@@ -8,23 +8,18 @@ import docx;
 
 glob llm = Model(model_name="gemini/gemini-2.5-flash", verbose=False);
 
-# --------------- Helpers ----------------
+# Helpers 
 def read_document_text(file_path: str) -> str{
-    """
-    Reads a PDF or Word document (.docx) and returns extracted text.
-    Returns an empty string if unreadable or unsupported.
-    """;
 
     if not os.path.exists(file_path){
-        print(f"[ERROR] File not found: {file_path}");
+
         return "";
     }
     file_path_lower = file_path.lower();
 
     try{
-        # ----------------------
+ 
         # PDF READER
-        # ----------------------
         if file_path_lower.endswith(".pdf"){
             text = "";
             with open(file_path, "rb") as f {
@@ -35,16 +30,14 @@ def read_document_text(file_path: str) -> str{
             }
             return text.strip();
         }
-        # ----------------------
+
         # DOCX READER
-        # ----------------------
         elif file_path_lower.endswith(".docx"){
             doc = docx.Document(file_path);
             text = "\n".join([para.text for para in doc.paragraphs]);
             return text.strip();
         }
         else{
-            print(f"[ERROR] Unsupported file type: {file_path}");
             return "";
         }
     }
@@ -55,9 +48,7 @@ def read_document_text(file_path: str) -> str{
 
 }
 
-# ---------------- Backend Nodes ----------------
-
-# Track resume upload status
+# Backend Nodes
 node Memory {
     has email: str = "";
     has full_name: str = "";
@@ -98,7 +89,9 @@ node Interest {
     has description: str = "";
 }
 
-# ---------------- Edges ----------------
+
+
+# Edges
 edge skilled_in {}
 edge has_certification {}
 edge interested_in {}
@@ -110,7 +103,7 @@ obj UserProfile {
 }
 
 
-# ---------------- Walkers ----------------
+# Walkers
 
 # Initialize Memory for a new user
 walker initialize_memory {
@@ -303,7 +296,6 @@ walker extract_user_skills {
     """
     You are an AI that extracts structured information ONLY from real CV/resume text.
 
-    -------------------------------------
     ### TASK
     Given a block of text, determine whether it represents a CV/resume using common CV structure and words such as Experience, Skills, Referees, Education. 
     Do not analyze anything that does not look like a CV. Return None if it is not a CV.  If it is a CV, extract:
@@ -318,7 +310,7 @@ walker extract_user_skills {
 
     If the document is not a CV → return None.
 
-    -------------------------------------
+
     ### IMPORTANT
     The output MUST be a well-structured UserProfile object with lists of Skill, Certification, and Interest objects.
     No missing fields. No hallucination. Use only the information present in the text.
@@ -338,9 +330,8 @@ walker extract_user_skills {
 
     can extract_user_skills with Resume entry {
 
-        # ---------------- Edge Case Checks ----------------
+        # Edge Case Checks
         if not here.file_path {
-            print("[WARN] No resume file path found");
             report {
                 "status": "Fail",
                 "message": "No resume file path found",
@@ -350,7 +341,6 @@ walker extract_user_skills {
         }
 
         if not os.path.exists(here.file_path) {
-            print(f"[WARN] File does not exist at path: {here.file_path}");
             report {
                 "status": "Fail",
                 "message": "Resume file does not exist on disk",
@@ -359,13 +349,10 @@ walker extract_user_skills {
             disengage;
         }
 
-        print(f"[INFO] Found resume file at: {here.file_path}");
-
-        # ---------------- Extract Text ----------------
+        # Extract Text
         let text = read_document_text(here.file_path);
 
         if not text {
-            print("[WARN] Unable to extract text from resume");
             report {
                 "status": "Fail",
                 "message": "Unable to extract text from resume",
@@ -374,12 +361,10 @@ walker extract_user_skills {
             disengage;
         }
 
-        # ---------------- LLM Extraction ----------------
+        # LLM Extraction
         try {
             self.user_profile = self.extract_user_skills_from_cv(text);
-            print(f"[INFO] Extraction complete: {self.user_profile}");
         } except Exception as err {
-            print(f"[ERROR] LLM extraction failed: {err}");
             report {
                 "status": "Fail",
                 "message": {err},
@@ -393,7 +378,7 @@ walker extract_user_skills {
         
 
 
-        # ---------------- Final Report ----------------
+        # Final Report
         report {
             "status": "Success",
             "message": "Resume processed successfully",
@@ -429,7 +414,7 @@ walker get_user_details {
 
     can get_user_details with Memory entry {
 
-        # ---------------- Edge Case Checks ----------------
+        # Edge Case Checks
 
         if here.full_name == None or here.email == None {
             report {
@@ -452,7 +437,7 @@ walker get_user_details {
             disengage;
         }
 
-        # ---------------- Final Success Report ----------------
+        # Final Success Report
 
         report {
             "status": "Success",
@@ -477,59 +462,38 @@ walker create_user_graph {
     }
 
     can create_user_graph with Memory entry {
-        print(f"Found user: {here.full_name}");
+        print(f"Found user: {here.resume_uploaded}");
 
-        # --------------------
-        # Connect Skills
-        # --------------------
-        print("Saving skills...");
         for skill in self.user_profile.skills {
 
-            # Check if Skill exists (by name)
+            # Check if Skill exists
             if [-->(`?Skill)](?name == skill.name) {
                 print(f"Skipping duplicate skill: {skill.name}");
                 continue;
             }
 
-            # Create + link
             here +>:skilled_in:+> skill;
         }
 
-        # --------------------
-        # Connect Certifications (dedup by title)
-        # --------------------
-        print("Saving certifications...");
         for cert in self.user_profile.certifications {
 
             # Check if Certification exists
             if [-->(`?Certification)](?title == cert.title) {
-                print(f"Skipping duplicate certification: {cert.title}");
                 continue;
             }
-
-            # Create + link
             here +>:has_certification:+> cert;
         }
 
-        # --------------------
-        # Connect Interests (dedup by name)
-        # --------------------
-        print("Saving interests...");
         for interest in self.user_profile.interests {
 
             # Check if Interest exists
             if [-->(`?Interest)](?name == interest.name) {
-                print(f"Skipping duplicate interest: {interest.name}");
+
                 continue;
             }
-
-            # Create + link
             here +>:interested_in:+> interest;
         }
 
-        # --------------------
-        # Report
-        # --------------------
         report {
             "status": "Success",
             "message": "User knowledge graph created",
@@ -541,12 +505,12 @@ walker create_user_graph {
         };
     }
 }
- 
-
 
 with entry {
     load_dotenv();
 }
+
+
 
 cl import from react { useState }
 cl import from 'lucide-react' { Mail, ChevronUp, ChevronLeft }
