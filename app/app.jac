@@ -1,6 +1,13 @@
 cl import from react { useState }
 cl import from 'lucide-react' { Mail, ChevronUp, ChevronLeft }
 cl import from 'radix-ui' { Accordion }
+cl import from "@jac-client/utils" {
+    Router,
+    Routes,
+    Route,
+    Link,
+    useNavigate,
+}
 
 
 
@@ -11,6 +18,7 @@ cl {
         def NavBar()  -> any {
             let links = ["CHANGELOG", "PRICING", "FAQs", "RESOURCES"];
             let [navbtnHover, setNavBtnHover] = useState("");
+            let navigate = useNavigate();
 
             return <div
                 style={{
@@ -78,7 +86,7 @@ cl {
                     </ul>
                     <button
                         type="button"
-                        # onClick={lambda  e: any  -> None{navigate("/auth");}}
+                        onClick={lambda  e: any  -> None{navigate("/auth");}}
                         onMouseEnter={lambda  e: any  -> None{ setNavBtnHover(true);} }
                         onMouseLeave={lambda  e: any  -> None{ setNavBtnHover(false);} }
                         style={{
@@ -766,7 +774,348 @@ cl {
     }
 
     def Auth() -> any {
-        return <div>
+         let navigate = useNavigate();
+
+        let [loginEmail, setLoginEmail] = useState("");
+        let [loginPassword, setLoginPassword] = useState("");
+
+        let [signupName, setSignupName] = useState("");
+        let [signupEmail, setSignupEmail] = useState("");
+        let [signupPassword, setSignupPassword] = useState("");
+
+        let [isSignIn, setIsSignIn] = useState(True);
+        let [error, setError] = useState("");
+
+        def handleLogin(e: any) -> None {
+            e.preventDefault();
+            setError("");
+
+            navigate("/onboarding");
+            
+        }
+
+        def handleSignup(e: any) -> None {
+            e.preventDefault();
+            setError("");
+
+          
+            navigate("/onboarding");
+        } 
+
+        def Header(title: str) -> any {
+            return <div
+                style={{
+                    "width": "calc(70% + 1.25rem)",
+                    "textAlign": "left",
+                    "marginBottom": "16px"
+                }}
+            >
+                <div
+                    onClick={lambda e: any -> None { navigate("/"); }}
+                    style={{
+                        "display": "flex",
+                        "flexDirection": "row",
+                        "alignItems": "center",
+                        "color": "grey",
+                        "cursor": "pointer",
+                        "marginBottom": "8px"
+                    }}
+                >
+                    <span><ChevronLeft /></span>
+                    Back
+                </div>
+                <h2
+                    style={{
+                        "color": "white",
+                        "margin": 0
+                    }}
+                >
+                    {title}
+                </h2>
+            </div>;
+        }
+
+
+        return <div
+            style={{
+                "width": "100%",
+                "height": "100vh",
+                "display": "grid",
+                "gridTemplateColumns": "50% 50%",
+                "position": "relative",
+                "color": "white"
+            }}
+            >
+            <div
+                style={{
+                    "width": "100%",
+                    "height": "100%",
+                    "display": "flex",
+                    "justifyContent": "center",
+                    "alignItems": "center"
+                }}
+             >
+                <div
+                    style={{
+                        "width": "100%",
+                        "display": "flex",
+                        "flexDirection": "column",
+                        "alignItems": "center",
+                        "padding": "24px",
+                        "fontFamily": "'Inter', sans-serif"
+                    }}
+                    >
+                    {Header("Welcome back")}
+                    <form
+                        onSubmit={handleLogin}
+                        style={{
+                            "width": "100%",
+                            "display": "flex",
+                            "flexDirection": "column",
+                            "alignItems": "center"
+                        }}
+                    >
+                        <input
+                            type="email"
+                            placeholder="Email"
+                            value={loginEmail}
+                            onChange={lambda e: any -> None { setLoginEmail(e.target.value); }}
+                            style={{
+                                "flexGrow": 1,
+                                "padding": "1.25rem",
+                                "borderRadius": "0.5rem",
+                                "border": "none",
+                                "backgroundColor": "#0b0b0b",
+                                "color": "white",
+                                "fontSize": "16px",
+                                "width": "70%",
+                                "outline": "none",
+                                "marginBottom": "16px"
+                            }}
+                        />
+                        <input
+                            type="password"
+                            placeholder="Password"
+                            value={loginPassword}
+                            onChange={lambda e: any -> None { setLoginPassword(e.target.value); }}
+                            style={{
+                                "flexGrow": 1,
+                                "padding": "1.25rem",
+                                "borderRadius": "0.5rem",
+                                "border": "none",
+                                "backgroundColor": "#0b0b0b",
+                                "color": "white",
+                                "fontSize": "16px",
+                                "width": "70%",
+                                "outline": "none",
+                                "marginBottom": "16px"
+                            }}
+                        />
+                        <button
+                            type="submit"
+                            style={{
+                                "width": "calc(70% + 12px + 1.25rem)",
+                                "padding": "1.25rem",
+                                "borderRadius": "8px",
+                                "border": "none",
+                                "backgroundColor": "#6e11b0",
+                                "color": "white",
+                                "fontWeight": "600",
+                                "fontSize": "15px",
+                                "cursor": "pointer"
+                            }}
+                        >
+                            Sign In
+                        </button>
+                    </form>
+                    <p
+                        style={{
+                            "marginTop": "19px",
+                            "fontSize": "14px",
+                            "color": "#bbbbbb",
+                            "textAlign": "center"
+                        }}
+                    >
+                        Don't have an account?
+                        <span
+                            onClick={lambda e: any -> None { setIsSignIn(False); }}
+                            style={{
+                                "color": "#6e11b0",
+                                "cursor": "pointer",
+                                "fontWeight": "600",
+                                "marginLeft": "5px"
+                            }}
+                        >
+                            Sign Up
+                        </span>
+                    </p>
+                </div>
+            </div>
+
+            <div
+                style={{
+                    "width": "100%",
+                    "height": "100%",
+                    "display": "flex",
+                    "justifyContent": "center",
+                    "alignItems": "center"
+                }}
+                >
+                <div
+                    style={{
+                        "width": "100%",
+                        "display": "flex",
+                        "flexDirection": "column",
+                        "alignItems": "center",
+                        "padding": "24px",
+                        "fontFamily": "'Inter', sans-serif"
+                    }}
+                >
+                    {Header("Create your account")}
+                    <form
+                        onSubmit={handleSignup}
+                        style={{
+                            "width": "100%",
+                            "display": "flex",
+                            "flexDirection": "column",
+                            "alignItems": "center"
+                        }}
+                    >
+                        <input
+                            type="text"
+                            placeholder="Full Name"
+                            value={signupName}
+                            onChange={lambda e: any -> None { setSignupName(e.target.value); }}
+                            style={{
+                                "flexGrow": 1,
+                                "padding": "1.25rem",
+                                "borderRadius": "0.5rem",
+                                "border": "none",
+                                "backgroundColor": "#0b0b0b",
+                                "color": "white",
+                                "fontSize": "16px",
+                                "width": "70%",
+                                "outline": "none",
+                                "marginBottom": "16px"
+                            }}
+                        />
+                        <input
+                            type="email"
+                            placeholder="Email"
+                            value={signupEmail}
+                            onChange={lambda e: any -> None { setSignupEmail(e.target.value); }}
+                            style={{
+                                "flexGrow": 1,
+                                "padding": "1.25rem",
+                                "borderRadius": "0.5rem",
+                                "border": "none",
+                                "backgroundColor": "#0b0b0b",
+                                "color": "white",
+                                "fontSize": "16px",
+                                "width": "70%",
+                                "outline": "none",
+                                "marginBottom": "16px"
+                            }}
+                        />
+                        <input
+                            type="password"
+                            placeholder="Password"
+                            value={signupPassword}
+                            onChange={lambda e: any -> None { setSignupPassword(e.target.value); }}
+                            style={{
+                                "flexGrow": 1,
+                                "padding": "1.25rem",
+                                "borderRadius": "0.5rem",
+                                "border": "none",
+                                "backgroundColor": "#0b0b0b",
+                                "color": "white",
+                                "fontSize": "16px",
+                                "width": "70%",
+                                "outline": "none",
+                                "marginBottom": "16px"
+                            }}
+                        />
+                        <button
+                            type="submit"
+                            style={{
+                                "width": "calc(70% + 12px + 1.25rem)",
+                                "padding": "1.25rem",
+                                "borderRadius": "8px",
+                                "border": "none",
+                                "backgroundColor": "#6e11b0",
+                                "color": "white",
+                                "fontWeight": "600",
+                                "fontSize": "15px",
+                                "cursor": "pointer"
+                            }}
+                        >
+                            Sign Up
+                        </button>
+                    </form>
+                    <p
+                        style={{
+                            "marginTop": "19px",
+                            "fontSize": "14px",
+                            "color": "#bbbbbb",
+                            "textAlign": "center"
+                        }}
+                    >
+                        Already have an account?
+                        <span
+                            onClick={lambda e: any -> None { setIsSignIn(True); }}
+                            style={{
+                                "color": "#6e11b0",
+                                "cursor": "pointer",
+                                "fontWeight": "600",
+                                "marginLeft": "5px"
+                            }}
+                        >
+                            Sign In
+                        </span>
+                    </p>
+                </div>
+            </div>
+
+            <div
+                style={{
+                    "width": "50%",
+                    "height": "100%",
+                    "position": "absolute",
+                    "top": "0px",
+                    "left": ("50%" if isSignIn else "0px"),
+                    "transition": "all 300ms ease-in",
+                    "display": "flex",
+                    "justifyContent": "center",
+                    "alignItems": "center",
+                    "pointerEvents": "none"
+                }}
+             >
+                <div
+                    style={{
+                        "margin": "auto",
+                        "backgroundColor": "#6e11b0",
+                        "width": "97%",
+                        "height": "97%",
+                        "zIndex": "9999",
+                        "borderRadius": "10px",
+                        "display": "flex",
+                        "justifyContent": "center",
+                        "alignItems": "center",
+                        "overflow": "hidden"
+                    }}
+                >
+                    <div
+                        style={{
+                            "color": "white",
+                            "fontSize": "20px",
+                            "fontWeight": "600"
+                        }}
+                    >
+                        Smart Career Path Navigator
+                    </div>
+                </div>
+            </div>
+
         </div>;
     }
 
@@ -807,7 +1156,28 @@ cl {
         document.head.appendChild(fontLink);
 
 
-        return <Website />;
+        return <Router>
+            <div>
+                <Routes>
+                    <Route
+                        path="/"
+                        element={<Website />}
+                    />
+                    <Route
+                        path="/auth"
+                        element={<Auth />}
+                    />
+                     <Route
+                        path="/onboarding"
+                        element={<Onboarding />}
+                    />
+                     <Route
+                        path="/dashboard"
+                        element={<Dashboard />}
+                    />
+                </Routes>
+            </div>
+        </Router>;
     }
 
 
