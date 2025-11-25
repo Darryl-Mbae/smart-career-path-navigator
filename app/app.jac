@@ -98,6 +98,11 @@ node Interest {
     has description: str = "";
 }
 
+# ---------------- Edges ----------------
+edge skilled_in {}
+edge has_certification {}
+edge interested_in {}
+
 obj UserProfile {
     has skills: list[Skill];
     has certifications: list[Certification];
@@ -291,7 +296,6 @@ walker save_resume {
     }
 }
 
-# extract user skills and certifications from uploaded CV
 # extract user skills, certifications, and interests from uploaded CV
 walker extract_user_skills {
     has user_profile: UserProfile = UserProfile([], [], []);
@@ -383,6 +387,11 @@ walker extract_user_skills {
             };
             disengage;
         }
+        # create User graph
+        print("Saving User Profile to Memory...\n");
+        root spawn create_user_graph(user_profile=self.user_profile);
+        
+
 
         # ---------------- Final Report ----------------
         report {
@@ -455,6 +464,84 @@ walker get_user_details {
         };
     }
 }
+
+walker create_user_graph {
+    has user_profile: UserProfile = UserProfile([], [], []);
+
+    can visit_memory with `root entry {
+        print("Checking User Memory...");
+        visit [-->(`?Memory)] else {
+            report {"status": "Fail", "message": "No user found", "body": {}};
+            disengage;
+        }
+    }
+
+    can create_user_graph with Memory entry {
+        print(f"Found user: {here.full_name}");
+
+        # --------------------
+        # Connect Skills
+        # --------------------
+        print("Saving skills...");
+        for skill in self.user_profile.skills {
+
+            # Check if Skill exists (by name)
+            if [-->(`?Skill)](?name == skill.name) {
+                print(f"Skipping duplicate skill: {skill.name}");
+                continue;
+            }
+
+            # Create + link
+            here +>:skilled_in:+> skill;
+        }
+
+        # --------------------
+        # Connect Certifications (dedup by title)
+        # --------------------
+        print("Saving certifications...");
+        for cert in self.user_profile.certifications {
+
+            # Check if Certification exists
+            if [-->(`?Certification)](?title == cert.title) {
+                print(f"Skipping duplicate certification: {cert.title}");
+                continue;
+            }
+
+            # Create + link
+            here +>:has_certification:+> cert;
+        }
+
+        # --------------------
+        # Connect Interests (dedup by name)
+        # --------------------
+        print("Saving interests...");
+        for interest in self.user_profile.interests {
+
+            # Check if Interest exists
+            if [-->(`?Interest)](?name == interest.name) {
+                print(f"Skipping duplicate interest: {interest.name}");
+                continue;
+            }
+
+            # Create + link
+            here +>:interested_in:+> interest;
+        }
+
+        # --------------------
+        # Report
+        # --------------------
+        report {
+            "status": "Success",
+            "message": "User knowledge graph created",
+            "body": {
+                "skills": [s.name for s in self.user_profile.skills],
+                "certifications": [c.title for c in self.user_profile.certifications],
+                "interests": [i.name for i in self.user_profile.interests]
+            }
+        };
+    }
+}
+ 
 
 
 with entry {
