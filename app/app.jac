@@ -1,5 +1,5 @@
-cl import from react { useState }
-cl import from 'lucide-react' { Mail, ChevronUp, ChevronLeft }
+cl import from react { useState,useEffect }
+cl import from 'lucide-react' { Mail,Brain, CloudUpload, Check, Goal, Route as Node, ChevronUp, ChevronLeft }
 cl import from 'radix-ui' { Accordion }
 cl import from "@jac-client/utils" {
     Router,
@@ -341,7 +341,7 @@ cl {
                             "transform": (
                                 "translateY(0.25rem)" if btnHover else "translateY(0)"
                             ),
-                            "transition": "all 0.2s ease",
+                            "transition": "all 0.2s eFase",
                             "opacity": (0.5 if isSubmitting else 1),
 
                         }}
@@ -1104,15 +1104,7 @@ cl {
                         "overflow": "hidden"
                     }}
                 >
-                    <div
-                        style={{
-                            "color": "white",
-                            "fontSize": "20px",
-                            "fontWeight": "600"
-                        }}
-                    >
-                        Smart Career Path Navigator
-                    </div>
+                    
                 </div>
             </div>
 
@@ -1120,8 +1112,346 @@ cl {
     }
 
     def Onboarding() -> any {
-         return <div>
-        </div>;
+
+        let [currentStep, setCurrentStep] = useState(1);
+        let [stepCompleted,setStepCompleted] = useState(0);
+        let [navbtnHover, setNavBtnHover] = useState("");
+        let [progress,setProgress] = useState(25);
+        let [resumeHover,setResumeHover] = useState(false);
+
+
+        useEffect(lambda -> None {
+            let percent = (currentStep / 4) * 100;
+            setProgress(percent + "%");
+        }, [currentStep]);
+
+
+        let steps = [
+            {
+                id: 1,
+                title: "Upload Your CV",
+                description: "Let our AI analyze your experience and extract your current skills.",
+                icon: <CloudUpload style={{
+                    "fontSize":"0.75rem"
+                }}/>,
+                completed: false
+            },
+            {
+                id: 2,
+                title: "Review & Update Skills",
+                description: "Confirm AI-detected skills and add any we might have missed.",
+                icon:<Brain style={{
+                    "fontSize":"0.75rem"
+                }} />,
+                completed: false
+            },
+            {
+                id: 3,
+                title: "Set Career Goals",
+                description: "Choose your target roles, industries, and career aspirations.",
+                icon:  <Goal style={{
+                    "fontSize":"0.75rem"
+                }}/>,
+                completed: false
+            },
+            {
+                id: 4,
+                title: "Get Your Roadmap",
+                description: "Explore your personalized learning path and skill gap analysis.",
+                icon: <Node style={{
+                    "fontSize":"0.75rem"
+                }} />,
+                completed: false
+            }
+        ];
+
+
+        def Step(props:any) -> any {
+            console.log(props);
+            return <div style={{
+                "display":"flex",
+                "flexDirection":"row",
+                "gap":"36px",
+                "alignItems":"center",
+                "width":"75%",
+                "marginInline":"auto",
+                "marginBottom":"45px"
+            }}>
+                <div style={{
+                    "width":"40px",
+                    "aspectRatio":"1",
+                    "borderRadius":"50%",
+                    "display":"flex",
+                    "alignItems":"center",
+                    "justifyContent":"center",
+                    "color":"white",
+                    "position":"relative",
+                    "zIndex":"1",
+                    "transition": "all 0.2s ease",
+                    "boxShadow": ("0 0 20px rgba(110, 17, 176, 0.5)" if props.step.id == currentStep else "none"),
+                    "backgroundColor":("#6e11b0" if props.step.id <= currentStep else "black")
+                }}>
+                    <div style={{
+                        "display":"flex",
+                        "alignItems":"center",
+                        "justifyContent":"center",
+                    }}>
+                        { props.step.icon }
+                        { props.step.id != 4 &&
+                        <div style={{
+                            "position":"absolute",
+                            "height":"calc(100% + 65px)",
+                            "width":"2px",
+                            "left":"calc(50% + 1px)",
+                            "top":"100%",
+                            "transform":"translateX(-50%)",
+                            "zIndex":"-1",
+                            "transition": "all 0.2s ease",
+                            "borderLeft": ("2px dashed #6e11b0" if props.step.id < currentStep else "2px dashed grey")
+
+                        }}
+                        ></div>
+                        }
+                    </div>
+                    
+                </div>
+                <div>
+                    <h1 style={{
+                        "marginBottom":"0px",
+                        "fontWeight":"600",
+                        "color":("white" if props.step.id <= currentStep else "rgba(255, 255, 255, 0.6); "),
+                        "fontSize":"1.15rem"
+                    }}>{props.step.title}</h1>
+                    <p style={{
+                        "color":"grey",
+                        "marginBlock":"0px",
+                        "marginTop":"10px"
+                    }}>{props.step.description}</p>
+                </div>
+            </div>;
+        }
+
+
+         return <div style={{
+            "width": "100%",
+            "height": "100vh",
+            "display": "grid",
+            "gridTemplateColumns": "45% 55%",
+            "position": "relative",
+            "color": "white",
+            "fontFamily": "system-ui, sans-serif"
+
+         }}>
+                <div style={{
+                        "width": "100%",
+                        "height": "100%",
+                        "display": "flex",
+                        "justifyContent": "center",
+                        "alignItems": "center"
+                    }}>
+                    <div
+                        style={{
+                            "margin": "auto",
+                            "backgroundColor": "#0b0b0b",
+                            "width": "95%",
+                            "height": "90%",
+                            "zIndex": "9999",
+                            "borderRadius": "10px",
+                            "display": "flex",
+                            "flexDirection" :"column",
+                            "justifyContent": "center",
+                            "alignItems": "center",
+                            "overflow": "hidden"
+                        }}
+                    >
+                     {steps.map(
+                        lambda step:any -> any { return 
+                        <Step
+                        key={step.id}
+                        step={step}
+                        isActive={currentStep == step.id}
+                        />;
+                        })}   
+                    </div>
+                </div>
+                <div style={{
+                        "width": "100%",
+                        "height": "95%",
+                        "marginBlock":"auto",
+                        "display": "flex",
+                        "justifyContent": "center",
+                        "alignItems": "center"
+                    }}>
+                    <div style={{
+                        "width":"90%",
+                        "height":"90%",
+                        "display":"flex",
+                        "flexDirection":"column",
+                        "justifyContent":"center"
+                        
+                     }}>
+                        <div style={{
+                            "color":"grey",
+                            "textTransform":"uppercase"
+                         }}>Step {currentStep} of 4</div>
+                        
+                        <div style={{
+                            "width":"80%",
+                            "height":"11px",
+                            "borderRadius":"20px",
+                            "backgroundColor": "#0b0b0b",
+                            "overflow":"hidden",
+                            "marginBlock":"20px"
+                         }}>
+                             <div
+                                style={{
+                                "height": "100%",
+                                "width":(progress),     
+                                "backgroundColor": "#6e11b0",
+                                "transition": "0.3s ease",
+                                "borderRadius":"20px"
+                                }}
+                             ></div>
+                        </div>
+
+                        { currentStep == 1 &&
+                        <div style={{
+                            "height":"60vh"
+                            }}>
+                            <div style={{
+                                "marginBottom":"0px",
+                                "fontWeight":"600",
+                                "color":"white",
+                                "fontSize":"1.15rem"
+                            }}>Upload your CV</div>
+                            <p style={{
+                                "color":"grey",
+                                "marginBlock":"0px",
+                                "marginTop":"10px"
+                                }}>Let us start by understanding your background</p>
+                            <div    
+                                onMouseEnter={lambda  e: any  -> None{ setResumeHover(true);} }
+                                onMouseLeave={lambda  e: any  -> None{ setResumeHover(false);} }
+                                style={{
+                                    "marginBlock":"30px",
+                                    "height":"40vh",
+                                    "width":"80%",
+                                    "borderRadius":"15px",
+                                    "border":("2px dashed #6e11b0" if resumeHover else "2px dashed grey"),
+                                    "backgroundColor": ( "#0b0b0b" if resumeHover else "#101010ff"),
+                                    "display":"flex",
+                                    "flexDirection":"column",
+                                    "justifyContent":"center",
+                                    "alignItems":"center"
+
+                                }}>
+                                    <div style={{
+                                        "width":"55px",
+                                        "aspectRatio":"1",
+                                        "borderRadius":"50%",
+                                        "backgroundColor":"black",
+                                        "display":"flex",
+                                        "alignItems":"center",
+                                        "justifyContent":"center",
+                                        "marginBottom":"15px"
+
+                                    }}>
+                                     <CloudUpload style={{
+                                        "fontSize":"0.75rem",
+                                        "color":"#6e11b0"
+
+                                    }} /></div>
+                                    <p style={{
+                                         "color":"grey",
+                                        "marginBlock":"0px",
+                                        "marginBlock":"20px",
+                                        "fontSize":".9em"
+                                    }}>
+                                    Supported formats: PDF, DOC, DOCX (Max 5MB)</p>
+                                    <div></div>
+                                    <div style={{
+                                        "width": "auto",
+                                        "padding": "1rem 1.5rem",
+                                        "border": "none",
+                                        "borderRadius": "0.5rem",
+                                        "backgroundColor": "#6e11b0",
+                                        "color": "white",
+                                        "fontWeight": "600",
+                                        "fontSize": "0.875rem",
+                                        "cursor": "pointer",
+                                        "transition": "all 0.2s ease",
+                                        "marginTop":"10px",
+                                        "boxShadow": "0 0 20px rgba(110, 17, 176, 0.2)"
+                                    }}>Upload from Computer</div>
+                                </div>
+                        </div>}
+
+                        { currentStep == 2 && 
+                        <div style={{
+                            "height":"60vh"
+                        }}>hello</div>
+                        }
+
+                        { currentStep == 3 && 
+                        <div style={{
+                            "height":"60vh"
+                        }}>hello</div>
+                        }
+
+                        { currentStep == 4 && 
+                        <div style={{
+                            "height":"60vh"
+                        }}>hello</div>
+                        }
+
+                        <div style={{
+                            "display":"flex",
+                            "flexDirection":"row",
+                            "gap":"25px",
+                            "alignItems":"center"
+                            }}>
+
+                            { currentStep > 1 &&
+                            <div 
+                                onClick={lambda  e: any  -> None{setCurrentStep(currentStep - 1);}}
+                                style={{
+                                    "display":"flex",
+                                    "flexDirection":"row",
+                                    "alignItems":"center"
+                                }}> 
+                                <ChevronLeft/>
+                                Back
+                            </div>
+                            }
+
+                            <button
+                                type="button"
+                                onClick={lambda  e: any  -> None{setCurrentStep(currentStep + 1);}}
+                                onMouseEnter={lambda  e: any  -> None{ setNavBtnHover(true);} }
+                                onMouseLeave={lambda  e: any  -> None{ setNavBtnHover(false);} }
+                                style={{
+                                    "width": "180px",
+                                    "backgroundColor": "#6e11b0",
+                                    "color": "white",
+                                    "border": "none",
+                                    "paddingInline": "2.5rem",
+                                    "paddingBlock": "1rem",
+                                    "borderRadius": "5px",
+                                    "cursor": "pointer",
+                                    "fontSize": "16px",
+                                    "transform": (
+                                        "translateY(0.25rem)" if navbtnHover else "translateY(0)"
+                                    ),
+                                    "transition": "transform 0.2s ease"
+                                }}
+                                >
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>;
     }
 
     def Dashboard() -> any {
