@@ -1,3 +1,7 @@
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
 function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
 function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
@@ -5,8 +9,8 @@ function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length)
 function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t["return"] && (u = t["return"](), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
 function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
 import { __jacJsx, __jacSpawn } from "@jac-client/utils";
-import { useState } from "react";
-import { Mail, ChevronUp, ChevronLeft } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Mail, Brain, CloudUpload, Check, Goal, Route as Node, ChevronUp, ChevronLeft } from "lucide-react";
 import { Accordion } from "radix-ui";
 import { Router, Routes, Route, Link, useNavigate } from "@jac-client/utils";
 function Website() {
@@ -309,7 +313,7 @@ function Website() {
         "fontSize": "0.875rem",
         "cursor": "pointer",
         "transform": btnHover ? "translateY(0.25rem)" : "translateY(0)",
-        "transition": "all 0.2s ease",
+        "transition": "all 0.2s eFase",
         "opacity": isSubmitting ? 0.5 : 1
       }
     }, [isSubmitting ? "Subscribing..." : "Subscribe"])])]);
@@ -971,16 +975,336 @@ function Auth() {
       "alignItems": "center",
       "overflow": "hidden"
     }
-  }, [__jacJsx("div", {
-    "style": {
-      "color": "white",
-      "fontSize": "20px",
-      "fontWeight": "600"
-    }
-  }, ["Smart Career Path Navigator"])])])]);
+  }, [])])]);
 }
 function Onboarding() {
-  return __jacJsx("div", {}, []);
+  var _useState27 = useState(1),
+    _useState28 = _slicedToArray(_useState27, 2),
+    currentStep = _useState28[0],
+    setCurrentStep = _useState28[1];
+  var _useState29 = useState(0),
+    _useState30 = _slicedToArray(_useState29, 2),
+    stepCompleted = _useState30[0],
+    setStepCompleted = _useState30[1];
+  var _useState31 = useState(""),
+    _useState32 = _slicedToArray(_useState31, 2),
+    navbtnHover = _useState32[0],
+    setNavBtnHover = _useState32[1];
+  var _useState33 = useState(25),
+    _useState34 = _slicedToArray(_useState33, 2),
+    progress = _useState34[0],
+    setProgress = _useState34[1];
+  var _useState35 = useState(false),
+    _useState36 = _slicedToArray(_useState35, 2),
+    resumeHover = _useState36[0],
+    setResumeHover = _useState36[1];
+  useEffect(function () {
+    var percent = currentStep / 4 * 100;
+    setProgress(percent + "%");
+  }, [currentStep]);
+  var steps = [{
+    id: 1,
+    title: "Upload Your CV",
+    description: "Let our AI analyze your experience and extract your current skills.",
+    icon: __jacJsx(CloudUpload, {
+      "style": {
+        "fontSize": "0.75rem"
+      }
+    }, []),
+    completed: false
+  }, {
+    id: 2,
+    title: "Review & Update Skills",
+    description: "Confirm AI-detected skills and add any we might have missed.",
+    icon: __jacJsx(Brain, {
+      "style": {
+        "fontSize": "0.75rem"
+      }
+    }, []),
+    completed: false
+  }, {
+    id: 3,
+    title: "Set Career Goals",
+    description: "Choose your target roles, industries, and career aspirations.",
+    icon: __jacJsx(Goal, {
+      "style": {
+        "fontSize": "0.75rem"
+      }
+    }, []),
+    completed: false
+  }, {
+    id: 4,
+    title: "Get Your Roadmap",
+    description: "Explore your personalized learning path and skill gap analysis.",
+    icon: __jacJsx(Node, {
+      "style": {
+        "fontSize": "0.75rem"
+      }
+    }, []),
+    completed: false
+  }];
+  function Step(props) {
+    console.log(props);
+    return __jacJsx("div", {
+      "style": {
+        "display": "flex",
+        "flexDirection": "row",
+        "gap": "36px",
+        "alignItems": "center",
+        "width": "75%",
+        "marginInline": "auto",
+        "marginBottom": "45px"
+      }
+    }, [__jacJsx("div", {
+      "style": {
+        "width": "40px",
+        "aspectRatio": "1",
+        "borderRadius": "50%",
+        "display": "flex",
+        "alignItems": "center",
+        "justifyContent": "center",
+        "color": "white",
+        "position": "relative",
+        "zIndex": "1",
+        "transition": "all 0.2s ease",
+        "boxShadow": props.step.id === currentStep ? "0 0 20px rgba(110, 17, 176, 0.5)" : "none",
+        "backgroundColor": props.step.id <= currentStep ? "#6e11b0" : "black"
+      }
+    }, [__jacJsx("div", {
+      "style": {
+        "display": "flex",
+        "alignItems": "center",
+        "justifyContent": "center"
+      }
+    }, [props.step.icon, props.step.id !== 4 && __jacJsx("div", {
+      "style": {
+        "position": "absolute",
+        "height": "calc(100% + 65px)",
+        "width": "2px",
+        "left": "calc(50% + 1px)",
+        "top": "100%",
+        "transform": "translateX(-50%)",
+        "zIndex": "-1",
+        "transition": "all 0.2s ease",
+        "borderLeft": props.step.id < currentStep ? "2px dashed #6e11b0" : "2px dashed grey"
+      }
+    }, [])])]), __jacJsx("div", {}, [__jacJsx("h1", {
+      "style": {
+        "marginBottom": "0px",
+        "fontWeight": "600",
+        "color": props.step.id <= currentStep ? "white" : "rgba(255, 255, 255, 0.6); ",
+        "fontSize": "1.15rem"
+      }
+    }, [props.step.title]), __jacJsx("p", {
+      "style": {
+        "color": "grey",
+        "marginBlock": "0px",
+        "marginTop": "10px"
+      }
+    }, [props.step.description])])]);
+  }
+  return __jacJsx("div", {
+    "style": {
+      "width": "100%",
+      "height": "100vh",
+      "display": "grid",
+      "gridTemplateColumns": "45% 55%",
+      "position": "relative",
+      "color": "white",
+      "fontFamily": "system-ui, sans-serif"
+    }
+  }, [__jacJsx("div", {
+    "style": {
+      "width": "100%",
+      "height": "100%",
+      "display": "flex",
+      "justifyContent": "center",
+      "alignItems": "center"
+    }
+  }, [__jacJsx("div", {
+    "style": {
+      "margin": "auto",
+      "backgroundColor": "#0b0b0b",
+      "width": "95%",
+      "height": "90%",
+      "zIndex": "9999",
+      "borderRadius": "10px",
+      "display": "flex",
+      "flexDirection": "column",
+      "justifyContent": "center",
+      "alignItems": "center",
+      "overflow": "hidden"
+    }
+  }, [steps.map(function (step) {
+    return __jacJsx(Step, {
+      "key": step.id,
+      "step": step,
+      "isActive": currentStep === step.id
+    }, []);
+  }), "   "])]), __jacJsx("div", {
+    "style": {
+      "width": "100%",
+      "height": "95%",
+      "marginBlock": "auto",
+      "display": "flex",
+      "justifyContent": "center",
+      "alignItems": "center"
+    }
+  }, [__jacJsx("div", {
+    "style": {
+      "width": "90%",
+      "height": "90%",
+      "display": "flex",
+      "flexDirection": "column",
+      "justifyContent": "center"
+    }
+  }, [__jacJsx("div", {
+    "style": {
+      "color": "grey",
+      "textTransform": "uppercase"
+    }
+  }, ["Step ", currentStep, " of 4"]), __jacJsx("div", {
+    "style": {
+      "width": "80%",
+      "height": "11px",
+      "borderRadius": "20px",
+      "backgroundColor": "#0b0b0b",
+      "overflow": "hidden",
+      "marginBlock": "20px"
+    }
+  }, [__jacJsx("div", {
+    "style": {
+      "height": "100%",
+      "width": progress,
+      "backgroundColor": "#6e11b0",
+      "transition": "0.3s ease",
+      "borderRadius": "20px"
+    }
+  }, [])]), currentStep === 1 && __jacJsx("div", {
+    "style": {
+      "height": "60vh"
+    }
+  }, [__jacJsx("div", {
+    "style": {
+      "marginBottom": "0px",
+      "fontWeight": "600",
+      "color": "white",
+      "fontSize": "1.15rem"
+    }
+  }, ["Upload your CV"]), __jacJsx("p", {
+    "style": {
+      "color": "grey",
+      "marginBlock": "0px",
+      "marginTop": "10px"
+    }
+  }, ["Let us start by understanding your background"]), __jacJsx("div", {
+    "onMouseEnter": function onMouseEnter(e) {
+      setResumeHover(true);
+    },
+    "onMouseLeave": function onMouseLeave(e) {
+      setResumeHover(false);
+    },
+    "style": {
+      "marginBlock": "30px",
+      "height": "40vh",
+      "width": "80%",
+      "borderRadius": "15px",
+      "border": resumeHover ? "2px dashed #6e11b0" : "2px dashed grey",
+      "backgroundColor": resumeHover ? "#0b0b0b" : "#101010ff",
+      "display": "flex",
+      "flexDirection": "column",
+      "justifyContent": "center",
+      "alignItems": "center"
+    }
+  }, [__jacJsx("div", {
+    "style": {
+      "width": "55px",
+      "aspectRatio": "1",
+      "borderRadius": "50%",
+      "backgroundColor": "black",
+      "display": "flex",
+      "alignItems": "center",
+      "justifyContent": "center",
+      "marginBottom": "15px"
+    }
+  }, [__jacJsx(CloudUpload, {
+    "style": {
+      "fontSize": "0.75rem",
+      "color": "#6e11b0"
+    }
+  }, [])]), __jacJsx("p", {
+    "style": _defineProperty(_defineProperty({
+      "color": "grey",
+      "marginBlock": "0px"
+    }, "marginBlock", "20px"), "fontSize", ".9em")
+  }, ["Supported formats: PDF, DOC, DOCX (Max 5MB)"]), __jacJsx("div", {}, []), __jacJsx("div", {
+    "style": {
+      "width": "auto",
+      "padding": "1rem 1.5rem",
+      "border": "none",
+      "borderRadius": "0.5rem",
+      "backgroundColor": "#6e11b0",
+      "color": "white",
+      "fontWeight": "600",
+      "fontSize": "0.875rem",
+      "cursor": "pointer",
+      "transition": "all 0.2s ease",
+      "marginTop": "10px",
+      "boxShadow": "0 0 20px rgba(110, 17, 176, 0.2)"
+    }
+  }, ["Upload from Computer"])])]), currentStep === 2 && __jacJsx("div", {
+    "style": {
+      "height": "60vh"
+    }
+  }, ["hello"]), currentStep === 3 && __jacJsx("div", {
+    "style": {
+      "height": "60vh"
+    }
+  }, ["hello"]), currentStep === 4 && __jacJsx("div", {
+    "style": {
+      "height": "60vh"
+    }
+  }, ["hello"]), __jacJsx("div", {
+    "style": {
+      "display": "flex",
+      "flexDirection": "row",
+      "gap": "25px",
+      "alignItems": "center"
+    }
+  }, [currentStep > 1 && __jacJsx("div", {
+    "onClick": function onClick(e) {
+      setCurrentStep(currentStep - 1);
+    },
+    "style": {
+      "display": "flex",
+      "flexDirection": "row",
+      "alignItems": "center"
+    }
+  }, [" ", __jacJsx(ChevronLeft, {}, []), "Back"]), __jacJsx("button", {
+    "type": "button",
+    "onClick": function onClick(e) {
+      setCurrentStep(currentStep + 1);
+    },
+    "onMouseEnter": function onMouseEnter(e) {
+      setNavBtnHover(true);
+    },
+    "onMouseLeave": function onMouseLeave(e) {
+      setNavBtnHover(false);
+    },
+    "style": {
+      "width": "180px",
+      "backgroundColor": "#6e11b0",
+      "color": "white",
+      "border": "none",
+      "paddingInline": "2.5rem",
+      "paddingBlock": "1rem",
+      "borderRadius": "5px",
+      "cursor": "pointer",
+      "fontSize": "16px",
+      "transform": navbtnHover ? "translateY(0.25rem)" : "translateY(0)",
+      "transition": "transform 0.2s ease"
+    }
+  }, ["Next"])])])])]);
 }
 function Dashboard() {
   return __jacJsx("div", {}, []);
