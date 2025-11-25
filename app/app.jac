@@ -59,7 +59,10 @@ def read_document_text(file_path: str) -> str{
 
 # Track resume upload status
 node Memory {
+    has email: str = "";
+    has full_name: str = "";
     has resume_uploaded: bool = False;
+    
 }
 
 node Resume {
@@ -90,9 +93,15 @@ node Certification {
     has url: str = "";
 }
 
+node Interest {
+    has name: str = "";
+    has description: str = "";
+}
+
 obj UserProfile {
     has skills: list[Skill];
     has certifications: list[Certification];
+    has interests: list[Interest];
 }
 
 
@@ -100,9 +109,11 @@ obj UserProfile {
 
 # Initialize Memory for a new user
 walker initialize_memory {
+    has email: str = "";
+    has full_name: str= "";
+
     can initialize_memory with `root entry {
-        new_memory = here ++> Memory();
-        report here;
+        new_memory = here ++> Memory(email=self.email, full_name=self.full_name);
         report {"status": "Success", "message": "Memory initialized", "body": new_memory};
     }
 }
@@ -281,30 +292,31 @@ walker save_resume {
 }
 
 # extract user skills and certifications from uploaded CV
+# extract user skills, certifications, and interests from uploaded CV
 walker extract_user_skills {
-    has user_profile: UserProfile = UserProfile([], []);
+    has user_profile: UserProfile = UserProfile([], [], []);
 
     """
     You are an AI that extracts structured information ONLY from real CV/resume text.
 
     -------------------------------------
     ### TASK
-    Given a block of text, determine whether it represents a CV/resume using coomon CV structure and words such as Experience, Skills, Referees, Education. 
+    Given a block of text, determine whether it represents a CV/resume using common CV structure and words such as Experience, Skills, Referees, Education. 
     Do not analyze anything that does not look like a CV. Return None if it is not a CV.  If it is a CV, extract:
 
     - skills: list of Skill objects (Skill{name, description})
     - certifications: list of Certification objects (Certification{title, provider, url})
+    - interests: list of Interest objects (Interest{name, description})
 
     Return a populated UserProfile.
 
-    If the text is NOT a CV/resume, return None
+    If the text is NOT a CV/resume, return None.
 
-    If the document is not a CV → return None:
-
+    If the document is not a CV → return None.
 
     -------------------------------------
     ### IMPORTANT
-    The output MUST be a well-structured UserProfile object with lists of Skill and Certification objects.
+    The output MUST be a well-structured UserProfile object with lists of Skill, Certification, and Interest objects.
     No missing fields. No hallucination. Use only the information present in the text.
     """
     def extract_user_skills_from_cv(resume_text: str) -> UserProfile | None by llm(method="Reason");
@@ -366,7 +378,7 @@ walker extract_user_skills {
             print(f"[ERROR] LLM extraction failed: {err}");
             report {
                 "status": "Fail",
-                "message": "LLM extraction failed",
+                "message": {err},
                 "body": {}
             };
             disengage;
@@ -381,16 +393,73 @@ walker extract_user_skills {
                 "certifications": [
                     {"title": c.title, "provider": c.provider, "url": c.url} 
                     for c in self.user_profile.certifications
-                ]
+                    ],
+                    "interests": [
+                        {"name": i.name, "description": i.description}
+                        for i in self.user_profile.interests
+                    ]
+                }
+            };
+        }
+}
+
+
+# extract full names and email
+walker get_user_details {
+
+    can visit_memory with `root entry {
+        visit [-->(`?Memory)] else {
+            report {
+                "status": "Fail",
+                "message": "User does not exist",
+                "body": {}
+            };
+            disengage;
+        }
+    }
+
+    can get_user_details with Memory entry {
+
+        # ---------------- Edge Case Checks ----------------
+
+        if here.full_name == None or here.email == None {
+            report {
+                "status": "Fail",
+                "message": "User details missing in memory",
+                "body": {}
+            };
+            disengage;
+        }
+
+        let name_clean = here.full_name.strip() if here.full_name else "";
+        let email_clean = here.email.strip() if here.email else "";
+
+        if name_clean == "" and email_clean == "" {
+            report {
+                "status": "Fail",
+                "message": "No user details found",
+                "body": {}
+            };
+            disengage;
+        }
+
+        # ---------------- Final Success Report ----------------
+
+        report {
+            "status": "Success",
+            "message": "User details fetched successfully",
+            "body": {
+                "full_name": name_clean,
+                "email": email_clean
             }
         };
     }
 }
 
+
 with entry {
     load_dotenv();
 }
-
 
 cl import from react { useState }
 cl import from 'lucide-react' { Mail, ChevronUp, ChevronLeft }
