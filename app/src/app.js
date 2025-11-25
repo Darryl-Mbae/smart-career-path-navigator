@@ -2,13 +2,17 @@ import {__jacJsx, __jacSpawn} from "@jac-client/utils";
 import { useState } from "react";
 import { Mail, ChevronUp, ChevronLeft } from "lucide-react";
 import { Accordion } from "radix-ui";
+import { Router, Routes, Route, Link, useNavigate } from "@jac-client/utils";
 function Website() {
   function NavBar() {
     let links = ["CHANGELOG", "PRICING", "FAQs", "RESOURCES"];
     let [navbtnHover, setNavBtnHover] = useState("");
+    let navigate = useNavigate();
     return __jacJsx("div", {"style": {"position": "sticky", "border": "1px solid transparent", "top": "1rem", "zIndex": "99999", "width": "calc(92% - 6px)", "marginInline": "auto", "paddingBlock": "1rem", "paddingInline": "1.5rem", "display": "flex", "alignItems": "center", "justifyContent": "space-between", "color": "white", "borderRadius": "0.375rem", "transition": "all 200ms ease-in", "backgroundColor": "rgba(0,0,0,.5)", "backdropFilter": "blur(12px)"}}, [__jacJsx("a", {"href": "/app", "style": {"fontSize": "1.125rem", "fontWeight": "600", "cursor": "pointer", "color": "white", "textDecoration": "none"}}, ["Arise"]), __jacJsx("div", {"style": {"display": "flex", "alignItems": "center", "gap": "2rem"}}, [__jacJsx("ul", {"style": {"position": "relative", "zIndex": "10", "display": "flex", "alignItems": "center", "gap": "10px", "listStyle": "none"}}, [links.map(link => {
       return __jacJsx("li", {"key": link, "style": {"position": "relative", "fontSize": "14px", "cursor": "pointer", "padding": "4px 8px", "borderRadius": "4px"}}, [link]);
-    })]), __jacJsx("button", {"type": "button", "onMouseEnter": e => {
+    })]), __jacJsx("button", {"type": "button", "onClick": e => {
+      navigate("/auth");
+    }, "onMouseEnter": e => {
       setNavBtnHover(true);
     }, "onMouseLeave": e => {
       setNavBtnHover(false);
@@ -52,7 +56,7 @@ function Website() {
     console.log(arrow);
     let faqData = [{question: "How does Arise generate personalized career paths?", answer: "Our **AI Career Engine** analyzes your skills, interests, work values, and personality traits through comprehensive assessments. It then matches these insights with labor market data, industry trends, and millions of career trajectories to generate tailored pathway recommendations with actionable steps.", value: "career-generation"}, {question: "What is the accuracy of your job matching algorithm?", answer: "Our matching algorithm achieves **92% accuracy** in identifying suitable roles based on user profiles and preferences. We continuously refine our models using feedback from successful placements and evolving job market data to improve match quality.", value: "accuracy"}, {question: "Can Arise help me if I'm looking to change careers?", answer: "Absolutely! **Career transition** is one of our core strengths. We identify transferable skills from your current experience, map them to new industries, and create step-by-step transition plans including skill gaps, recommended training, and timeline projections.", value: "career-change"}, {question: "What platforms and integrations do you support?", answer: "Arise integrates with **LinkedIn, Indeed, Glassdoor, and major job boards** to provide real-time opportunities. We also connect with learning platforms like Coursera and Udemy to recommend relevant courses, and offer a mobile app for on-the-go career guidance.", value: "integrations"}, {question: "How is my personal data and career information protected?", answer: "We prioritize your privacy with **end-to-end encryption** and strict data protection policies. Your career data, assessments, and job search activity are never shared with third parties without explicit consent. We comply with GDPR, CCPA, and industry-standard security protocols.", value: "privacy-security"}, {question: "Do you provide ongoing career guidance or just one-time recommendations?", answer: "Arise offers **continuous career guidance** that evolves with you. Our AI tracks your progress, updates recommendations based on skill development, monitors market changes, and provides quarterly career check-ins to ensure you stay on track toward your goals.", value: "ongoing-support"}, {question: "Can I customize my career preferences and filters?", answer: "Yes! You have full control to customize preferences including **salary expectations, location flexibility, work-life balance priorities, company culture, remote work options, and industry preferences**. Our recommendations adapt in real-time to your updated preferences.", value: "customization"}];
     return __jacJsx("div", {"id": "FAQs", "style": {"width": "88%", "maxWidth": "56rem", "marginInline": "auto", "paddingBlock": "5rem"}}, [__jacJsx("h2", {"style": {"fontSize": "2.25rem", "fontWeight": "bold", "textAlign": "center", "mmarginBottom": "2.5rem", "color": "white"}}, ["Frequently Asked Questions"]), __jacJsx(Accordion.Root, {"type": "single", "collapsible": true}, [faqData.map(faq => {
-      return __jacJsx("div", {}, [__jacJsx(Accordion.Item, {"value": faq.value, "key": faq.value, "style": {"borderBottom": "1px solid rgba(255,255,255,0.1)", "backgroundColor": "#059669", "padding": "1.75rem 1rem", "borderRadius": "0.5rem", "transition": "background-color 0.2s ease", "marginTop": "10px"}}, [__jacJsx(Accordion.Trigger, {"onClick": e => {
+      return __jacJsx("div", {}, [__jacJsx(Accordion.Item, {"value": faq.value, "key": faq.value, "style": {"borderBottom": "1px solid rgba(255,255,255,0.1)", "backgroundColor": "#6e11b0", "padding": "1.75rem 1rem", "borderRadius": "0.5rem", "transition": "background-color 0.2s ease", "marginTop": "10px"}}, [__jacJsx(Accordion.Trigger, {"onClick": e => {
         arrow !== faq.value ? setArrow(faq.value) : setArrow("");
       }, "style": {"textAlign": "left", "fontSize": "1rem", "color": "white", "background": "none", "border": "none", "width": "100%", "cursor": "pointer", "display": "flex", "flexDirection": "row", "justifyContent": "space-between", "alignItems": "center"}}, [faq.question, __jacJsx(ChevronUp, {"style": {"transform": arrow === faq.value ? "rotate(180deg)" : "none", "transition": "all ease 0.3s"}}, [])]), __jacJsx(Accordion.Content, {"style": {"paddingTop": "0.5rem", "paddingBottom": "0", "color": "#d1d5db"}}, [faq.answer])])]);
     })])]);
@@ -75,7 +79,44 @@ function Website() {
   return __jacJsx("div", {"style": {"width": "100%", "minHeight": "100vh", "margin": "0px", "padding": "0px", "background": "black", "position": "relative", "fontFamily": "system-ui, sans-serif"}}, [" ", __jacJsx(NavBar, {}, []), __jacJsx(Homepage, {}, []), __jacJsx(Demo, {}, []), __jacJsx(Features, {}, []), __jacJsx(Pricing, {}, []), __jacJsx(NewsletterSubscribe, {}, []), __jacJsx(FAQs, {}, []), __jacJsx(Footer, {}, [])]);
 }
 function Auth() {
-  return __jacJsx("div", {}, []);
+  let navigate = useNavigate();
+  let [loginEmail, setLoginEmail] = useState("");
+  let [loginPassword, setLoginPassword] = useState("");
+  let [signupName, setSignupName] = useState("");
+  let [signupEmail, setSignupEmail] = useState("");
+  let [signupPassword, setSignupPassword] = useState("");
+  let [isSignIn, setIsSignIn] = useState(true);
+  let [error, setError] = useState("");
+  function handleLogin(e) {
+    e.preventDefault();
+    setError("");
+    navigate("/onboarding");
+  }
+  function handleSignup(e) {
+    e.preventDefault();
+    setError("");
+    navigate("/onboarding");
+  }
+  function Header(title) {
+    return __jacJsx("div", {"style": {"width": "calc(70% + 1.25rem)", "textAlign": "left", "marginBottom": "16px"}}, [__jacJsx("div", {"onClick": e => {
+      navigate("/");
+    }, "style": {"display": "flex", "flexDirection": "row", "alignItems": "center", "color": "grey", "cursor": "pointer", "marginBottom": "8px"}}, [__jacJsx("span", {}, [__jacJsx(ChevronLeft, {}, [])]), "Back"]), __jacJsx("h2", {"style": {"color": "white", "margin": 0}}, [title])]);
+  }
+  return __jacJsx("div", {"style": {"width": "100%", "height": "100vh", "display": "grid", "gridTemplateColumns": "50% 50%", "position": "relative", "color": "white"}}, [__jacJsx("div", {"style": {"width": "100%", "height": "100%", "display": "flex", "justifyContent": "center", "alignItems": "center"}}, [__jacJsx("div", {"style": {"width": "100%", "display": "flex", "flexDirection": "column", "alignItems": "center", "padding": "24px", "fontFamily": "'Inter', sans-serif"}}, [Header("Welcome back"), __jacJsx("form", {"onSubmit": handleLogin, "style": {"width": "100%", "display": "flex", "flexDirection": "column", "alignItems": "center"}}, [__jacJsx("input", {"type": "email", "placeholder": "Email", "value": loginEmail, "onChange": e => {
+    setLoginEmail(e.target.value);
+  }, "style": {"flexGrow": 1, "padding": "1.25rem", "borderRadius": "0.5rem", "border": "none", "backgroundColor": "#0b0b0b", "color": "white", "fontSize": "16px", "width": "70%", "outline": "none", "marginBottom": "16px"}}, []), __jacJsx("input", {"type": "password", "placeholder": "Password", "value": loginPassword, "onChange": e => {
+    setLoginPassword(e.target.value);
+  }, "style": {"flexGrow": 1, "padding": "1.25rem", "borderRadius": "0.5rem", "border": "none", "backgroundColor": "#0b0b0b", "color": "white", "fontSize": "16px", "width": "70%", "outline": "none", "marginBottom": "16px"}}, []), __jacJsx("button", {"type": "submit", "style": {"width": "calc(70% + 12px + 1.25rem)", "padding": "1.25rem", "borderRadius": "8px", "border": "none", "backgroundColor": "#6e11b0", "color": "white", "fontWeight": "600", "fontSize": "15px", "cursor": "pointer"}}, ["Sign In"])]), __jacJsx("p", {"style": {"marginTop": "19px", "fontSize": "14px", "color": "#bbbbbb", "textAlign": "center"}}, ["Don't have an account?", __jacJsx("span", {"onClick": e => {
+    setIsSignIn(false);
+  }, "style": {"color": "#6e11b0", "cursor": "pointer", "fontWeight": "600", "marginLeft": "5px"}}, ["Sign Up"])])])]), __jacJsx("div", {"style": {"width": "100%", "height": "100%", "display": "flex", "justifyContent": "center", "alignItems": "center"}}, [__jacJsx("div", {"style": {"width": "100%", "display": "flex", "flexDirection": "column", "alignItems": "center", "padding": "24px", "fontFamily": "'Inter', sans-serif"}}, [Header("Create your account"), __jacJsx("form", {"onSubmit": handleSignup, "style": {"width": "100%", "display": "flex", "flexDirection": "column", "alignItems": "center"}}, [__jacJsx("input", {"type": "text", "placeholder": "Full Name", "value": signupName, "onChange": e => {
+    setSignupName(e.target.value);
+  }, "style": {"flexGrow": 1, "padding": "1.25rem", "borderRadius": "0.5rem", "border": "none", "backgroundColor": "#0b0b0b", "color": "white", "fontSize": "16px", "width": "70%", "outline": "none", "marginBottom": "16px"}}, []), __jacJsx("input", {"type": "email", "placeholder": "Email", "value": signupEmail, "onChange": e => {
+    setSignupEmail(e.target.value);
+  }, "style": {"flexGrow": 1, "padding": "1.25rem", "borderRadius": "0.5rem", "border": "none", "backgroundColor": "#0b0b0b", "color": "white", "fontSize": "16px", "width": "70%", "outline": "none", "marginBottom": "16px"}}, []), __jacJsx("input", {"type": "password", "placeholder": "Password", "value": signupPassword, "onChange": e => {
+    setSignupPassword(e.target.value);
+  }, "style": {"flexGrow": 1, "padding": "1.25rem", "borderRadius": "0.5rem", "border": "none", "backgroundColor": "#0b0b0b", "color": "white", "fontSize": "16px", "width": "70%", "outline": "none", "marginBottom": "16px"}}, []), __jacJsx("button", {"type": "submit", "style": {"width": "calc(70% + 12px + 1.25rem)", "padding": "1.25rem", "borderRadius": "8px", "border": "none", "backgroundColor": "#6e11b0", "color": "white", "fontWeight": "600", "fontSize": "15px", "cursor": "pointer"}}, ["Sign Up"])]), __jacJsx("p", {"style": {"marginTop": "19px", "fontSize": "14px", "color": "#bbbbbb", "textAlign": "center"}}, ["Already have an account?", __jacJsx("span", {"onClick": e => {
+    setIsSignIn(true);
+  }, "style": {"color": "#6e11b0", "cursor": "pointer", "fontWeight": "600", "marginLeft": "5px"}}, ["Sign In"])])])]), __jacJsx("div", {"style": {"width": "50%", "height": "100%", "position": "absolute", "top": "0px", "left": isSignIn ? "50%" : "0px", "transition": "all 300ms ease-in", "display": "flex", "justifyContent": "center", "alignItems": "center", "pointerEvents": "none"}}, [__jacJsx("div", {"style": {"margin": "auto", "backgroundColor": "#6e11b0", "width": "97%", "height": "97%", "zIndex": "9999", "borderRadius": "10px", "display": "flex", "justifyContent": "center", "alignItems": "center", "overflow": "hidden"}}, [__jacJsx("div", {"style": {"color": "white", "fontSize": "20px", "fontWeight": "600"}}, ["Smart Career Path Navigator"])])])]);
 }
 function Onboarding() {
   return __jacJsx("div", {}, []);
@@ -100,6 +141,6 @@ function app() {
   fontLink.href = "https://fonts.googleapis.com/css2?family=Zalando+Sans+SemiExpanded:ital,wght@0,200..900;1,200..900&display=swap";
   fontLink.rel = "stylesheet";
   document.head.appendChild(fontLink);
-  return __jacJsx(Website, {}, []);
+  return __jacJsx(Router, {}, [__jacJsx("div", {}, [__jacJsx(Routes, {}, [__jacJsx(Route, {"path": "/", "element": __jacJsx(Website, {}, [])}, []), __jacJsx(Route, {"path": "/auth", "element": __jacJsx(Auth, {}, [])}, []), __jacJsx(Route, {"path": "/onboarding", "element": __jacJsx(Onboarding, {}, [])}, []), __jacJsx(Route, {"path": "/dashboard", "element": __jacJsx(Dashboard, {}, [])}, [])])])]);
 }
 export { Auth, Dashboard, Onboarding, Website, app };
