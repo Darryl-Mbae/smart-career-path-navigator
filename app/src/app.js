@@ -103,7 +103,7 @@ function Auth() {
         navigate("/onboarding");
       }
     } else {
-      setError("Invalid credentials");
+      setError("Wrong email or password");
     }
   }
   async function handleSignup(e) {

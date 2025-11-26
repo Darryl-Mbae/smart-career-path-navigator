@@ -741,7 +741,7 @@ function Auth() {
             _context.n = 5;
             break;
           case 4:
-            setError("Invalid credentials");
+            setError("Wrong email or password");
           case 5:
             return _context.a(2);
         }

@@ -862,9 +862,6 @@ def Auth() -> any {
         </div>;
     }
 
-    # --------------------------------------------------
-    # EXTRACTED CONDITIONAL RENDERS (NO inline ternaries)
-    # --------------------------------------------------
 
     let loginErrorBox = None;
     if error and isSignIn {
@@ -892,9 +889,6 @@ def Auth() -> any {
         </div>;
     }
 
-    # -------------------------
-    # MAIN RETURN JSX
-    # -------------------------
     return <div
         style={{
             "width": "100%",
