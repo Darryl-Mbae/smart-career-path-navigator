@@ -2,7 +2,7 @@ import {__jacJsx, __jacSpawn} from "@jac-client/utils";
 import { useState, useEffect } from "react";
 import { Mail, Brain, CloudUpload, Check, Goal, Route as Node, ChevronUp, ChevronLeft } from "lucide-react";
 import { Accordion } from "radix-ui";
-import { Router, Routes, Route, Link, useNavigate } from "@jac-client/utils";
+import { Router, Routes, Route, Link, Navigate, useNavigate, jacSignup, jacLogin, jacLogout, jacIsLoggedIn } from "@jac-client/utils";
 function Website() {
   function NavBar() {
     let links = ["CHANGELOG", "PRICING", "FAQs", "RESOURCES"];
@@ -87,35 +87,71 @@ function Auth() {
   let [signupPassword, setSignupPassword] = useState("");
   let [isSignIn, setIsSignIn] = useState(true);
   let [error, setError] = useState("");
-  function handleLogin(e) {
+  async function handleLogin(e) {
     e.preventDefault();
     setError("");
-    navigate("/onboarding");
+    if (!loginEmail || !loginPassword) {
+      setError("Please fill all fields");
+      return;
+    }
+    let success = await jacLogin(loginEmail, loginPassword);
+    if (success) {
+      let resume_status = await __jacSpawn("check_resume_upload_status", "", {});
+      if (resume_status.reports[0]["body"] === true) {
+        navigate("/dashboard");
+      } else {
+        navigate("/onboarding");
+      }
+    } else {
+      setError("Invalid credentials");
+    }
   }
-  function handleSignup(e) {
+  async function handleSignup(e) {
     e.preventDefault();
     setError("");
-    navigate("/onboarding");
+    if (!signupName || !signupEmail || !signupPassword) {
+      setError("Please fill in all fields");
+      return;
+    }
+    let result = await jacSignup(signupEmail, signupPassword);
+    if (result["success"]) {
+      let new_memory = await __jacSpawn("initialize_memory", "", {"full_name": signupName, "email": signupEmail});
+      console.log("New Memory initialized:");
+      console.log(new_memory);
+      navigate("/onboarding");
+    } else {
+      setError(result["error"] ? result["error"] : "Signup failed");
+    }
   }
   function Header(title) {
     return __jacJsx("div", {"style": {"width": "calc(70% + 1.25rem)", "textAlign": "left", "marginBottom": "16px"}}, [__jacJsx("div", {"onClick": e => {
       navigate("/");
     }, "style": {"display": "flex", "flexDirection": "row", "alignItems": "center", "color": "grey", "cursor": "pointer", "marginBottom": "8px"}}, [__jacJsx("span", {}, [__jacJsx(ChevronLeft, {}, [])]), "Back"]), __jacJsx("h2", {"style": {"color": "white", "margin": 0}}, [title])]);
   }
-  return __jacJsx("div", {"style": {"width": "100%", "height": "100vh", "display": "grid", "gridTemplateColumns": "50% 50%", "position": "relative", "color": "white"}}, [__jacJsx("div", {"style": {"width": "100%", "height": "100%", "display": "flex", "justifyContent": "center", "alignItems": "center"}}, [__jacJsx("div", {"style": {"width": "100%", "display": "flex", "flexDirection": "column", "alignItems": "center", "padding": "24px", "fontFamily": "'Inter', sans-serif"}}, [Header("Welcome back"), __jacJsx("form", {"onSubmit": handleLogin, "style": {"width": "100%", "display": "flex", "flexDirection": "column", "alignItems": "center"}}, [__jacJsx("input", {"type": "email", "placeholder": "Email", "value": loginEmail, "onChange": e => {
+  let loginErrorBox = null;
+  if (error && isSignIn) {
+    loginErrorBox = __jacJsx("div", {"style": {"color": "#dc2626", "marginBottom": "10px", "fontSize": "14px"}}, [error]);
+  }
+  let signupErrorBox = null;
+  if (error && !isSignIn) {
+    signupErrorBox = __jacJsx("div", {"style": {"color": "#dc2626", "marginBottom": "10px", "fontSize": "14px"}}, [error]);
+  }
+  return __jacJsx("div", {"style": {"width": "100%", "height": "100vh", "display": "grid", "gridTemplateColumns": "50% 50%", "position": "relative", "color": "white"}}, [__jacJsx("div", {"style": {"width": "100%", "height": "100%", "display": "flex", "justifyContent": "center", "alignItems": "center"}}, [__jacJsx("div", {"style": {"width": "100%", "display": "flex", "flexDirection": "column", "alignItems": "center", "padding": "24px", "fontFamily": "'Inter', sans-serif"}}, [Header("Welcome back"), loginErrorBox, __jacJsx("form", {"onSubmit": handleLogin, "style": {"width": "100%", "display": "flex", "flexDirection": "column", "alignItems": "center"}}, [__jacJsx("input", {"type": "email", "placeholder": "Email", "value": loginEmail, "onChange": e => {
     setLoginEmail(e.target.value);
-  }, "style": {"flexGrow": 1, "padding": "1.25rem", "borderRadius": "0.5rem", "border": "none", "backgroundColor": "#0b0b0b", "color": "white", "fontSize": "16px", "width": "70%", "outline": "none", "marginBottom": "16px"}}, []), __jacJsx("input", {"type": "password", "placeholder": "Password", "value": loginPassword, "onChange": e => {
+  }, "style": {"padding": "1.25rem", "borderRadius": "0.5rem", "border": "none", "backgroundColor": "#0b0b0b", "color": "white", "fontSize": "16px", "width": "70%", "marginBottom": "16px"}}, []), __jacJsx("input", {"type": "password", "placeholder": "Password", "value": loginPassword, "onChange": e => {
     setLoginPassword(e.target.value);
-  }, "style": {"flexGrow": 1, "padding": "1.25rem", "borderRadius": "0.5rem", "border": "none", "backgroundColor": "#0b0b0b", "color": "white", "fontSize": "16px", "width": "70%", "outline": "none", "marginBottom": "16px"}}, []), __jacJsx("button", {"type": "submit", "style": {"width": "calc(70% + 12px + 1.25rem)", "padding": "1.25rem", "borderRadius": "8px", "border": "none", "backgroundColor": "#6e11b0", "color": "white", "fontWeight": "600", "fontSize": "15px", "cursor": "pointer"}}, ["Sign In"])]), __jacJsx("p", {"style": {"marginTop": "19px", "fontSize": "14px", "color": "#bbbbbb", "textAlign": "center"}}, ["Don't have an account?", __jacJsx("span", {"onClick": e => {
+  }, "style": {"padding": "1.25rem", "borderRadius": "0.5rem", "border": "none", "backgroundColor": "#0b0b0b", "color": "white", "fontSize": "16px", "width": "70%", "marginBottom": "16px"}}, []), __jacJsx("button", {"type": "submit", "style": {"width": "calc(70% + 12px + 1.25rem)", "padding": "1.25rem", "borderRadius": "8px", "border": "none", "backgroundColor": "#6e11b0", "color": "white", "fontWeight": "600", "cursor": "pointer"}}, ["Sign In"])]), __jacJsx("p", {"style": {"marginTop": "19px", "fontSize": "14px", "color": "#bbbbbb", "textAlign": "center"}}, ["Don't have an account?", __jacJsx("span", {"onClick": e => {
     setIsSignIn(false);
-  }, "style": {"color": "#6e11b0", "cursor": "pointer", "fontWeight": "600", "marginLeft": "5px"}}, ["Sign Up"])])])]), __jacJsx("div", {"style": {"width": "100%", "height": "100%", "display": "flex", "justifyContent": "center", "alignItems": "center"}}, [__jacJsx("div", {"style": {"width": "100%", "display": "flex", "flexDirection": "column", "alignItems": "center", "padding": "24px", "fontFamily": "'Inter', sans-serif"}}, [Header("Create your account"), __jacJsx("form", {"onSubmit": handleSignup, "style": {"width": "100%", "display": "flex", "flexDirection": "column", "alignItems": "center"}}, [__jacJsx("input", {"type": "text", "placeholder": "Full Name", "value": signupName, "onChange": e => {
+    setError("");
+  }, "style": {"color": "#6e11b0", "cursor": "pointer", "fontWeight": "600", "marginLeft": "5px"}}, ["Sign Up"])])])]), __jacJsx("div", {"style": {"width": "100%", "height": "100%", "display": "flex", "justifyContent": "center", "alignItems": "center"}}, [__jacJsx("div", {"style": {"width": "100%", "display": "flex", "flexDirection": "column", "alignItems": "center", "padding": "24px", "fontFamily": "'Inter', sans-serif"}}, [Header("Create your account"), signupErrorBox, __jacJsx("form", {"onSubmit": handleSignup, "style": {"width": "100%", "display": "flex", "flexDirection": "column", "alignItems": "center"}}, [__jacJsx("input", {"type": "text", "placeholder": "Full Name", "value": signupName, "onChange": e => {
     setSignupName(e.target.value);
-  }, "style": {"flexGrow": 1, "padding": "1.25rem", "borderRadius": "0.5rem", "border": "none", "backgroundColor": "#0b0b0b", "color": "white", "fontSize": "16px", "width": "70%", "outline": "none", "marginBottom": "16px"}}, []), __jacJsx("input", {"type": "email", "placeholder": "Email", "value": signupEmail, "onChange": e => {
+  }, "style": {"padding": "1.25rem", "borderRadius": "0.5rem", "border": "none", "backgroundColor": "#0b0b0b", "color": "white", "fontSize": "16px", "width": "70%", "marginBottom": "16px"}}, []), __jacJsx("input", {"type": "email", "placeholder": "Email", "value": signupEmail, "onChange": e => {
     setSignupEmail(e.target.value);
-  }, "style": {"flexGrow": 1, "padding": "1.25rem", "borderRadius": "0.5rem", "border": "none", "backgroundColor": "#0b0b0b", "color": "white", "fontSize": "16px", "width": "70%", "outline": "none", "marginBottom": "16px"}}, []), __jacJsx("input", {"type": "password", "placeholder": "Password", "value": signupPassword, "onChange": e => {
+  }, "style": {"padding": "1.25rem", "borderRadius": "0.5rem", "border": "none", "backgroundColor": "#0b0b0b", "color": "white", "fontSize": "16px", "width": "70%", "marginBottom": "16px"}}, []), __jacJsx("input", {"type": "password", "placeholder": "Password", "value": signupPassword, "onChange": e => {
     setSignupPassword(e.target.value);
-  }, "style": {"flexGrow": 1, "padding": "1.25rem", "borderRadius": "0.5rem", "border": "none", "backgroundColor": "#0b0b0b", "color": "white", "fontSize": "16px", "width": "70%", "outline": "none", "marginBottom": "16px"}}, []), __jacJsx("button", {"type": "submit", "style": {"width": "calc(70% + 12px + 1.25rem)", "padding": "1.25rem", "borderRadius": "8px", "border": "none", "backgroundColor": "#6e11b0", "color": "white", "fontWeight": "600", "fontSize": "15px", "cursor": "pointer"}}, ["Sign Up"])]), __jacJsx("p", {"style": {"marginTop": "19px", "fontSize": "14px", "color": "#bbbbbb", "textAlign": "center"}}, ["Already have an account?", __jacJsx("span", {"onClick": e => {
+  }, "style": {"padding": "1.25rem", "borderRadius": "0.5rem", "border": "none", "backgroundColor": "#0b0b0b", "color": "white", "fontSize": "16px", "width": "70%", "marginBottom": "16px"}}, []), __jacJsx("button", {"type": "submit", "style": {"width": "calc(70% + 12px + 1.25rem)", "padding": "1.25rem", "borderRadius": "8px", "border": "none", "backgroundColor": "#6e11b0", "color": "white", "fontWeight": "600", "cursor": "pointer"}}, ["Sign Up"])]), __jacJsx("p", {"style": {"marginTop": "19px", "fontSize": "14px", "color": "#bbbbbb", "textAlign": "center"}}, ["Already have an account?", __jacJsx("span", {"onClick": e => {
     setIsSignIn(true);
+    setError("");
   }, "style": {"color": "#6e11b0", "cursor": "pointer", "fontWeight": "600", "marginLeft": "5px"}}, ["Sign In"])])])]), __jacJsx("div", {"style": {"width": "50%", "height": "100%", "position": "absolute", "top": "0px", "left": isSignIn ? "50%" : "0px", "transition": "all 300ms ease-in", "display": "flex", "justifyContent": "center", "alignItems": "center", "pointerEvents": "none"}}, [__jacJsx("div", {"style": {"margin": "auto", "backgroundColor": "#6e11b0", "width": "97%", "height": "97%", "zIndex": "9999", "borderRadius": "10px", "display": "flex", "justifyContent": "center", "alignItems": "center", "overflow": "hidden"}}, [])])]);
 }
 function Onboarding() {
