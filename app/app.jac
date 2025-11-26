@@ -456,7 +456,7 @@ walker create_user_graph {
     can visit_memory with `root entry {
         print("Checking User Memory...");
         visit [-->(`?Memory)] else {
-            report {"status": "Fail", "message": "No user found", "body": {}};
+            report {"status": "Fail", "message": "User memory not initialized", "body": {}};
             disengage;
         }
     }
