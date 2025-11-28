@@ -6,7 +6,7 @@ import os;
 import PyPDF2;
 import docx;
 
-glob llm = Model(model_name="gemini/gemini-2.5-flash", verbose=False);
+glob llm = Model(model_name="gemini/gemini-2.0-flash", verbose=True);
 
 # Helpers 
 def read_document_text(file_path: str) -> str{
@@ -96,6 +96,7 @@ edge skilled_in {}
 edge has_certification {}
 edge interested_in {}
 
+# User profile object
 obj UserProfile {
     has skills: list[Skill];
     has certifications: list[Certification];
@@ -103,7 +104,7 @@ obj UserProfile {
 }
 
 
-# Walkers
+# Agents
 
 # Initialize Memory for a new user
 walker initialize_memory {
@@ -124,7 +125,7 @@ walker create_resume_node {
     }
 }
 
-# Upload resume
+# Save CV contents to Resume node as bytes
 walker upload_resume {
     has file: bytes = b"";      # Base64 string from frontend
     has name: str = "";
@@ -177,7 +178,7 @@ walker update_resume_upload_status {
 }
 
 
-# Check resume upload status
+# Check if CV is uploaded or not
 walker check_resume_upload_status {
     can check_memory with `root entry {
         visit [-->(`?Memory)];
@@ -189,7 +190,7 @@ walker check_resume_upload_status {
 }
 
 
-# Save resume to disk
+# Save CV to disk
 walker save_resume {
 
     can visit_resume with `root entry {
@@ -289,8 +290,8 @@ walker save_resume {
     }
 }
 
-# extract user skills, certifications, and interests from uploaded CV
-walker extract_user_skills {
+# analyze CV and report findings to FE
+walker analyze_cv {
     has user_profile: UserProfile = UserProfile([], [], []);
 
     """
@@ -450,6 +451,8 @@ walker get_user_details {
     }
 }
 
+
+# create and store user profile
 walker create_user_graph {
     has user_profile: UserProfile = UserProfile([], [], []);
 
@@ -463,16 +466,16 @@ walker create_user_graph {
 
     can create_user_graph with Memory entry {
         print(f"Found user: {here.resume_uploaded}");
+        end_node = End();
 
         for skill in self.user_profile.skills {
 
             # Check if Skill exists
-            if [-->(`?Skill)](?name == skill.name) {
-                print(f"Skipping duplicate skill: {skill.name}");
+            if [-->(`?Skill)](?name == skill.name) { 
+                print(f"Skipping duplicate skill: {skill.name}"); 
                 continue;
             }
-
-            here +>:skilled_in:+> skill;
+            here +>:skilled_in:+> skill ++> end_node;
         }
 
         for cert in self.user_profile.certifications {
@@ -481,7 +484,7 @@ walker create_user_graph {
             if [-->(`?Certification)](?title == cert.title) {
                 continue;
             }
-            here +>:has_certification:+> cert;
+            here +>:has_certification:+> cert ++> end_node;
         }
 
         for interest in self.user_profile.interests {
@@ -491,12 +494,12 @@ walker create_user_graph {
 
                 continue;
             }
-            here +>:interested_in:+> interest;
+            here +>:interested_in:+> interest ++> end_node;
         }
 
         report {
             "status": "Success",
-            "message": "User knowledge graph created",
+            "message": "Resume analyzed successfully",
             "body": {
                 "skills": [s.name for s in self.user_profile.skills],
                 "certifications": [c.title for c in self.user_profile.certifications],
@@ -505,6 +508,362 @@ walker create_user_graph {
         };
     }
 }
+
+# Used by get_user_profile agent to aggregate user's skills. interests and certifications and report back to FE
+node End{
+    has user_profile: UserProfile = UserProfile([], [], []);
+
+    can aggregate_user_info with get_user_profile entry {
+        self.user_profile = visitor.user_profile;
+        print("Finished Aggregating User Profile...Now reporting..\n");
+        report {
+            "status": "Success",
+            "message": "User profile fetched successfully",
+            "body": {
+                "skills": [
+                    {"name": s.name, "description": s.description}
+                    for s in self.user_profile.skills
+                ],
+                "interests": [
+                    {"name": i.name, "description": i.description}
+                    for i in self.user_profile.interests
+                ],
+                "certifications": [
+                    {
+                        "title": c.title,
+                        "provider": c.provider,
+                        "url": c.url
+                    }
+                    for c in self.user_profile.certifications
+                ]
+            }
+        };
+    }
+}
+
+# Retrieve user profile
+walker get_user_profile {
+    has user_profile: UserProfile = UserProfile([], [], []);
+
+    can visit_memory with `root entry {
+
+        print("get_user_profile walker visiting memory..\n");
+        visit [-->(`?Memory)] else {
+            report {
+                "status": "Fail",
+                "message": "User memory not initialized",
+                "body": {}
+            };
+            disengage;
+        }
+    }
+
+    can visit_skills with Memory entry {
+        print("get_user_profile walker visiting skills..\n");
+        visit [-->(`?Skill)] else {
+            print("No Skills found");
+            report {
+                "status": "Fail",
+                "message": "No Skills found",
+                "body": {}
+            };
+        }
+    }
+
+    can add_skill with Skill entry {
+        print("get_user_profile adding skills..\n");
+        self.user_profile.skills.append(here);
+        visit [-->(`?End)] else {
+            print("No End node...creating one..\n");
+            end_node = End();
+            here ++> end_node;
+            visit [-->(`?End)];
+        };
+    }
+
+
+    can visit_interests with Memory entry {
+        visit [-->(`?Interest)];
+    }
+
+    can add_interest with Interest entry {
+        self.user_profile.interests.append(here);
+        visit [-->(`?End)] else {
+            print("No End node...creating one..\n");
+            end_node = End();
+            here ++> end_node;
+            visit [-->(`?End)];
+        };
+    }
+
+    can visit_certifications with Memory entry {
+        visit [-->(`?Certification)];
+    }
+
+    can add_certification with Certification entry {
+        self.user_profile.certifications.append(here);
+        visit [-->(`?End)] else {
+            print("No End node...creating one..\n");
+            end_node = End();
+            here ++> end_node;
+            visit [-->(`?End)];
+        };
+    }
+
+}
+
+# Update user profile
+walker update_user_profile {
+
+    has updated_skills: list[dict] = [];
+    has updated_interests: list[dict] = [];
+    has updated_certifications: list[dict] = [];
+
+    can visit_memory with `root entry {
+        print("Visiting User Memory to update profile...\n");
+        visit [-->(`?Memory)] else {
+            report {
+                "status": "Fail",
+                "message": "User memory was never initialized",
+                "body": {}
+            };
+            disengage;
+        }
+    }
+
+    can add_new_skills with Memory entry {
+        print("Arrived at Memory node..\n");
+
+        print("Visiting Skill nodes to delete..\n");
+        visit [-->(`?Skill)] else {
+            report {
+                "status": "Info",
+                "message": "No skills found",
+                "body": {}
+            };
+        }
+        print(f"Clone that remained at Memory Adding new skills...{self.updated_skills}\n");
+        for skill in self.updated_skills {
+            let name = skill["name"];
+            let desc = skill["description"];
+
+            if not [-->(`?Skill)](?name==name) {
+                let new_skill = Skill(name=name, description=desc);
+                here +>:skilled_in:+> new_skill;
+                report {
+                    "status": "Success",
+                    "message": "Skill added successfully",
+                    "body": {name}
+                };
+            }
+            else {
+                report {
+                    "status": "Fail",
+                    "message": "Skill already exists",
+                    "body": {name}
+                };
+            }
+        }
+
+    }
+
+    can delete_skill with Skill entry {
+        print("Deleting skills if not in updated list...\n");
+        let names = [s["name"] for s in self.updated_skills];
+
+        if here.name not in names {
+            let removed = here.name;
+            del here;
+            report {
+                "status": "Success",
+                "message": "Skill deleted",
+                "body": {removed}
+            };
+        }
+        else {
+            report {
+                "status":"Fail",
+                "message": "Skill not deleted because it exists in updated list",
+                "body": {here.name}
+            };
+        }
+    }
+
+    can add_new_interests with Memory entry {
+
+        print("Visiting Interest nodes to delete..\n");
+        visit [-->(`?Interest)] else {
+            report {
+                "status": "Info",
+                "message": "No interests found",
+                "body": {}
+            };
+        }
+        print("Adding new interests...\n");
+        for interest in self.updated_interests {
+            let name = interest["name"];
+            let desc = interest["description"];
+
+            if not [-->(`?Interest)](?name==name) {
+                let new_interest = Interest(name=name, description=desc);
+                here +>:interested_in:+> new_interest;
+                report {
+                    "status": "Success",
+                    "message": "Interest added successfully",
+                    "body": {name}
+                };
+            }
+            else {
+                report {
+                    "status": "Fail",
+                    "message": "Interest already exists",
+                    "body": {name}
+                };
+            }
+        }
+        
+    }
+
+    can delete_interest with Interest entry {
+        print("Deleting interests if not in updated list...\n");
+        let names = [i["name"] for i in self.updated_interests];
+
+        if here.name not in names {
+            let removed = here.name;
+            del here;
+            report {
+                "status": "Success",
+                "message": "Interest deleted",
+                "body": {removed}
+            };
+        }
+        else {
+            report {
+                "status":"Fail",
+                "message": "Interest not deleted because it exists in updated list",
+                "body": {here.name}
+            };
+        }
+    }
+
+    can add_new_certifications with Memory entry {
+
+        print("Visiting Certification nodes to delete..\n");
+        visit [-->(`?Certification)] else {
+            report {
+                "status": "Info",
+                "message": "No certifications found",
+                "body": {}
+            };
+        }
+        print(f"Adding new certifications...{self.updated_certifications}\n");
+        for cert in self.updated_certifications {
+            let title = cert["title"];
+            let provider = cert["provider"];
+            let url = cert["url"];
+
+            if not [-->(`?Certification)](?title==title) {
+                let new_cert = Certification(title=title, provider=provider, url=url);
+                here +>:has_certification:+> new_cert;
+
+                report {
+                    "status": "Success",
+                    "message": "Certification added successfully",
+                    "body": {title}
+                };
+            }
+            else {
+                report {
+                    "status": "Fail",
+                    "message": "Certification already exists",
+                    "body": {title}
+                };
+            }
+        }
+        
+    }
+
+    can delete_certification with Certification entry {
+        print("Deleting certifications if not in updated list...\n");
+        let titles = [c["title"] for c in self.updated_certifications];
+
+        if here.title not in titles {
+            let removed = here.title;
+            del here;
+            report {
+                "status": "Success",
+                "message": "Certification deleted",
+                "body": {removed}
+            };
+        }
+        else {
+            report {
+                "status":"Fail",
+                "message": "Certification not deleted because it exists in updated list",
+                "body": {here.title}
+            };
+        }
+    }
+}
+
+
+# delete entire user profile
+walker delete_user_profile {
+    can visit_memory with `root entry {
+        visit [-->(`?Memory)] else {
+            report {"status": "Failed", "message": "User memory was never initiated", "body": {}};
+            disengage;
+        }
+    }
+
+    can delete_memory with Memory entry {
+        visit [-->] else {
+            report{"status": "Failed", "message": "Nothing to be deleted", "body": {}};
+        };
+        try {
+            del here;
+            report {"status": "Success", "message": "User Memory deleted", "body": {}};
+        }
+        except Exception as err {
+            report {"status": "Success", "message": "Failed to delete user memory", "body": {}};
+        }
+        
+    }
+
+    can delete_skill with Skill entry {
+        deleted_skill = here.name;
+        try {
+            del here;
+            report {"status": "Success", "message": "Skill deleted Succesfully", "body": {delete_skill}};
+        }
+        except Exception as err {
+            report {"status": "Failed", "message": "Skill not deleted!", "body": {here.name}};
+        }
+    }
+
+    can delete_interest with Interest entry {
+        deleted_interest = here.name;
+        try {
+            del here;
+            report {"status": "Success", "message": "Interest deleted Succesfully", "body": {delete_interest}};
+        }
+        except Exception as err {
+            report {"status": "Failed", "message": "Interest not deleted!", "body": {here.name}};
+        }
+    }
+
+    can delete_certification with Certification entry {
+        deleted_certification = here.name;
+        try {
+            del here;
+            report {"status": "Success", "message": "Certification deleted Succesfully", "body": {delete_certification}};
+        }
+        except Exception as err {
+            report {"status": "Failed", "message": "Certification not deleted!", "body": {here.name}};
+        }
+    }
+}
+
 
 with entry {
     load_dotenv();
