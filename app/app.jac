@@ -53,7 +53,8 @@ node Memory {
     has email: str = "";
     has full_name: str = "";
     has resume_uploaded: bool = False;
-    
+    # optional: preserve suggested roles for quick retrieval
+    has suggested_roles_cache: list[Role] = [];
 }
 
 node Resume {
@@ -90,16 +91,17 @@ node Interest {
 }
 
 
-
 # Edges
 edge skilled_in {}
 edge has_certification {}
 edge interested_in {}
+edge recommended_role {}
 
 obj UserProfile {
     has skills: list[Skill];
     has certifications: list[Certification];
     has interests: list[Interest];
+    has suggested_roles: list[Role];
 }
 
 
@@ -291,28 +293,26 @@ walker save_resume {
 
 # extract user skills, certifications, and interests from uploaded CV
 walker extract_user_skills {
-    has user_profile: UserProfile = UserProfile([], [], []);
+    has user_profile: UserProfile = UserProfile([], [], [], []);
 
     """
     You are an AI that extracts structured information ONLY from real CV/resume text.
 
     ### TASK
-    Given a block of text, determine whether it represents a CV/resume using common CV structure and words such as Experience, Skills, Referees, Education. 
+    Given a block of text, determine whether it represents a CV/resume using common CV structure and words such as Experience, Skills, Referees, Education.
     Do not analyze anything that does not look like a CV. Return None if it is not a CV.  If it is a CV, extract:
 
     - skills: list of Skill objects (Skill{name, description})
     - certifications: list of Certification objects (Certification{title, provider, url})
     - interests: list of Interest objects (Interest{name, description})
+    - Generate suggested career path/roles (list of Role objects) based ONLY on the extracted skills, certifications, and interests. DO NOT HALLUCINATE extra skills or certifications. Use only what exists in the text.
 
     Return a populated UserProfile.
 
     If the text is NOT a CV/resume, return None.
 
-    If the document is not a CV → return None.
-
-
     ### IMPORTANT
-    The output MUST be a well-structured UserProfile object with lists of Skill, Certification, and Interest objects.
+    The output MUST be a well-structured UserProfile object with lists of Skill, Certification, Interest and Role objects.
     No missing fields. No hallucination. Use only the information present in the text.
     """
     def extract_user_skills_from_cv(resume_text: str) -> UserProfile | None by llm(method="Reason");
@@ -377,7 +377,6 @@ walker extract_user_skills {
         root spawn create_user_graph(user_profile=self.user_profile);
         
 
-
         # Final Report
         report {
             "status": "Success",
@@ -391,6 +390,9 @@ walker extract_user_skills {
                     "interests": [
                         {"name": i.name, "description": i.description}
                         for i in self.user_profile.interests
+                    ],
+                    "suggested_roles":[
+                        {"title": r.title, "description": r.description} for r in self.user_profile.suggested_roles
                     ]
                 }
             };
@@ -451,7 +453,7 @@ walker get_user_details {
 }
 
 walker create_user_graph {
-    has user_profile: UserProfile = UserProfile([], [], []);
+    has user_profile: UserProfile = UserProfile([], [], [], []);
 
     can visit_memory with `root entry {
         print("Checking User Memory...");
@@ -494,13 +496,32 @@ walker create_user_graph {
             here +>:interested_in:+> interest;
         }
 
+        # Save suggested roles as Role nodes and link to Memory
+        for role in self.user_profile.suggested_roles {
+            # avoid duplicates
+            if [-->(`?Role)](?title == role.title) {
+                # still create the edge if missing
+                if not (here -- recommended_role->(`?Role))(?title == role.title) {
+                    here +>:recommended_role:+> [-->(`?Role)](?title == role.title)[0];
+                }
+                continue;
+            }
+
+            new_role = here ++> Role(title=role.title, description=role.description);
+            here +>:recommended_role:+> new_role;
+        }
+
+        # Optionally cache suggested roles on Memory for quick API reads
+        here.suggested_roles_cache = self.user_profile.suggested_roles;
+
         report {
             "status": "Success",
             "message": "User knowledge graph created",
             "body": {
                 "skills": [s.name for s in self.user_profile.skills],
                 "certifications": [c.title for c in self.user_profile.certifications],
-                "interests": [i.name for i in self.user_profile.interests]
+                "interests": [i.name for i in self.user_profile.interests],
+                "suggested_roles": [r.title for r in self.user_profile.suggested_roles]
             }
         };
     }
@@ -509,4 +530,3 @@ walker create_user_graph {
 with entry {
     load_dotenv();
 }
-
