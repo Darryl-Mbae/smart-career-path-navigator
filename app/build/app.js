@@ -1,7 +1,3 @@
-function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
-function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
-function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
-function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
 function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
 function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
@@ -17,6 +13,8 @@ import { useState, useEffect } from "react";
 import { Mail, Brain, CloudUpload, Check, Goal, Route as Node, ChevronUp, ChevronLeft } from "lucide-react";
 import { Accordion } from "radix-ui";
 import { Router, Routes, Route, Link, Navigate, useNavigate, jacSignup, jacLogin, jacLogout, jacIsLoggedIn } from "@jac-client/utils";
+import { fileToBase64 } from "./fileutils.js";
+import "./styles.css";
 function Website() {
   function NavBar() {
     var links = ["CHANGELOG", "PRICING", "FAQs", "RESOURCES"];
@@ -1074,6 +1072,23 @@ function Auth() {
     }
   }, [])])]);
 }
+function LoadingDots() {
+  return __jacJsx("div", {
+    "style": {
+      "display": "flex",
+      "justifyContent": "center",
+      "alignItems": "center",
+      "gap": "6px",
+      "height": "20px"
+    }
+  }, [__jacJsx("span", {
+    "className": "loading-dot"
+  }, []), __jacJsx("span", {
+    "className": "loading-dot"
+  }, []), __jacJsx("span", {
+    "className": "loading-dot"
+  }, [])]);
+}
 function Onboarding() {
   var _useState27 = useState(1),
     _useState28 = _slicedToArray(_useState27, 2),
@@ -1083,11 +1098,11 @@ function Onboarding() {
     _useState30 = _slicedToArray(_useState29, 2),
     stepCompleted = _useState30[0],
     setStepCompleted = _useState30[1];
-  var _useState31 = useState(""),
+  var _useState31 = useState(false),
     _useState32 = _slicedToArray(_useState31, 2),
     navbtnHover = _useState32[0],
     setNavBtnHover = _useState32[1];
-  var _useState33 = useState(25),
+  var _useState33 = useState("25%"),
     _useState34 = _slicedToArray(_useState33, 2),
     progress = _useState34[0],
     setProgress = _useState34[1];
@@ -1095,6 +1110,35 @@ function Onboarding() {
     _useState36 = _slicedToArray(_useState35, 2),
     resumeHover = _useState36[0],
     setResumeHover = _useState36[1];
+  var _useState37 = useState(false),
+    _useState38 = _slicedToArray(_useState37, 2),
+    dragActive = _useState38[0],
+    setDragActive = _useState38[1];
+  var _useState39 = useState(""),
+    _useState40 = _slicedToArray(_useState39, 2),
+    fileName = _useState40[0],
+    setFileName = _useState40[1];
+  var _useState41 = useState(null),
+    _useState42 = _slicedToArray(_useState41, 2),
+    file = _useState42[0],
+    setFile = _useState42[1];
+  var _useState43 = useState(false),
+    _useState44 = _slicedToArray(_useState43, 2),
+    isLoading = _useState44[0],
+    setIsLoading = _useState44[1];
+  var _useState45 = useState(false),
+    _useState46 = _slicedToArray(_useState45, 2),
+    showManualEntry = _useState46[0],
+    setShowManualEntry = _useState46[1];
+  var _useState47 = useState(false),
+    _useState48 = _slicedToArray(_useState47, 2),
+    canProceed = _useState48[0],
+    setCanProceed = _useState48[1];
+  var _useState49 = useState(""),
+    _useState50 = _slicedToArray(_useState49, 2),
+    alertMessage = _useState50[0],
+    setAlertMessage = _useState50[1];
+  var navigate = useNavigate();
   useEffect(function () {
     var percent = currentStep / 4 * 100;
     setProgress(percent + "%");
@@ -1140,8 +1184,255 @@ function Onboarding() {
     }, []),
     completed: false
   }];
+  function handleFileSelect(e) {
+    var pickedFile = e.target.files[0];
+    if (pickedFile) {
+      setFileName(pickedFile.name);
+      setFile(pickedFile);
+      setCanProceed(true);
+    }
+  }
+  function handleDragOver(e) {
+    e.preventDefault();
+    setDragActive(true);
+  }
+  function handleDragLeave(e) {
+    e.preventDefault();
+    setDragActive(false);
+  }
+  function handleDrop(e) {
+    e.preventDefault();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      var droppedFile = e.dataTransfer.files[0];
+      setFileName(droppedFile.name);
+      setFile(droppedFile);
+      e.dataTransfer.clearData();
+      setCanProceed(true);
+    }
+  }
+  function handleStep1Next() {
+    return _handleStep1Next.apply(this, arguments);
+  }
+  function _handleStep1Next() {
+    _handleStep1Next = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
+      var base64Data, result, user_skills, _t;
+      return _regenerator().w(function (_context3) {
+        while (1) switch (_context3.p = _context3.n) {
+          case 0:
+            if (!(!canProceed || isLoading || !file)) {
+              _context3.n = 1;
+              break;
+            }
+            return _context3.a(2);
+          case 1:
+            setIsLoading(true);
+            setShowManualEntry(false);
+            _context3.p = 2;
+            _context3.n = 3;
+            return __jacSpawn("create_resume_node", "", {});
+          case 3:
+            _context3.n = 4;
+            return fileToBase64(file);
+          case 4:
+            base64Data = _context3.v;
+            _context3.n = 5;
+            return __jacSpawn("upload_resume", "", {
+              "file": base64Data,
+              "name": file.name,
+              "mime": file.type
+            });
+          case 5:
+            result = _context3.v;
+            if (result) {
+              _context3.n = 6;
+              break;
+            }
+            showTemporaryAlert("Resume upload failed");
+            setShowManualEntry(true);
+            setIsLoading(false);
+            return _context3.a(2);
+          case 6:
+            _context3.n = 7;
+            return __jacSpawn("save_resume", "", {});
+          case 7:
+            _context3.n = 8;
+            return __jacSpawn("update_resume_upload_status", "", {});
+          case 8:
+            _context3.n = 9;
+            return __jacSpawn("analyze_cv", "", {});
+          case 9:
+            user_skills = _context3.v;
+            if (!(!user_skills || !user_skills.reports || user_skills.reports.length === 0 || user_skills.reports[0]["status"] !== "Success")) {
+              _context3.n = 10;
+              break;
+            }
+            showTemporaryAlert("Something went wrong. Please upload another document or enter details manually.");
+            setShowManualEntry(true);
+            setIsLoading(false);
+            return _context3.a(2);
+          case 10:
+            setCurrentStep(2);
+            _context3.n = 12;
+            break;
+          case 11:
+            _context3.p = 11;
+            _t = _context3.v;
+            console.log(_t);
+            showTemporaryAlert("Something went wrong");
+            setShowManualEntry(true);
+          case 12:
+            _context3.p = 12;
+            setIsLoading(false);
+            return _context3.f(12);
+          case 13:
+            return _context3.a(2);
+        }
+      }, _callee3, null, [[2, 11, 12, 13]]);
+    }));
+    return _handleStep1Next.apply(this, arguments);
+  }
+  function showTemporaryAlert(msg) {
+    setAlertMessage(msg);
+    setTimeout(function () {
+      setAlertMessage("");
+    }, 4000);
+  }
+  var wrapperStyle = {
+    "width": "100%",
+    "height": "100vh",
+    "display": "grid",
+    "gridTemplateColumns": "45% 55%",
+    "position": "relative",
+    "color": "white",
+    "fontFamily": "system-ui, sans-serif"
+  };
+  var leftPanelInnerStyle = {
+    "margin": "auto",
+    "backgroundColor": "#0b0b0b",
+    "width": "95%",
+    "height": "90%",
+    "zIndex": "9999",
+    "borderRadius": "10px",
+    "display": "flex",
+    "flexDirection": "column",
+    "justifyContent": "center",
+    "alignItems": "center",
+    "overflow": "hidden"
+  };
+  var rightInnerStyle = {
+    "width": "90%",
+    "height": "90%",
+    "display": "flex",
+    "flexDirection": "column",
+    "justifyContent": "center"
+  };
+  var uploadBoxStyle = {
+    "marginBlock": "30px",
+    "height": "40vh",
+    "width": "80%",
+    "borderRadius": "15px",
+    "display": "flex",
+    "flexDirection": "column",
+    "justifyContent": "center",
+    "alignItems": "center",
+    "transition": "0.2s ease"
+  };
+  if (resumeHover) {
+    uploadBoxStyle["border"] = "2px dashed #6e11b0";
+    uploadBoxStyle["backgroundColor"] = "#0b0b0b";
+  } else {
+    uploadBoxStyle["border"] = "2px dashed grey";
+    uploadBoxStyle["backgroundColor"] = "#101010ff";
+  }
+  var uploadLabelStyle = {
+    "width": "auto",
+    "padding": "1rem 1.5rem",
+    "border": "none",
+    "borderRadius": "0.5rem",
+    "backgroundColor": "#6e11b0",
+    "color": "white",
+    "fontWeight": "600",
+    "fontSize": "0.875rem",
+    "cursor": "pointer",
+    "transition": "all 0.2s ease",
+    "marginTop": "10px",
+    "boxShadow": "0 0 20px rgba(110, 17, 176, 0.2)"
+  };
+  var nextBtnBaseStyle = {
+    "width": "180px",
+    "border": "none",
+    "paddingInline": "2.5rem",
+    "paddingBlock": "1rem",
+    "borderRadius": "5px",
+    "cursor": "pointer",
+    "fontSize": "16px",
+    "transition": "transform 0.2s ease",
+    "color": "white",
+    "backgroundColor": "#6e11b0",
+    "transform": navbtnHover ? "translateY(0.25rem)" : "translateY(0)"
+  };
+  if (currentStep === 1 && !canProceed || isLoading) {
+    nextBtnBaseStyle["opacity"] = "0.4";
+    nextBtnBaseStyle["cursor"] = "not-allowed";
+  }
+  var nextBtnContent = null;
+  if (currentStep === 1 && isLoading) {
+    nextBtnContent = LoadingDots();
+  } else {
+    nextBtnContent = __jacJsx("label", {}, ["Next"]);
+  }
   function Step(props) {
-    console.log(props);
+    var isActive = props.step.id === currentStep;
+    var circleStyle = {
+      "width": "40px",
+      "aspectRatio": "1",
+      "borderRadius": "50%",
+      "display": "flex",
+      "alignItems": "center",
+      "justifyContent": "center",
+      "color": "white",
+      "position": "relative",
+      "zIndex": "1",
+      "transition": "all 0.2s ease",
+      "boxShadow": "none",
+      "backgroundColor": "#000000"
+    };
+    if (isActive || props.step.id < currentStep) {
+      circleStyle["backgroundColor"] = "#6e11b0";
+    }
+    if (isActive) {
+      circleStyle["boxShadow"] = "0 0 20px rgba(110, 17, 176, 0.5)";
+    }
+    var connectorDisplay = null;
+    if (props.step.id !== 4) {
+      var connectorStyle = {
+        "position": "absolute",
+        "height": "calc(100% + 65px)",
+        "width": "2px",
+        "left": "calc(50% + 1px)",
+        "top": "100%",
+        "transform": "translateX(-50%)",
+        "zIndex": "-1",
+        "transition": "all 0.2s ease",
+        "borderLeft": "2px dashed grey"
+      };
+      if (props.step.id < currentStep) {
+        connectorStyle["borderLeft"] = "2px dashed #6e11b0";
+      }
+      connectorDisplay = __jacJsx("div", {
+        "style": connectorStyle
+      }, []);
+    }
+    var titleStyle = {
+      "marginBottom": "0px",
+      "fontWeight": "600",
+      "color": "rgba(255, 255, 255, 0.6)",
+      "fontSize": "1.15rem"
+    };
+    if (props.step.id <= currentStep) {
+      titleStyle["color"] = "white";
+    }
     return __jacJsx("div", {
       "style": {
         "display": "flex",
@@ -1152,46 +1443,16 @@ function Onboarding() {
         "marginInline": "auto",
         "marginBottom": "45px"
       }
-    }, [__jacJsx("div", {
-      "style": {
-        "width": "40px",
-        "aspectRatio": "1",
-        "borderRadius": "50%",
-        "display": "flex",
-        "alignItems": "center",
-        "justifyContent": "center",
-        "color": "white",
-        "position": "relative",
-        "zIndex": "1",
-        "transition": "all 0.2s ease",
-        "boxShadow": props.step.id === currentStep ? "0 0 20px rgba(110, 17, 176, 0.5)" : "none",
-        "backgroundColor": props.step.id <= currentStep ? "#6e11b0" : "black"
-      }
+    }, [" ", __jacJsx("div", {
+      "style": circleStyle
     }, [__jacJsx("div", {
       "style": {
         "display": "flex",
         "alignItems": "center",
         "justifyContent": "center"
       }
-    }, [props.step.icon, props.step.id !== 4 && __jacJsx("div", {
-      "style": {
-        "position": "absolute",
-        "height": "calc(100% + 65px)",
-        "width": "2px",
-        "left": "calc(50% + 1px)",
-        "top": "100%",
-        "transform": "translateX(-50%)",
-        "zIndex": "-1",
-        "transition": "all 0.2s ease",
-        "borderLeft": props.step.id < currentStep ? "2px dashed #6e11b0" : "2px dashed grey"
-      }
-    }, [])])]), __jacJsx("div", {}, [__jacJsx("h1", {
-      "style": {
-        "marginBottom": "0px",
-        "fontWeight": "600",
-        "color": props.step.id <= currentStep ? "white" : "rgba(255, 255, 255, 0.6); ",
-        "fontSize": "1.15rem"
-      }
+    }, [props.step.icon, connectorDisplay])]), __jacJsx("div", {}, [__jacJsx("h1", {
+      "style": titleStyle
     }, [props.step.title]), __jacJsx("p", {
       "style": {
         "color": "grey",
@@ -1200,17 +1461,186 @@ function Onboarding() {
       }
     }, [props.step.description])])]);
   }
+  var stepsList = steps.map(function (step) {
+    return __jacJsx(Step, {
+      "key": step.id,
+      "step": step
+    }, []);
+  });
+  var uploadedFileDisplay = null;
+  if (fileName && fileName !== "") {
+    uploadedFileDisplay = __jacJsx("div", {
+      "style": {
+        "marginTop": "20px",
+        "fontSize": "14px",
+        "color": "white",
+        "fontWeight": "500"
+      }
+    }, ["Uploaded: ", fileName]);
+  }
+  var alertDisplay = null;
+  if (alertMessage && alertMessage !== "") {
+    alertDisplay = __jacJsx("div", {
+      "style": {
+        "position": "fixed",
+        "top": "20px",
+        "right": "20px",
+        "backgroundColor": "#dc2626",
+        "color": "white",
+        "padding": "12px 20px",
+        "borderRadius": "6px",
+        "zIndex": "9999",
+        "boxShadow": "0 0 15px rgba(0,0,0,0.3)"
+      }
+    }, [alertMessage]);
+  }
+  var manualSkipDisplay = null;
+  if (showManualEntry && currentStep === 1) {
+    manualSkipDisplay = __jacJsx("div", {
+      "style": {
+        "fontSize": "15px",
+        "cursor": "pointer",
+        "color": "white",
+        "textDecoration": "underline",
+        "fontWeight": "500"
+      },
+      "onClick": function onClick(e) {
+        setCurrentStep(2);
+      }
+    }, ["Skip →"]);
+  }
+  var step1Content = null;
+  if (currentStep === 1) {
+    step1Content = __jacJsx("div", {
+      "style": {
+        "height": "60vh"
+      }
+    }, [__jacJsx("div", {
+      "style": {
+        "marginBottom": "0px",
+        "fontWeight": "600",
+        "color": "white",
+        "fontSize": "1.15rem"
+      }
+    }, ["Upload your CV"]), __jacJsx("p", {
+      "style": {
+        "color": "grey",
+        "marginBlock": "0px",
+        "marginTop": "10px"
+      }
+    }, ["Let us start by understanding your background"]), __jacJsx("div", {
+      "onMouseEnter": function onMouseEnter(e) {
+        setResumeHover(true);
+      },
+      "onMouseLeave": function onMouseLeave(e) {
+        setResumeHover(false);
+      },
+      "onDragOver": handleDragOver,
+      "onDragLeave": handleDragLeave,
+      "onDrop": handleDrop,
+      "style": uploadBoxStyle
+    }, [__jacJsx("div", {
+      "style": {
+        "width": "55px",
+        "aspectRatio": "1",
+        "borderRadius": "50%",
+        "backgroundColor": "black",
+        "display": "flex",
+        "alignItems": "center",
+        "justifyContent": "center",
+        "marginBottom": "15px"
+      }
+    }, [__jacJsx(CloudUpload, {
+      "style": {
+        "fontSize": "0.75rem",
+        "color": "#6e11b0"
+      }
+    }, [])]), __jacJsx("p", {
+      "style": {
+        "color": "grey",
+        "marginBlock": "20px",
+        "fontSize": ".9em"
+      }
+    }, ["Supported formats: PDF, DOC, DOCX (Max 5MB)"]), __jacJsx("input", {
+      "type": "file",
+      "accept": ".pdf,.doc,.docx",
+      "onChange": handleFileSelect,
+      "style": {
+        "display": "none"
+      },
+      "id": "resumeInput"
+    }, []), __jacJsx("label", {
+      "for": "resumeInput",
+      "style": uploadLabelStyle,
+      "onMouseEnter": function onMouseEnter(e) {
+        e.currentTarget.style.filter = "brightness(0.95)";
+      },
+      "onMouseLeave": function onMouseLeave(e) {
+        e.currentTarget.style.filter = "brightness(1)";
+      }
+    }, ["Upload from Computer"]), uploadedFileDisplay])]);
+  }
+  var step2Content = null;
+  if (currentStep === 2) {
+    step2Content = __jacJsx("div", {
+      "style": {
+        "height": "60vh"
+      }
+    }, ["hello"]);
+  }
+  var step3Content = null;
+  if (currentStep === 3) {
+    step3Content = __jacJsx("div", {
+      "style": {
+        "height": "60vh"
+      }
+    }, ["hello"]);
+  }
+  var step4Content = null;
+  if (currentStep === 4) {
+    step4Content = __jacJsx("div", {
+      "style": {
+        "height": "60vh"
+      }
+    }, ["hello"]);
+  }
+  var backNav = null;
+  if (currentStep > 1) {
+    backNav = __jacJsx("div", {
+      "onClick": function onClick(e) {
+        setCurrentStep(currentStep - 1);
+      },
+      "style": {
+        "display": "flex",
+        "flexDirection": "row",
+        "alignItems": "center",
+        "cursor": "pointer"
+      }
+    }, [__jacJsx(ChevronLeft, {}, []), "Back"]);
+  }
+  var nextBtn = __jacJsx("button", {
+    "type": "button",
+    "onClick": function onClick(e) {
+      if (currentStep === 1) {
+        handleStep1Next();
+      } else {
+        if (currentStep < 4) {
+          setCurrentStep(currentStep + 1);
+        }
+      }
+    },
+    "onMouseEnter": function onMouseEnter(e) {
+      setNavBtnHover(true);
+    },
+    "onMouseLeave": function onMouseLeave(e) {
+      setNavBtnHover(false);
+    },
+    "style": nextBtnBaseStyle,
+    "disabled": currentStep === 1 && !canProceed || isLoading
+  }, [nextBtnContent]);
   return __jacJsx("div", {
-    "style": {
-      "width": "100%",
-      "height": "100vh",
-      "display": "grid",
-      "gridTemplateColumns": "45% 55%",
-      "position": "relative",
-      "color": "white",
-      "fontFamily": "system-ui, sans-serif"
-    }
-  }, [__jacJsx("div", {
+    "style": wrapperStyle
+  }, [alertDisplay, __jacJsx("div", {
     "style": {
       "width": "100%",
       "height": "100%",
@@ -1219,26 +1649,8 @@ function Onboarding() {
       "alignItems": "center"
     }
   }, [__jacJsx("div", {
-    "style": {
-      "margin": "auto",
-      "backgroundColor": "#0b0b0b",
-      "width": "95%",
-      "height": "90%",
-      "zIndex": "9999",
-      "borderRadius": "10px",
-      "display": "flex",
-      "flexDirection": "column",
-      "justifyContent": "center",
-      "alignItems": "center",
-      "overflow": "hidden"
-    }
-  }, [steps.map(function (step) {
-    return __jacJsx(Step, {
-      "key": step.id,
-      "step": step,
-      "isActive": currentStep === step.id
-    }, []);
-  }), "   "])]), __jacJsx("div", {
+    "style": leftPanelInnerStyle
+  }, [stepsList])]), __jacJsx("div", {
     "style": {
       "width": "100%",
       "height": "95%",
@@ -1248,13 +1660,7 @@ function Onboarding() {
       "alignItems": "center"
     }
   }, [__jacJsx("div", {
-    "style": {
-      "width": "90%",
-      "height": "90%",
-      "display": "flex",
-      "flexDirection": "column",
-      "justifyContent": "center"
-    }
+    "style": rightInnerStyle
   }, [__jacJsx("div", {
     "style": {
       "color": "grey",
@@ -1277,131 +1683,15 @@ function Onboarding() {
       "transition": "0.3s ease",
       "borderRadius": "20px"
     }
-  }, [])]), currentStep === 1 && __jacJsx("div", {
-    "style": {
-      "height": "60vh"
-    }
-  }, [__jacJsx("div", {
-    "style": {
-      "marginBottom": "0px",
-      "fontWeight": "600",
-      "color": "white",
-      "fontSize": "1.15rem"
-    }
-  }, ["Upload your CV"]), __jacJsx("p", {
-    "style": {
-      "color": "grey",
-      "marginBlock": "0px",
-      "marginTop": "10px"
-    }
-  }, ["Let us start by understanding your background"]), __jacJsx("div", {
-    "onMouseEnter": function onMouseEnter(e) {
-      setResumeHover(true);
-    },
-    "onMouseLeave": function onMouseLeave(e) {
-      setResumeHover(false);
-    },
-    "style": {
-      "marginBlock": "30px",
-      "height": "40vh",
-      "width": "80%",
-      "borderRadius": "15px",
-      "border": resumeHover ? "2px dashed #6e11b0" : "2px dashed grey",
-      "backgroundColor": resumeHover ? "#0b0b0b" : "#101010ff",
-      "display": "flex",
-      "flexDirection": "column",
-      "justifyContent": "center",
-      "alignItems": "center"
-    }
-  }, [__jacJsx("div", {
-    "style": {
-      "width": "55px",
-      "aspectRatio": "1",
-      "borderRadius": "50%",
-      "backgroundColor": "black",
-      "display": "flex",
-      "alignItems": "center",
-      "justifyContent": "center",
-      "marginBottom": "15px"
-    }
-  }, [__jacJsx(CloudUpload, {
-    "style": {
-      "fontSize": "0.75rem",
-      "color": "#6e11b0"
-    }
-  }, [])]), __jacJsx("p", {
-    "style": _defineProperty(_defineProperty({
-      "color": "grey",
-      "marginBlock": "0px"
-    }, "marginBlock", "20px"), "fontSize", ".9em")
-  }, ["Supported formats: PDF, DOC, DOCX (Max 5MB)"]), __jacJsx("div", {}, []), __jacJsx("div", {
-    "style": {
-      "width": "auto",
-      "padding": "1rem 1.5rem",
-      "border": "none",
-      "borderRadius": "0.5rem",
-      "backgroundColor": "#6e11b0",
-      "color": "white",
-      "fontWeight": "600",
-      "fontSize": "0.875rem",
-      "cursor": "pointer",
-      "transition": "all 0.2s ease",
-      "marginTop": "10px",
-      "boxShadow": "0 0 20px rgba(110, 17, 176, 0.2)"
-    }
-  }, ["Upload from Computer"])])]), currentStep === 2 && __jacJsx("div", {
-    "style": {
-      "height": "60vh"
-    }
-  }, ["hello"]), currentStep === 3 && __jacJsx("div", {
-    "style": {
-      "height": "60vh"
-    }
-  }, ["hello"]), currentStep === 4 && __jacJsx("div", {
-    "style": {
-      "height": "60vh"
-    }
-  }, ["hello"]), __jacJsx("div", {
+  }, [])]), step1Content, step2Content, step3Content, step4Content, __jacJsx("div", {
     "style": {
       "display": "flex",
       "flexDirection": "row",
       "gap": "25px",
-      "alignItems": "center"
+      "alignItems": "center",
+      "marginTop": "20px"
     }
-  }, [currentStep > 1 && __jacJsx("div", {
-    "onClick": function onClick(e) {
-      setCurrentStep(currentStep - 1);
-    },
-    "style": {
-      "display": "flex",
-      "flexDirection": "row",
-      "alignItems": "center"
-    }
-  }, [" ", __jacJsx(ChevronLeft, {}, []), "Back"]), __jacJsx("button", {
-    "type": "button",
-    "onClick": function onClick(e) {
-      setCurrentStep(currentStep + 1);
-    },
-    "onMouseEnter": function onMouseEnter(e) {
-      setNavBtnHover(true);
-    },
-    "onMouseLeave": function onMouseLeave(e) {
-      setNavBtnHover(false);
-    },
-    "style": {
-      "width": "180px",
-      "backgroundColor": "#6e11b0",
-      "color": "white",
-      "border": "none",
-      "paddingInline": "2.5rem",
-      "paddingBlock": "1rem",
-      "borderRadius": "5px",
-      "cursor": "pointer",
-      "fontSize": "16px",
-      "transform": navbtnHover ? "translateY(0.25rem)" : "translateY(0)",
-      "transition": "transform 0.2s ease"
-    }
-  }, ["Next"])])])])]);
+  }, [backNav, nextBtn, manualSkipDisplay])])])]);
 }
 function Dashboard() {
   return __jacJsx("div", {}, []);
@@ -1437,4 +1727,4 @@ function app() {
     "element": __jacJsx(Dashboard, {}, [])
   }, [])])])]);
 }
-export { Auth, Dashboard, Onboarding, Website, app };
+export { Auth, Dashboard, LoadingDots, Onboarding, Website, app };
