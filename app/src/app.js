@@ -463,39 +463,69 @@ function Onboarding() {
     if (step2Loading) {
       step2Content = step2LoadingView;
     } else {
-      step2Content = __jacJsx("div", {"style": {"height": "65vh", "overflowY": "auto", "paddingRight": "10px"}}, [__jacJsx("div", {"style": {"marginBottom": "25px"}}, [__jacJsx("h2", {"style": {"color": "white", "marginBottom": "8px"}}, ["Skills"]), __jacJsx("div", {"style": {"display": "flex", "flexDirection": "row", "gap": "10px", "marginBottom": "12px"}}, [__jacJsx("input", {"type": "text", "value": newSkill, "onChange": e => {
+      step2Content = __jacJsx("div", {"style": {"height": "65vh", "overflowY": "auto", "paddingRight": "10px"}}, [__jacJsx("div", {"style": {"marginBottom": "25px"}}, [__jacJsx("h2", {"style": {"color": "white", "marginBottom": "8px"}}, ["Skills"]), __jacJsx("div", {"style": {"display": "flex", "flexDirection": "row", "alignItems": "center", "gap": "10px", "marginBottom": "12px"}}, [__jacJsx("input", {"type": "text", "value": newSkill, "onChange": e => {
         setNewSkill(e.target.value);
       }, "onKeyDown": e => {
         if (e.key === "Enter") {
           addSkill();
         }
-      }, "placeholder": "Python, Project Management, etc.", "style": {"flex": "1", "backgroundColor": "#0b0b0b", "border": "1px solid #333", "color": "white", "padding": "8px", "borderRadius": "6px"}}, []), __jacJsx("button", {"onClick": e => {
+      }, "placeholder": "Python, Project Management, etc.", "style": {"width": "260px", "backgroundColor": "#0e0e0e", "border": "1px solid #262626", "color": "white", "padding": "10px", "borderRadius": "10px", "fontSize": "0.9rem", "transition": "all 0.25s ease", "boxShadow": "0 0 0 0 rgba(0,0,0,0)"}, "onFocus": e => {
+        e.target.style.border = "1px solid #7f2ae6";
+        e.target.style.boxShadow = "0 0 6px #7f2ae6";
+      }, "onBlur": e => {
+        e.target.style.border = "1px solid #262626";
+        e.target.style.boxShadow = "none";
+      }}, []), __jacJsx("button", {"onClick": e => {
         addSkill();
-      }, "style": {"padding": "8px 12px", "backgroundColor": "#6e11b0", "color": "white", "border": "none", "borderRadius": "6px", "cursor": "pointer"}}, ["Add"])]), skills.length === 0 && __jacJsx("p", {"style": {"color": "grey"}}, ["No skills added"]), skills.length > 0 && __jacJsx("div", {"style": {"display": "flex", "flexWrap": "wrap", "gap": "8px"}}, [skills.map((s, idx) => {
+      }, "style": {"padding": "10px 16px", "backgroundColor": "#7f2ae6", "color": "white", "border": "none", "borderRadius": "10px", "cursor": "pointer", "fontWeight": "600", "transition": "all 0.25s ease"}, "onMouseEnter": e => {
+        e.target.style.backgroundColor = "#9a48ff";
+      }, "onMouseLeave": e => {
+        e.target.style.backgroundColor = "#7f2ae6";
+      }}, ["Add"])]), skills.length === 0 && __jacJsx("p", {"style": {"color": "grey"}}, ["No skills added"]), skills.length > 0 && __jacJsx("div", {"style": {"display": "flex", "flexWrap": "wrap", "gap": "8px"}}, [skills.map((s, idx) => {
         return __jacJsx("div", {"key": idx, "style": {"display": "flex", "alignItems": "center", "gap": "6px", "padding": "4px 10px", "backgroundColor": "#0d0d0d", "borderRadius": "9999px", "fontSize": "0.85rem", "color": "white"}}, [__jacJsx("span", {}, [s.name]), __jacJsx("span", {"style": {"color": "#dc2626", "cursor": "pointer", "fontWeight": "700"}, "onClick": e => {
           removeSkill(s.name);
         }}, ["×"])]);
-      })])]), __jacJsx("div", {"style": {"marginBottom": "25px"}}, [__jacJsx("h2", {"style": {"color": "white", "marginBottom": "8px"}}, ["Interests"]), __jacJsx("div", {"style": {"display": "flex", "flexDirection": "row", "gap": "10px", "marginBottom": "12px"}}, [__jacJsx("input", {"type": "text", "value": newInterest, "onChange": e => {
+      })])]), __jacJsx("div", {"style": {"marginBottom": "25px"}}, [__jacJsx("h2", {"style": {"color": "white", "marginBottom": "8px"}}, ["Interests"]), __jacJsx("div", {"style": {"display": "flex", "flexDirection": "row", "alignItems": "center", "gap": "10px", "marginBottom": "12px"}}, [__jacJsx("input", {"type": "text", "value": newInterest, "onChange": e => {
         setNewInterest(e.target.value);
       }, "onKeyDown": e => {
         if (e.key === "Enter") {
           addInterest();
         }
-      }, "placeholder": "Add new interest", "style": {"flex": "1", "backgroundColor": "#0b0b0b", "border": "1px solid #333", "color": "white", "padding": "8px", "borderRadius": "6px"}}, []), __jacJsx("button", {"onClick": e => {
+      }, "placeholder": "Add new interest", "style": {"width": "260px", "backgroundColor": "#0e0e0e", "border": "1px solid #262626", "color": "white", "padding": "10px", "borderRadius": "10px", "fontSize": "0.9rem", "transition": "all 0.25s ease"}, "onFocus": e => {
+        e.target.style.border = "1px solid #7f2ae6";
+        e.target.style.boxShadow = "0 0 6px #7f2ae6";
+      }, "onBlur": e => {
+        e.target.style.border = "1px solid #262626";
+        e.target.style.boxShadow = "none";
+      }}, []), __jacJsx("button", {"onClick": e => {
         addInterest();
-      }, "style": {"padding": "8px 12px", "backgroundColor": "#6e11b0", "color": "white", "border": "none", "borderRadius": "6px", "cursor": "pointer"}}, ["Add"])]), interests.length === 0 && __jacJsx("p", {"style": {"color": "grey"}}, ["No interests added"]), interests.length > 0 && __jacJsx("div", {"style": {"display": "flex", "flexWrap": "wrap", "gap": "8px"}}, [interests.map((i, idx) => {
+      }, "style": {"padding": "10px 16px", "backgroundColor": "#7f2ae6", "color": "white", "border": "none", "borderRadius": "10px", "cursor": "pointer", "fontWeight": "600", "transition": "all 0.25s ease"}, "onMouseEnter": e => {
+        e.target.style.backgroundColor = "#9a48ff";
+      }, "onMouseLeave": e => {
+        e.target.style.backgroundColor = "#7f2ae6";
+      }}, ["Add"])]), interests.length === 0 && __jacJsx("p", {"style": {"color": "grey"}}, ["No interests added"]), interests.length > 0 && __jacJsx("div", {"style": {"display": "flex", "flexWrap": "wrap", "gap": "8px"}}, [interests.map((i, idx) => {
         return __jacJsx("div", {"key": idx, "style": {"display": "flex", "alignItems": "center", "gap": "6px", "padding": "4px 10px", "backgroundColor": "#0d0d0d", "borderRadius": "9999px", "fontSize": "0.85rem", "color": "white"}}, [__jacJsx("span", {}, [i.name]), __jacJsx("span", {"style": {"color": "#dc2626", "cursor": "pointer", "fontWeight": "700"}, "onClick": e => {
           removeInterest(i.name);
         }}, ["×"])]);
-      })])]), __jacJsx("div", {}, [__jacJsx("h2", {"style": {"color": "white", "marginBottom": "8px"}}, ["Certifications"]), __jacJsx("div", {"style": {"display": "flex", "flexDirection": "row", "gap": "10px", "marginBottom": "12px"}}, [__jacJsx("input", {"type": "text", "value": newCert, "onChange": e => {
+      })])]), __jacJsx("div", {}, [__jacJsx("h2", {"style": {"color": "white", "marginBottom": "8px"}}, ["Certifications"]), __jacJsx("div", {"style": {"display": "flex", "flexDirection": "row", "alignItems": "center", "gap": "10px", "marginBottom": "12px"}}, [__jacJsx("input", {"type": "text", "value": newCert, "onChange": e => {
         setNewCert(e.target.value);
       }, "onKeyDown": e => {
         if (e.key === "Enter") {
           addCert();
         }
-      }, "placeholder": "Add certification", "style": {"flex": "1", "backgroundColor": "#0b0b0b", "border": "1px solid #333", "color": "white", "padding": "8px", "borderRadius": "6px"}}, []), __jacJsx("button", {"onClick": e => {
+      }, "placeholder": "Add certification", "style": {"width": "260px", "backgroundColor": "#0e0e0e", "border": "1px solid #262626", "color": "white", "padding": "10px", "borderRadius": "10px", "fontSize": "0.9rem", "transition": "all 0.25s ease"}, "onFocus": e => {
+        e.target.style.border = "1px solid #7f2ae6";
+        e.target.style.boxShadow = "0 0 6px #7f2ae6";
+      }, "onBlur": e => {
+        e.target.style.border = "1px solid #262626";
+        e.target.style.boxShadow = "none";
+      }}, []), __jacJsx("button", {"onClick": e => {
         addCert();
-      }, "style": {"padding": "8px 12px", "backgroundColor": "#6e11b0", "color": "white", "border": "none", "borderRadius": "6px", "cursor": "pointer"}}, ["Add"])]), certs.length === 0 && __jacJsx("p", {"style": {"color": "grey"}}, ["No certifications added"]), certs.length > 0 && __jacJsx("div", {"style": {"display": "flex", "flexWrap": "wrap", "gap": "8px"}}, [certs.map((c, idx) => {
+      }, "style": {"padding": "10px 16px", "backgroundColor": "#7f2ae6", "color": "white", "border": "none", "borderRadius": "10px", "cursor": "pointer", "fontWeight": "600", "transition": "all 0.25s ease"}, "onMouseEnter": e => {
+        e.target.style.backgroundColor = "#9a48ff";
+      }, "onMouseLeave": e => {
+        e.target.style.backgroundColor = "#7f2ae6";
+      }}, ["Add"])]), certs.length === 0 && __jacJsx("p", {"style": {"color": "grey"}}, ["No certifications added"]), certs.length > 0 && __jacJsx("div", {"style": {"display": "flex", "flexWrap": "wrap", "gap": "8px"}}, [certs.map((c, idx) => {
         return __jacJsx("div", {"key": idx, "style": {"display": "flex", "alignItems": "center", "gap": "6px", "padding": "4px 10px", "backgroundColor": "#0d0d0d", "borderRadius": "9999px", "fontSize": "0.85rem", "color": "white"}}, [__jacJsx("span", {}, [c.title]), __jacJsx("span", {"style": {"color": "#dc2626", "cursor": "pointer", "fontWeight": "700"}, "onClick": e => {
           removeCert(c.title);
         }}, ["×"])]);

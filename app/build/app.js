@@ -1830,6 +1830,7 @@ function Onboarding() {
         "style": {
           "display": "flex",
           "flexDirection": "row",
+          "alignItems": "center",
           "gap": "10px",
           "marginBottom": "12px"
         }
@@ -1846,24 +1847,43 @@ function Onboarding() {
         },
         "placeholder": "Python, Project Management, etc.",
         "style": {
-          "flex": "1",
-          "backgroundColor": "#0b0b0b",
-          "border": "1px solid #333",
+          "width": "260px",
+          "backgroundColor": "#0e0e0e",
+          "border": "1px solid #262626",
           "color": "white",
-          "padding": "8px",
-          "borderRadius": "6px"
+          "padding": "10px",
+          "borderRadius": "10px",
+          "fontSize": "0.9rem",
+          "transition": "all 0.25s ease",
+          "boxShadow": "0 0 0 0 rgba(0,0,0,0)"
+        },
+        "onFocus": function onFocus(e) {
+          e.target.style.border = "1px solid #7f2ae6";
+          e.target.style.boxShadow = "0 0 6px #7f2ae6";
+        },
+        "onBlur": function onBlur(e) {
+          e.target.style.border = "1px solid #262626";
+          e.target.style.boxShadow = "none";
         }
       }, []), __jacJsx("button", {
         "onClick": function onClick(e) {
           addSkill();
         },
         "style": {
-          "padding": "8px 12px",
-          "backgroundColor": "#6e11b0",
+          "padding": "10px 16px",
+          "backgroundColor": "#7f2ae6",
           "color": "white",
           "border": "none",
-          "borderRadius": "6px",
-          "cursor": "pointer"
+          "borderRadius": "10px",
+          "cursor": "pointer",
+          "fontWeight": "600",
+          "transition": "all 0.25s ease"
+        },
+        "onMouseEnter": function onMouseEnter(e) {
+          e.target.style.backgroundColor = "#9a48ff";
+        },
+        "onMouseLeave": function onMouseLeave(e) {
+          e.target.style.backgroundColor = "#7f2ae6";
         }
       }, ["Add"])]), skills.length === 0 && __jacJsx("p", {
         "style": {
@@ -1911,6 +1931,7 @@ function Onboarding() {
         "style": {
           "display": "flex",
           "flexDirection": "row",
+          "alignItems": "center",
           "gap": "10px",
           "marginBottom": "12px"
         }
@@ -1927,24 +1948,42 @@ function Onboarding() {
         },
         "placeholder": "Add new interest",
         "style": {
-          "flex": "1",
-          "backgroundColor": "#0b0b0b",
-          "border": "1px solid #333",
+          "width": "260px",
+          "backgroundColor": "#0e0e0e",
+          "border": "1px solid #262626",
           "color": "white",
-          "padding": "8px",
-          "borderRadius": "6px"
+          "padding": "10px",
+          "borderRadius": "10px",
+          "fontSize": "0.9rem",
+          "transition": "all 0.25s ease"
+        },
+        "onFocus": function onFocus(e) {
+          e.target.style.border = "1px solid #7f2ae6";
+          e.target.style.boxShadow = "0 0 6px #7f2ae6";
+        },
+        "onBlur": function onBlur(e) {
+          e.target.style.border = "1px solid #262626";
+          e.target.style.boxShadow = "none";
         }
       }, []), __jacJsx("button", {
         "onClick": function onClick(e) {
           addInterest();
         },
         "style": {
-          "padding": "8px 12px",
-          "backgroundColor": "#6e11b0",
+          "padding": "10px 16px",
+          "backgroundColor": "#7f2ae6",
           "color": "white",
           "border": "none",
-          "borderRadius": "6px",
-          "cursor": "pointer"
+          "borderRadius": "10px",
+          "cursor": "pointer",
+          "fontWeight": "600",
+          "transition": "all 0.25s ease"
+        },
+        "onMouseEnter": function onMouseEnter(e) {
+          e.target.style.backgroundColor = "#9a48ff";
+        },
+        "onMouseLeave": function onMouseLeave(e) {
+          e.target.style.backgroundColor = "#7f2ae6";
         }
       }, ["Add"])]), interests.length === 0 && __jacJsx("p", {
         "style": {
@@ -1988,6 +2027,7 @@ function Onboarding() {
         "style": {
           "display": "flex",
           "flexDirection": "row",
+          "alignItems": "center",
           "gap": "10px",
           "marginBottom": "12px"
         }
@@ -2004,24 +2044,42 @@ function Onboarding() {
         },
         "placeholder": "Add certification",
         "style": {
-          "flex": "1",
-          "backgroundColor": "#0b0b0b",
-          "border": "1px solid #333",
+          "width": "260px",
+          "backgroundColor": "#0e0e0e",
+          "border": "1px solid #262626",
           "color": "white",
-          "padding": "8px",
-          "borderRadius": "6px"
+          "padding": "10px",
+          "borderRadius": "10px",
+          "fontSize": "0.9rem",
+          "transition": "all 0.25s ease"
+        },
+        "onFocus": function onFocus(e) {
+          e.target.style.border = "1px solid #7f2ae6";
+          e.target.style.boxShadow = "0 0 6px #7f2ae6";
+        },
+        "onBlur": function onBlur(e) {
+          e.target.style.border = "1px solid #262626";
+          e.target.style.boxShadow = "none";
         }
       }, []), __jacJsx("button", {
         "onClick": function onClick(e) {
           addCert();
         },
         "style": {
-          "padding": "8px 12px",
-          "backgroundColor": "#6e11b0",
+          "padding": "10px 16px",
+          "backgroundColor": "#7f2ae6",
           "color": "white",
           "border": "none",
-          "borderRadius": "6px",
-          "cursor": "pointer"
+          "borderRadius": "10px",
+          "cursor": "pointer",
+          "fontWeight": "600",
+          "transition": "all 0.25s ease"
+        },
+        "onMouseEnter": function onMouseEnter(e) {
+          e.target.style.backgroundColor = "#9a48ff";
+        },
+        "onMouseLeave": function onMouseLeave(e) {
+          e.target.style.backgroundColor = "#7f2ae6";
         }
       }, ["Add"])]), certs.length === 0 && __jacJsx("p", {
         "style": {
