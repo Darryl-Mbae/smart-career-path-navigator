@@ -1204,22 +1204,19 @@ def Onboarding() -> any {
     let [isLoading, setIsLoading] = useState(False);
     let [showManualEntry, setShowManualEntry] = useState(False);
     let [canProceed, setCanProceed] = useState(False);
-
     let navigate = useNavigate();
 
-    # ---------------- Step 2 States ----------------
+    # Step 2 States 
     let [skills, setSkills] = useState([]);
     let [interests, setInterests] = useState([]);
     let [certs, setCerts] = useState([]);
-
     let [newSkill, setNewSkill] = useState("");
     let [newInterest, setNewInterest] = useState("");
     let [newCert, setNewCert] = useState("");
-
     let [step2Loading, setStep2Loading] = useState(True);
     let [savingProfile, setSavingProfile] = useState(False);
 
-    #-------------------- alert ----------------
+    # Alert 
     def showAlert(msg: str) {
         setAlertMessage(msg);
         setAlertVisible(True);
@@ -1229,7 +1226,7 @@ def Onboarding() -> any {
         }, 3500);
     }
 
-    # ---------------- Load User Profile (Step 2) ----------------
+    # Load User Profile (Step 2)
     async def loadStep2() -> None {
         setStep2Loading(True);
 
@@ -1262,7 +1259,7 @@ def Onboarding() -> any {
         }
     }, [currentStep]);
 
-    # ---------------- Add to UI ----------------
+    # Add to UI
     def addSkill() {
         if newSkill.trim().length == 0 { return; }
         # Avoid duplicates by name (case-insensitive)
@@ -1291,7 +1288,7 @@ def Onboarding() -> any {
         setNewCert("");
     }
 
-    # ---------------- Remove ----------------
+    # Remove
     def removeSkill(name: str) {
         setSkills(skills.filter(lambda s: any -> bool { return s.name != name; }));
     }
@@ -1304,7 +1301,7 @@ def Onboarding() -> any {
         setCerts(certs.filter(lambda c: any -> bool { return c.title != name; }));
     }
 
-    # ---------------- Save All (Step 2 Next) ----------------
+    # Save All (Step 2 Next)
     async def saveStep2() -> None {
         if savingProfile { return; }
         setSavingProfile(True);
@@ -1775,7 +1772,7 @@ def Onboarding() -> any {
         </div>;
     }
 
-    # ---------------- Step 2 content ----------------
+   # Step 2 content
 let step2Content = None;
 if currentStep == 2 {
     if step2Loading {
@@ -1787,13 +1784,14 @@ if currentStep == 2 {
             "paddingRight":"10px"
         }}>
 
-            # ---------- Skills ----------
+            # Skills
             <div style={{ "marginBottom":"25px" }}>
                 <h2 style={{ "color":"white", "marginBottom":"8px" }}>Skills</h2>
 
                 <div style={{
                     "display":"flex",
                     "flexDirection":"row",
+                    "alignItems":"center",
                     "gap":"10px",
                     "marginBottom":"12px"
                 }}>
@@ -1804,23 +1802,43 @@ if currentStep == 2 {
                         onKeyDown={lambda e: any -> None { if e.key == "Enter" { addSkill(); } }}
                         placeholder="Python, Project Management, etc."
                         style={{
-                            "flex":"1",
-                            "backgroundColor":"#0b0b0b",
-                            "border":"1px solid #333",
+                            "width":"260px",
+                            "backgroundColor":"#0e0e0e",
+                            "border":"1px solid #262626",
                             "color":"white",
-                            "padding":"8px",
-                            "borderRadius":"6px"
+                            "padding":"10px",
+                            "borderRadius":"10px",
+                            "fontSize":"0.9rem",
+                            "transition":"all 0.25s ease",
+                            "boxShadow":"0 0 0 0 rgba(0,0,0,0)"
+                        }}
+                        onFocus={lambda e: any -> None {
+                            e.target.style.border = "1px solid #7f2ae6";
+                            e.target.style.boxShadow = "0 0 6px #7f2ae6";
+                        }}
+                        onBlur={lambda e: any -> None {
+                            e.target.style.border = "1px solid #262626";
+                            e.target.style.boxShadow = "none";
                         }}
                     />
+
                     <button
                         onClick={lambda e: any -> None { addSkill(); }}
                         style={{
-                            "padding":"8px 12px",
-                            "backgroundColor":"#6e11b0",
+                            "padding":"10px 16px",
+                            "backgroundColor":"#7f2ae6",
                             "color":"white",
                             "border":"none",
-                            "borderRadius":"6px",
-                            "cursor":"pointer"
+                            "borderRadius":"10px",
+                            "cursor":"pointer",
+                            "fontWeight":"600",
+                            "transition":"all 0.25s ease"
+                        }}
+                        onMouseEnter={lambda e: any -> None {
+                            e.target.style.backgroundColor = "#9a48ff";
+                        }}
+                        onMouseLeave={lambda e: any -> None {
+                            e.target.style.backgroundColor = "#7f2ae6";
                         }}
                     >
                         Add
@@ -1860,13 +1878,14 @@ if currentStep == 2 {
                 </div>}
             </div>
 
-            # ---------- Interests ----------
+            # Interests
             <div style={{ "marginBottom":"25px" }}>
                 <h2 style={{ "color":"white", "marginBottom":"8px" }}>Interests</h2>
 
                 <div style={{
                     "display":"flex",
                     "flexDirection":"row",
+                    "alignItems":"center",
                     "gap":"10px",
                     "marginBottom":"12px"
                 }}>
@@ -1877,23 +1896,42 @@ if currentStep == 2 {
                         onKeyDown={lambda e: any -> None { if e.key == "Enter" { addInterest(); } }}
                         placeholder="Add new interest"
                         style={{
-                            "flex":"1",
-                            "backgroundColor":"#0b0b0b",
-                            "border":"1px solid #333",
+                            "width":"260px",
+                            "backgroundColor":"#0e0e0e",
+                            "border":"1px solid #262626",
                             "color":"white",
-                            "padding":"8px",
-                            "borderRadius":"6px"
+                            "padding":"10px",
+                            "borderRadius":"10px",
+                            "fontSize":"0.9rem",
+                            "transition":"all 0.25s ease"
+                        }}
+                        onFocus={lambda e: any -> None {
+                            e.target.style.border = "1px solid #7f2ae6";
+                            e.target.style.boxShadow = "0 0 6px #7f2ae6";
+                        }}
+                        onBlur={lambda e: any -> None {
+                            e.target.style.border = "1px solid #262626";
+                            e.target.style.boxShadow = "none";
                         }}
                     />
+
                     <button
                         onClick={lambda e: any -> None { addInterest(); }}
                         style={{
-                            "padding":"8px 12px",
-                            "backgroundColor":"#6e11b0",
+                            "padding":"10px 16px",
+                            "backgroundColor":"#7f2ae6",
                             "color":"white",
                             "border":"none",
-                            "borderRadius":"6px",
-                            "cursor":"pointer"
+                            "borderRadius":"10px",
+                            "cursor":"pointer",
+                            "fontWeight":"600",
+                            "transition":"all 0.25s ease"
+                        }}
+                        onMouseEnter={lambda e: any -> None {
+                            e.target.style.backgroundColor = "#9a48ff";
+                        }}
+                        onMouseLeave={lambda e: any -> None {
+                            e.target.style.backgroundColor = "#7f2ae6";
                         }}
                     >
                         Add
@@ -1933,13 +1971,14 @@ if currentStep == 2 {
                 </div>}
             </div>
 
-            # ---------- Certifications ----------
+            # Certifications
             <div>
                 <h2 style={{ "color":"white", "marginBottom":"8px" }}>Certifications</h2>
 
                 <div style={{
                     "display":"flex",
                     "flexDirection":"row",
+                    "alignItems":"center",
                     "gap":"10px",
                     "marginBottom":"12px"
                 }}>
@@ -1950,23 +1989,42 @@ if currentStep == 2 {
                         onKeyDown={lambda e: any -> None { if e.key == "Enter" { addCert(); } }}
                         placeholder="Add certification"
                         style={{
-                            "flex":"1",
-                            "backgroundColor":"#0b0b0b",
-                            "border":"1px solid #333",
+                            "width":"260px",
+                            "backgroundColor":"#0e0e0e",
+                            "border":"1px solid #262626",
                             "color":"white",
-                            "padding":"8px",
-                            "borderRadius":"6px"
+                            "padding":"10px",
+                            "borderRadius":"10px",
+                            "fontSize":"0.9rem",
+                            "transition":"all 0.25s ease"
+                        }}
+                        onFocus={lambda e: any -> None {
+                            e.target.style.border = "1px solid #7f2ae6";
+                            e.target.style.boxShadow = "0 0 6px #7f2ae6";
+                        }}
+                        onBlur={lambda e: any -> None {
+                            e.target.style.border = "1px solid #262626";
+                            e.target.style.boxShadow = "none";
                         }}
                     />
+
                     <button
                         onClick={lambda e: any -> None { addCert(); }}
                         style={{
-                            "padding":"8px 12px",
-                            "backgroundColor":"#6e11b0",
+                            "padding":"10px 16px",
+                            "backgroundColor":"#7f2ae6",
                             "color":"white",
                             "border":"none",
-                            "borderRadius":"6px",
-                            "cursor":"pointer"
+                            "borderRadius":"10px",
+                            "cursor":"pointer",
+                            "fontWeight":"600",
+                            "transition":"all 0.25s ease"
+                        }}
+                        onMouseEnter={lambda e: any -> None {
+                            e.target.style.backgroundColor = "#9a48ff";
+                        }}
+                        onMouseLeave={lambda e: any -> None {
+                            e.target.style.backgroundColor = "#7f2ae6";
                         }}
                     >
                         Add
