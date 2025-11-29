@@ -1196,10 +1196,12 @@ def Onboarding() -> any {
     let [dragActive, setDragActive] = useState(False);
     let [fileName, setFileName] = useState("");
     let [file, setFile] = useState(None);
-    let [error, setError] = useState("");
     let [isLoading, setIsLoading] = useState(False);
     let [showManualEntry, setShowManualEntry] = useState(False);
     let [canProceed, setCanProceed] = useState(False);
+
+    # Alert state
+    let [alertMessage, setAlertMessage] = useState("");
 
     let navigate = useNavigate();
 
@@ -1210,34 +1212,10 @@ def Onboarding() -> any {
 
     # ------------------------ Steps data ------------------------
     let steps = [
-        {
-            id: 1,
-            title: "Upload Your CV",
-            description: "Let our AI analyze your experience and extract your current skills.",
-            icon: <CloudUpload style={{ "fontSize": "0.75rem" }} />,
-            completed: False
-        },
-        {
-            id: 2,
-            title: "Review & Update Skills",
-            description: "Confirm AI-detected skills and add any we might have missed.",
-            icon: <Brain style={{ "fontSize": "0.75rem" }} />,
-            completed: False
-        },
-        {
-            id: 3,
-            title: "Set Career Goals",
-            description: "Choose your target roles, industries, and career aspirations.",
-            icon: <Goal style={{ "fontSize": "0.75rem" }} />,
-            completed: False
-        },
-        {
-            id: 4,
-            title: "Get Your Roadmap",
-            description: "Explore your personalized learning path and skill gap analysis.",
-            icon: <Node style={{ "fontSize": "0.75rem" }} />,
-            completed: False
-        }
+        { id: 1, title: "Upload Your CV", description: "Let our AI analyze your experience and extract your current skills.", icon: <CloudUpload style={{ "fontSize": "0.75rem" }} />, completed: False },
+        { id: 2, title: "Review & Update Skills", description: "Confirm AI-detected skills and add any we might have missed.", icon: <Brain style={{ "fontSize": "0.75rem" }} />, completed: False },
+        { id: 3, title: "Set Career Goals", description: "Choose your target roles, industries, and career aspirations.", icon: <Goal style={{ "fontSize": "0.75rem" }} />, completed: False },
+        { id: 4, title: "Get Your Roadmap", description: "Explore your personalized learning path and skill gap analysis.", icon: <Node style={{ "fontSize": "0.75rem" }} />, completed: False }
     ];
 
     # ------------------------ File Handlers ------------------------
@@ -1246,7 +1224,6 @@ def Onboarding() -> any {
         if pickedFile {
             setFileName(pickedFile.name);
             setFile(pickedFile);
-            setError("");
             setCanProceed(True);
         }
     }
@@ -1269,7 +1246,6 @@ def Onboarding() -> any {
             setFileName(droppedFile.name);
             setFile(droppedFile);
             e.dataTransfer.clearData();
-            setError("");
             setCanProceed(True);
         }
     }
@@ -1281,7 +1257,6 @@ def Onboarding() -> any {
         }
 
         setIsLoading(True);
-        setError("");
         setShowManualEntry(False);
 
         try {
@@ -1289,14 +1264,11 @@ def Onboarding() -> any {
 
             let base64Data = await fileToBase64(file);
 
-            let result = await root spawn upload_resume(
-                file=base64Data,
-                name=file.name,
-                mime=file.type
-            );
+            let result = await root spawn upload_resume(file=base64Data, name=file.name, mime=file.type);
 
             if not result {
-                setError("Resume upload failed");
+                showTemporaryAlert("Resume upload failed");
+                setShowManualEntry(True);
                 setIsLoading(False);
                 return;
             }
@@ -1306,455 +1278,143 @@ def Onboarding() -> any {
 
             let user_skills = await root spawn analyze_cv();
 
-            if not user_skills or not user_skills.reports or user_skills.reports.length == 0 {
-                setError("Something went wrong. Please upload another document or enter details manually.");
+            if not user_skills or not user_skills.reports or user_skills.reports.length == 0 or user_skills.reports[0]["status"] != "Success" {
+                showTemporaryAlert("Something went wrong. Please upload another document or enter details manually.");
                 setShowManualEntry(True);
                 setIsLoading(False);
                 return;
             }
 
-            if user_skills.reports[0]["status"] != "Success" {
-                setError("Something went wrong. Please upload another document or enter details manually.");
-                setShowManualEntry(True);
-                setIsLoading(False);
-                return;
-            }
-
+            # Success → advance to step 2
             setCurrentStep(2);
 
         } except Exception as err {
             console.log(err);
-            setError("Something went wrong");
+            showTemporaryAlert("Something went wrong");
+            setShowManualEntry(True);
         } finally {
             setIsLoading(False);
         }
     }
 
+    # ------------------------ Show temporary alert ------------------------
+    def showTemporaryAlert(msg: str) -> None {
+        setAlertMessage(msg);
+        setTimeout(lambda -> None { setAlertMessage(""); }, 4000);  # disappears after 4 seconds
+    }
+
     # ------------------------ Styles (computed outside JSX) ------------------------
-    let wrapperStyle = {
-        "width": "100%",
-        "height": "100vh",
-        "display": "grid",
-        "gridTemplateColumns": "45% 55%",
-        "position": "relative",
-        "color": "white",
-        "fontFamily": "system-ui, sans-serif"
-    };
+    let wrapperStyle = { "width": "100%", "height": "100vh", "display": "grid", "gridTemplateColumns": "45% 55%", "position": "relative", "color": "white", "fontFamily": "system-ui, sans-serif" };
 
-    let leftPanelInnerStyle = {
-        "margin": "auto",
-        "backgroundColor": "#0b0b0b",
-        "width": "95%",
-        "height": "90%",
-        "zIndex": "9999",
-        "borderRadius": "10px",
-        "display": "flex",
-        "flexDirection": "column",
-        "justifyContent": "center",
-        "alignItems": "center",
-        "overflow": "hidden"
-    };
+    let leftPanelInnerStyle = { "margin": "auto", "backgroundColor": "#0b0b0b", "width": "95%", "height": "90%", "zIndex": "9999", "borderRadius": "10px", "display": "flex", "flexDirection": "column", "justifyContent": "center", "alignItems": "center", "overflow": "hidden" };
 
-    let rightInnerStyle = {
-        "width":"90%",
-        "height":"90%",
-        "display":"flex",
-        "flexDirection":"column",
-        "justifyContent":"center"
-    };
+    let rightInnerStyle = { "width":"90%", "height":"90%", "display":"flex", "flexDirection":"column", "justifyContent":"center" };
 
-    let uploadBoxStyle = {
-        "marginBlock":"30px",
-        "height":"40vh",
-        "width":"80%",
-        "borderRadius":"15px",
-        "display":"flex",
-        "flexDirection":"column",
-        "justifyContent":"center",
-        "alignItems":"center",
-        "transition":"0.2s ease"
-    };
+    let uploadBoxStyle = { "marginBlock":"30px", "height":"40vh", "width":"80%", "borderRadius":"15px", "display":"flex", "flexDirection":"column", "justifyContent":"center", "alignItems":"center", "transition":"0.2s ease" };
+    if resumeHover { uploadBoxStyle["border"] = "2px dashed #6e11b0"; uploadBoxStyle["backgroundColor"] = "#0b0b0b"; }
+    else { uploadBoxStyle["border"] = "2px dashed grey"; uploadBoxStyle["backgroundColor"] = "#101010ff"; }
 
-    if resumeHover {
-        uploadBoxStyle["border"] = "2px dashed #6e11b0";
-        uploadBoxStyle["backgroundColor"] = "#0b0b0b";
-    } else {
-        uploadBoxStyle["border"] = "2px dashed grey";
-        uploadBoxStyle["backgroundColor"] = "#101010ff";
-    }
+    let uploadLabelStyle = { "width": "auto", "padding": "1rem 1.5rem", "border": "none", "borderRadius": "0.5rem", "backgroundColor": "#6e11b0", "color": "white", "fontWeight": "600", "fontSize": "0.875rem", "cursor": "pointer", "transition": "all 0.2s ease", "marginTop":"10px", "boxShadow": "0 0 20px rgba(110, 17, 176, 0.2)" };
 
-    let uploadLabelStyle = {
-        "width": "auto",
-        "padding": "1rem 1.5rem",
-        "border": "none",
-        "borderRadius": "0.5rem",
-        "backgroundColor": "#6e11b0",
-        "color": "white",
-        "fontWeight": "600",
-        "fontSize": "0.875rem",
-        "cursor": "pointer",
-        "transition": "all 0.2s ease",
-        "marginTop":"10px",
-        "boxShadow": "0 0 20px rgba(110, 17, 176, 0.2)"
-    };
+    let nextBtnBaseStyle = { "width": "180px", "border": "none", "paddingInline": "2.5rem", "paddingBlock": "1rem", "borderRadius": "5px", "cursor": "pointer", "fontSize": "16px", "transition": "transform 0.2s ease", "color": "white", "backgroundColor": "#6e11b0", "transform": ( "translateY(0.25rem)" if navbtnHover else "translateY(0)" ) };
+    if currentStep == 1 and (not canProceed or isLoading) { nextBtnBaseStyle["opacity"] = "0.4"; nextBtnBaseStyle["cursor"] = "not-allowed"; }
 
-    let nextBtnBaseStyle = {
-        "width": "180px",
-        "border": "none",
-        "paddingInline": "2.5rem",
-        "paddingBlock": "1rem",
-        "borderRadius": "5px",
-        "cursor": "pointer",
-        "fontSize": "16px",
-        "transition": "transform 0.2s ease",
-        "color": "white",
-        "backgroundColor": "#6e11b0",
-        "transform": ( "translateY(0.25rem)" if navbtnHover else "translateY(0)" )
-    };
-
-    # Disabled look for Step 1 Next: purple but faded (opacity 0.4) and not-allowed cursor
-    if currentStep == 1 and (not canProceed or isLoading) {
-        nextBtnBaseStyle["opacity"] = "0.4";
-        nextBtnBaseStyle["cursor"] = "not-allowed";
-    }
-
-    # Next button content computed (no inline conditions)
     let nextBtnContent = None;
-    if currentStep == 1 and isLoading {
-        nextBtnContent = LoadingDots();
-    } else {
-        nextBtnContent = <label>Next</label>;
+    if currentStep == 1 and isLoading { nextBtnContent = LoadingDots(); }
+    else { nextBtnContent = <label>Next</label>; }
+
+    # ------------------------ Computed UI blocks ------------------------
+    # Steps list
+    def Step(props: any) -> any { 
+        let isActive = (props.step.id == currentStep); 
+        let circleStyle = { "width": "40px", "aspectRatio": "1", "borderRadius": "50%", "display": "flex", "alignItems": "center", "justifyContent": "center", "color": "white", "position": "relative", "zIndex": "1", "transition": "all 0.2s ease", "boxShadow": "none", "backgroundColor": "#000000" }; 
+        if isActive or props.step.id < currentStep { circleStyle["backgroundColor"] = "#6e11b0"; } 
+        if isActive { circleStyle["boxShadow"] = "0 0 20px rgba(110, 17, 176, 0.5)"; }
+        let connectorDisplay = None; 
+        if props.step.id != 4 { 
+            let connectorStyle = { "position":"absolute","height":"calc(100% + 65px)","width":"2px","left":"calc(50% + 1px)","top":"100%","transform":"translateX(-50%)","zIndex":"-1","transition":"all 0.2s ease","borderLeft":"2px dashed grey" }; 
+            if props.step.id < currentStep { connectorStyle["borderLeft"] = "2px dashed #6e11b0"; } 
+            connectorDisplay = <div style={connectorStyle}></div>; 
+        } 
+        let titleStyle = { "marginBottom":"0px", "fontWeight":"600", "color":"rgba(255, 255, 255, 0.6)", "fontSize":"1.15rem" }; 
+        if props.step.id <= currentStep { titleStyle["color"] = "white"; } 
+        return <div style={{ "display":"flex","flexDirection":"row","gap":"36px","alignItems":"center","width":"75%","marginInline":"auto","marginBottom":"45px" }}> <div style={circleStyle}><div style={{"display":"flex","alignItems":"center","justifyContent":"center"}}>{ props.step.icon }{ connectorDisplay }</div></div><div><h1 style={titleStyle}>{props.step.title}</h1><p style={{"color":"grey","marginBlock":"0px","marginTop":"10px"}}>{props.step.description}</p></div></div>; 
     }
+    let stepsList = steps.map(lambda step: any -> any { return <Step key={step.id} step={step} />; });
 
-    # ------------------------ Computed UI blocks (no inline conditionals in JSX) ------------------------
-
-    # Steps list (left column)
-    def Step(props: any) -> any {
-        let isActive = (props.step.id == currentStep);
-        let circleStyle = {
-            "width": "40px",
-            "aspectRatio": "1",
-            "borderRadius": "50%",
-            "display": "flex",
-            "alignItems": "center",
-            "justifyContent": "center",
-            "color": "white",
-            "position": "relative",
-            "zIndex": "1",
-            "transition": "all 0.2s ease",
-            "boxShadow": "none",
-            "backgroundColor": "#000000"
-        };
-
-        if isActive or props.step.id < currentStep {
-            circleStyle["backgroundColor"] = "#6e11b0";
-        } else {
-            circleStyle["backgroundColor"] = "black";
-        }
-
-        if isActive {
-            circleStyle["boxShadow"] = "0 0 20px rgba(110, 17, 176, 0.5)";
-        }
-
-        let connectorDisplay = None;
-        if props.step.id != 4 {
-            let connectorStyle = {
-                "position":"absolute",
-                "height":"calc(100% + 65px)",
-                "width":"2px",
-                "left":"calc(50% + 1px)",
-                "top":"100%",
-                "transform":"translateX(-50%)",
-                "zIndex":"-1",
-                "transition":"all 0.2s ease",
-                "borderLeft":"2px dashed grey"
-            };
-            if props.step.id < currentStep {
-                connectorStyle["borderLeft"] = "2px dashed #6e11b0";
-            } else {
-                connectorStyle["borderLeft"] = "2px dashed grey";
-            }
-            connectorDisplay = <div style={connectorStyle}></div>;
-        }
-
-        let titleStyle = {
-            "marginBottom":"0px",
-            "fontWeight":"600",
-            "color":"rgba(255, 255, 255, 0.6)",
-            "fontSize":"1.15rem"
-        };
-        if props.step.id <= currentStep {
-            titleStyle["color"] = "white";
-        }
-
-        return <div style={{
-            "display":"flex",
-            "flexDirection":"row",
-            "gap":"36px",
-            "alignItems":"center",
-            "width":"75%",
-            "marginInline":"auto",
-            "marginBottom":"45px"
-        }}>
-            <div style={circleStyle}>
-                <div style={{
-                    "display":"flex",
-                    "alignItems":"center",
-                    "justifyContent":"center",
-                }}>
-                    { props.step.icon }
-                    { connectorDisplay }
-                </div>
-            </div>
-            <div>
-                <h1 style={titleStyle}>{props.step.title}</h1>
-                <p style={{
-                    "color":"grey",
-                    "marginBlock":"0px",
-                    "marginTop":"10px"
-                }}>{props.step.description}</p>
-            </div>
-        </div>;
-    }
-
-    let stepsList = steps.map(
-        lambda step: any -> any {
-            return <Step key={step.id} step={step} />;
-        }
-    );
-
-    # Uploaded file display block
+    # Uploaded file display
     let uploadedFileDisplay = None;
-    if fileName and fileName != "" {
-        uploadedFileDisplay = <div style={{
-            "marginTop": "20px",
-            "fontSize": "14px",
-            "color": "#1e293b",
-            "fontWeight": "500"
-        }}>
-            Uploaded: {fileName}
-        </div>;
+    if fileName and fileName != "" { uploadedFileDisplay = <div style={{"marginTop": "20px","fontSize": "14px","color": "white","fontWeight": "500"}}>Uploaded: {fileName}</div>; }
+
+    # Temporary alert block
+    let alertDisplay = None;
+    if alertMessage and alertMessage != "" {
+        alertDisplay = <div style={{"position":"fixed","top":"20px","right":"20px","backgroundColor":"#dc2626","color":"white","padding":"12px 20px","borderRadius":"6px","zIndex":"9999","boxShadow":"0 0 15px rgba(0,0,0,0.3)"}}>{alertMessage}</div>;
     }
 
-    # Error display block
-    let errorDisplay = None;
-    if error and error != "" {
-        errorDisplay = <div style={{
-            "marginTop": "12px",
-            "color": "#dc2626",
-            "fontSize": "14px"
-        }}>{error}</div>;
-    }
-
-    # Manual skip link block
+    # Manual skip link (appears only if analyze fails)
     let manualSkipDisplay = None;
-    if showManualEntry {
-        manualSkipDisplay = <div style={{
-            "marginTop": "10px",
-            "fontSize": "14px"
-        }}>
-            <span
-                style={{
-                    "color": "#1e293b",
-                    "textDecoration": "underline",
-                    "cursor": "pointer",
-                    "fontWeight": "600"
-                }}
-                onClick={lambda e: any -> None { navigate("/dashboard"); }}
-            >
-                Skip →
-            </span>
-        </div>;
+    if showManualEntry and currentStep == 1 {
+        manualSkipDisplay = <div style={{"fontSize": "15px","cursor": "pointer","color": "white","textDecoration": "underline","fontWeight": "500"}} onClick={lambda e: any -> None { setCurrentStep(2); }}>Skip →</div>;
     }
 
     # Step 1 content
     let step1Content = None;
     if currentStep == 1 {
         step1Content = <div style={{ "height":"60vh" }}>
-            <div style={{
-                "marginBottom":"0px",
-                "fontWeight":"600",
-                "color":"white",
-                "fontSize":"1.15rem"
-            }}>Upload your CV</div>
-            <p style={{
-                "color":"grey",
-                "marginBlock":"0px",
-                "marginTop":"10px"
-            }}>Let us start by understanding your background</p>
+            <div style={{ "marginBottom":"0px", "fontWeight":"600", "color":"white","fontSize":"1.15rem" }}>Upload your CV</div>
+            <p style={{ "color":"grey", "marginBlock":"0px", "marginTop":"10px" }}>Let us start by understanding your background</p>
 
-            <div
-                onMouseEnter={lambda e: any -> None { setResumeHover(True); }}
-                onMouseLeave={lambda e: any -> None { setResumeHover(False); }}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                style={uploadBoxStyle}
-            >
-                <div style={{
-                    "width":"55px",
-                    "aspectRatio":"1",
-                    "borderRadius":"50%",
-                    "backgroundColor":"black",
-                    "display":"flex",
-                    "alignItems":"center",
-                    "justifyContent":"center",
-                    "marginBottom":"15px"
-                }}>
-                    <CloudUpload style={{ "fontSize":"0.75rem", "color":"#6e11b0" }} />
-                </div>
-
-                <p style={{
-                    "color":"grey",
-                    "marginBlock":"0px",
-                    "marginBlock":"20px",
-                    "fontSize":".9em"
-                }}>
-                    Supported formats: PDF, DOC, DOCX (Max 5MB)
-                </p>
-
-                # Hidden file input + label (Option A)
-                <input
-                    type="file"
-                    accept=".pdf,.doc,.docx"
-                    onChange={handleFileSelect}
-                    style={{ "display": "none" }}
-                    id="resumeInput"
-                />
-
-                <label
-                    for="resumeInput"
-                    style={uploadLabelStyle}
-                    onMouseEnter={lambda e: any -> None { e.currentTarget.style.filter = "brightness(0.95)"; }}
-                    onMouseLeave={lambda e: any -> None { e.currentTarget.style.filter = "brightness(1)"; }}
-                >
-                    Upload from Computer
-                </label>
-
+            <div onMouseEnter={lambda e: any -> None { setResumeHover(True); }} onMouseLeave={lambda e: any -> None { setResumeHover(False); }} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} style={uploadBoxStyle}>
+                <div style={{"width":"55px","aspectRatio":"1","borderRadius":"50%","backgroundColor":"black","display":"flex","alignItems":"center","justifyContent":"center","marginBottom":"15px"}}><CloudUpload style={{ "fontSize":"0.75rem", "color":"#6e11b0" }} /></div>
+                <p style={{ "color":"grey", "marginBlock":"20px", "fontSize":".9em" }}>Supported formats: PDF, DOC, DOCX (Max 5MB)</p>
+                <input type="file" accept=".pdf,.doc,.docx" onChange={handleFileSelect} style={{ "display": "none" }} id="resumeInput" />
+                <label for="resumeInput" style={uploadLabelStyle} onMouseEnter={lambda e: any -> None { e.currentTarget.style.filter = "brightness(0.95)"; }} onMouseLeave={lambda e: any -> None { e.currentTarget.style.filter = "brightness(1)"; }}>Upload from Computer</label>
                 {uploadedFileDisplay}
-                {errorDisplay}
-                {manualSkipDisplay}
-
             </div>
         </div>;
     }
 
-    # Placeholders for steps 2-4
-    let step2Content = None;
-    if currentStep == 2 {
-        step2Content = <div style={{ "height":"60vh" }}>hello</div>;
-    }
+    # Steps 2-4 placeholders
+    let step2Content = None; if currentStep == 2 { step2Content = <div style={{ "height":"60vh" }}>hello</div>; }
+    let step3Content = None; if currentStep == 3 { step3Content = <div style={{ "height":"60vh" }}>hello</div>; }
+    let step4Content = None; if currentStep == 4 { step4Content = <div style={{ "height":"60vh" }}>hello</div>; }
 
-    let step3Content = None;
-    if currentStep == 3 {
-        step3Content = <div style={{ "height":"60vh" }}>hello</div>;
-    }
-
-    let step4Content = None;
-    if currentStep == 4 {
-        step4Content = <div style={{ "height":"60vh" }}>hello</div>;
-    }
-
-    # Navigation controls computed
+    # Back navigation
     let backNav = None;
     if currentStep > 1 {
-        backNav = <div
-            onClick={lambda e: any -> None { setCurrentStep(currentStep - 1); }}
-            style={{
-                "display":"flex",
-                "flexDirection":"row",
-                "alignItems":"center",
-                "cursor":"pointer"
-            }}
-        >
-            <ChevronLeft/>
-            Back
-        </div>;
+        backNav = <div onClick={lambda e: any -> None { setCurrentStep(currentStep - 1); }} style={{ "display":"flex","flexDirection":"row","alignItems":"center","cursor":"pointer" }}><ChevronLeft/>Back</div>;
     }
 
-    # Next button (single implementation)
-    let nextBtn = <button
-        type="button"
-        onClick={lambda e: any -> None {
-            if currentStep == 1 {
-                handleStep1Next();
-            } else {
-                if currentStep < 4 {
-                    setCurrentStep(currentStep + 1);
-                }
-            }
-        }}
-        onMouseEnter={lambda e: any -> None { setNavBtnHover(True); }}
-        onMouseLeave={lambda e: any -> None { setNavBtnHover(False); }}
-        style={nextBtnBaseStyle}
-        disabled={currentStep == 1 and (not canProceed or isLoading)}
-    >
-        {nextBtnContent}
-    </button>;
+    # Next button
+    let nextBtn = <button type="button" onClick={lambda e: any -> None { if currentStep == 1 { handleStep1Next(); } else { if currentStep < 4 { setCurrentStep(currentStep + 1); } }}} onMouseEnter={lambda e: any -> None { setNavBtnHover(True); }} onMouseLeave={lambda e: any -> None { setNavBtnHover(False); }} style={nextBtnBaseStyle} disabled={currentStep == 1 and (not canProceed or isLoading)}>{nextBtnContent}</button>;
 
-    # ------------------------ Final JSX (no inline conditional expressions) ------------------------
+    # ------------------------ Final JSX ------------------------
     return <div style={wrapperStyle}>
-
-        <div style={{
-            "width": "100%",
-            "height": "100%",
-            "display": "flex",
-            "justifyContent": "center",
-            "alignItems": "center"
-        }}>
-            <div style={leftPanelInnerStyle}>
-                {stepsList}
-            </div>
+        {alertDisplay}
+        <div style={{ "width": "100%","height": "100%","display": "flex","justifyContent": "center","alignItems": "center" }}>
+            <div style={leftPanelInnerStyle}>{stepsList}</div>
         </div>
-
-        <div style={{
-            "width": "100%",
-            "height": "95%",
-            "marginBlock":"auto",
-            "display": "flex",
-            "justifyContent": "center",
-            "alignItems": "center"
-        }}>
+        <div style={{ "width": "100%","height": "95%","marginBlock":"auto","display": "flex","justifyContent": "center","alignItems": "center" }}>
             <div style={rightInnerStyle}>
                 <div style={{ "color":"grey", "textTransform":"uppercase" }}>Step {currentStep} of 4</div>
-
-                <div style={{
-                    "width":"80%",
-                    "height":"11px",
-                    "borderRadius":"20px",
-                    "backgroundColor": "#0b0b0b",
-                    "overflow":"hidden",
-                    "marginBlock":"20px"
-                }}>
-                    <div style={{
-                        "height":"100%",
-                        "width": progress,
-                        "backgroundColor": "#6e11b0",
-                        "transition": "0.3s ease",
-                        "borderRadius":"20px"
-                    }}></div>
+                <div style={{ "width":"80%","height":"11px","borderRadius":"20px","backgroundColor": "#0b0b0b","overflow":"hidden","marginBlock":"20px" }}>
+                    <div style={{ "height":"100%","width": progress,"backgroundColor": "#6e11b0","transition": "0.3s ease","borderRadius":"20px" }}></div>
                 </div>
-
                 {step1Content}
                 {step2Content}
                 {step3Content}
                 {step4Content}
-
-                <div style={{
-                    "display":"flex",
-                    "flexDirection":"row",
-                    "gap":"25px",
-                    "alignItems":"center",
-                    "marginTop":"20px"
-                }}>
+                <div style={{ "display":"flex","flexDirection":"row","gap":"25px","alignItems":"center","marginTop":"20px" }}>
                     {backNav}
                     {nextBtn}
+                    {manualSkipDisplay}
                 </div>
             </div>
         </div>
-
     </div>;
 }
+
 
 
     def Dashboard() -> any {
