@@ -1776,198 +1776,240 @@ def Onboarding() -> any {
     }
 
     # ---------------- Step 2 content ----------------
-    let step2Content = None;
-    if currentStep == 2 {
-        if step2Loading {
-            step2Content = step2LoadingView;
-        } else {
-            step2Content = <div style={{
-                "height":"65vh",
-                "overflowY":"auto",
-                "paddingRight":"10px"
-            }}>
+let step2Content = None;
+if currentStep == 2 {
+    if step2Loading {
+        step2Content = step2LoadingView;
+    } else {
+        step2Content = <div style={{
+            "height":"65vh",
+            "overflowY":"auto",
+            "paddingRight":"10px"
+        }}>
 
-                # ---------- Skills ----------
-                <div style={{ "marginBottom":"25px" }}>
-                    <h2 style={{ "color":"white", "marginBottom":"8px" }}>Skills</h2>
+            # ---------- Skills ----------
+            <div style={{ "marginBottom":"25px" }}>
+                <h2 style={{ "color":"white", "marginBottom":"8px" }}>Skills</h2>
 
-                    <div style={{
-                        "display":"flex",
-                        "flexDirection":"row",
-                        "gap":"10px",
-                        "marginBottom":"12px"
-                    }}>
-                        <input
-                            type="text"
-                            value={newSkill}
-                            onChange={lambda e: any -> None { setNewSkill(e.target.value); }}
-                            onKeyDown={lambda e: any -> None { if e.key == "Enter" { addSkill(); } }}
-                            placeholder="Python, Project Management, etc."
-                            style={{
-                                "flex":"1",
-                                "backgroundColor":"#0b0b0b",
-                                "border":"1px solid #333",
-                                "color":"white",
-                                "padding":"8px",
-                                "borderRadius":"6px"
-                            }}
-                        />
-                        <button
-                            onClick={lambda e: any -> None { addSkill(); }}
-                            style={{
-                                "padding":"8px 12px",
-                                "backgroundColor":"#6e11b0",
-                                "color":"white",
-                                "border":"none",
-                                "borderRadius":"6px",
-                                "cursor":"pointer"
-                            }}
-                        >
-                            Add
-                        </button>
-                    </div>
-
-                    {skills.length == 0 and <p style={{ "color":"grey" }}>No skills added</p>}
-                    {skills.length > 0 and skills.map(lambda s: any, idx: any -> any {
-                        return <div key={idx} style={{
-                            "display":"flex",
-                            "justifyContent":"space-between",
+                <div style={{
+                    "display":"flex",
+                    "flexDirection":"row",
+                    "gap":"10px",
+                    "marginBottom":"12px"
+                }}>
+                    <input
+                        type="text"
+                        value={newSkill}
+                        onChange={lambda e: any -> None { setNewSkill(e.target.value); }}
+                        onKeyDown={lambda e: any -> None { if e.key == "Enter" { addSkill(); } }}
+                        placeholder="Python, Project Management, etc."
+                        style={{
+                            "flex":"1",
+                            "backgroundColor":"#0b0b0b",
+                            "border":"1px solid #333",
+                            "color":"white",
+                            "padding":"8px",
+                            "borderRadius":"6px"
+                        }}
+                    />
+                    <button
+                        onClick={lambda e: any -> None { addSkill(); }}
+                        style={{
                             "padding":"8px 12px",
-                            "backgroundColor":"#0d0d0d",
+                            "backgroundColor":"#6e11b0",
+                            "color":"white",
+                            "border":"none",
                             "borderRadius":"6px",
-                            "marginBottom":"8px"
-                        }}>
-                            <div style={{ "color":"white" }}>{s.name}</div>
-                            <div style={{ "color":"#dc2626", "cursor":"pointer", "fontWeight":"700" }}
-                                onClick={lambda e: any -> None { removeSkill(s.name); }}>
-                                X
-                            </div>
-                        </div>;
-                    })}
+                            "cursor":"pointer"
+                        }}
+                    >
+                        Add
+                    </button>
                 </div>
 
-                # ---------- Interests ----------
-                <div style={{ "marginBottom":"25px" }}>
-                    <h2 style={{ "color":"white", "marginBottom":"8px" }}>Interests</h2>
-
-                    <div style={{
-                        "display":"flex",
-                        "flexDirection":"row",
-                        "gap":"10px",
-                        "marginBottom":"12px"
-                    }}>
-                        <input
-                            type="text"
-                            value={newInterest}
-                            onChange={lambda e: any -> None { setNewInterest(e.target.value); }}
-                            onKeyDown={lambda e: any -> None { if e.key == "Enter" { addInterest(); } }}
-                            placeholder="Add new interest"
-                            style={{
-                                "flex":"1",
-                                "backgroundColor":"#0b0b0b",
-                                "border":"1px solid #333",
-                                "color":"white",
-                                "padding":"8px",
-                                "borderRadius":"6px"
-                            }}
-                        />
-                        <button
-                            onClick={lambda e: any -> None { addInterest(); }}
-                            style={{
-                                "padding":"8px 12px",
-                                "backgroundColor":"#6e11b0",
-                                "color":"white",
-                                "border":"none",
-                                "borderRadius":"6px",
-                                "cursor":"pointer"
-                            }}
-                        >
-                            Add
-                        </button>
-                    </div>
-
-                    {interests.length == 0 and <p style={{ "color":"grey" }}>No interests added</p>}
-                    {interests.length > 0 and interests.map(lambda i: any, idx: any -> any {
+                {skills.length == 0 and <p style={{ "color":"grey" }}>No skills added</p>}
+                {skills.length > 0 and <div style={{
+                    "display":"flex",
+                    "flexWrap":"wrap",
+                    "gap":"8px"
+                }}>
+                    {skills.map(lambda s: any, idx: any -> any {
                         return <div key={idx} style={{
                             "display":"flex",
-                            "justifyContent":"space-between",
-                            "padding":"8px 12px",
+                            "alignItems":"center",
+                            "gap":"6px",
+                            "padding":"4px 10px",
                             "backgroundColor":"#0d0d0d",
-                            "borderRadius":"6px",
-                            "marginBottom":"8px"
+                            "borderRadius":"9999px",
+                            "fontSize":"0.85rem",
+                            "color":"white"
                         }}>
-                            <div style={{ "color":"white" }}>{i.name}</div>
-                            <div style={{ "color":"#dc2626", "cursor":"pointer", "fontWeight":"700" }}
-                                onClick={lambda e: any -> None { removeInterest(i.name); }}>
-                                X
-                            </div>
+                            <span>{s.name}</span>
+                            <span
+                                style={{
+                                    "color":"#dc2626",
+                                    "cursor":"pointer",
+                                    "fontWeight":"700"
+                                }}
+                                onClick={lambda e: any -> None { removeSkill(s.name); }}
+                            >
+                                ×
+                            </span>
                         </div>;
                     })}
+                </div>}
+            </div>
+
+            # ---------- Interests ----------
+            <div style={{ "marginBottom":"25px" }}>
+                <h2 style={{ "color":"white", "marginBottom":"8px" }}>Interests</h2>
+
+                <div style={{
+                    "display":"flex",
+                    "flexDirection":"row",
+                    "gap":"10px",
+                    "marginBottom":"12px"
+                }}>
+                    <input
+                        type="text"
+                        value={newInterest}
+                        onChange={lambda e: any -> None { setNewInterest(e.target.value); }}
+                        onKeyDown={lambda e: any -> None { if e.key == "Enter" { addInterest(); } }}
+                        placeholder="Add new interest"
+                        style={{
+                            "flex":"1",
+                            "backgroundColor":"#0b0b0b",
+                            "border":"1px solid #333",
+                            "color":"white",
+                            "padding":"8px",
+                            "borderRadius":"6px"
+                        }}
+                    />
+                    <button
+                        onClick={lambda e: any -> None { addInterest(); }}
+                        style={{
+                            "padding":"8px 12px",
+                            "backgroundColor":"#6e11b0",
+                            "color":"white",
+                            "border":"none",
+                            "borderRadius":"6px",
+                            "cursor":"pointer"
+                        }}
+                    >
+                        Add
+                    </button>
                 </div>
 
-                # ---------- Certifications ----------
-                <div>
-                    <h2 style={{ "color":"white", "marginBottom":"8px" }}>Certifications</h2>
-
-                    <div style={{
-                        "display":"flex",
-                        "flexDirection":"row",
-                        "gap":"10px",
-                        "marginBottom":"12px"
-                    }}>
-                        <input
-                            type="text"
-                            value={newCert}
-                            onChange={lambda e: any -> None { setNewCert(e.target.value); }}
-                            onKeyDown={lambda e: any -> None { if e.key == "Enter" { addCert(); } }}
-                            placeholder="Add certification"
-                            style={{
-                                "flex":"1",
-                                "backgroundColor":"#0b0b0b",
-                                "border":"1px solid #333",
-                                "color":"white",
-                                "padding":"8px",
-                                "borderRadius":"6px"
-                            }}
-                        />
-                        <button
-                            onClick={lambda e: any -> None { addCert(); }}
-                            style={{
-                                "padding":"8px 12px",
-                                "backgroundColor":"#6e11b0",
-                                "color":"white",
-                                "border":"none",
-                                "borderRadius":"6px",
-                                "cursor":"pointer"
-                            }}
-                        >
-                            Add
-                        </button>
-                    </div>
-
-                    {certs.length == 0 and <p style={{ "color":"grey" }}>No certifications added</p>}
-                    {certs.length > 0 and certs.map(lambda c: any, idx: any -> any {
+                {interests.length == 0 and <p style={{ "color":"grey" }}>No interests added</p>}
+                {interests.length > 0 and <div style={{
+                    "display":"flex",
+                    "flexWrap":"wrap",
+                    "gap":"8px"
+                }}>
+                    {interests.map(lambda i: any, idx: any -> any {
                         return <div key={idx} style={{
                             "display":"flex",
-                            "justifyContent":"space-between",
-                            "padding":"8px 12px",
+                            "alignItems":"center",
+                            "gap":"6px",
+                            "padding":"4px 10px",
                             "backgroundColor":"#0d0d0d",
-                            "borderRadius":"6px",
-                            "marginBottom":"8px"
+                            "borderRadius":"9999px",
+                            "fontSize":"0.85rem",
+                            "color":"white"
                         }}>
-                            <div style={{ "color":"white" }}>{c.title}</div>
-                            <div style={{ "color":"#dc2626", "cursor":"pointer", "fontWeight":"700" }}
-                                onClick={lambda e: any -> None { removeCert(c.title); }}>
-                                X
-                            </div>
+                            <span>{i.name}</span>
+                            <span
+                                style={{
+                                    "color":"#dc2626",
+                                    "cursor":"pointer",
+                                    "fontWeight":"700"
+                                }}
+                                onClick={lambda e: any -> None { removeInterest(i.name); }}
+                            >
+                                ×
+                            </span>
                         </div>;
                     })}
+                </div>}
+            </div>
+
+            # ---------- Certifications ----------
+            <div>
+                <h2 style={{ "color":"white", "marginBottom":"8px" }}>Certifications</h2>
+
+                <div style={{
+                    "display":"flex",
+                    "flexDirection":"row",
+                    "gap":"10px",
+                    "marginBottom":"12px"
+                }}>
+                    <input
+                        type="text"
+                        value={newCert}
+                        onChange={lambda e: any -> None { setNewCert(e.target.value); }}
+                        onKeyDown={lambda e: any -> None { if e.key == "Enter" { addCert(); } }}
+                        placeholder="Add certification"
+                        style={{
+                            "flex":"1",
+                            "backgroundColor":"#0b0b0b",
+                            "border":"1px solid #333",
+                            "color":"white",
+                            "padding":"8px",
+                            "borderRadius":"6px"
+                        }}
+                    />
+                    <button
+                        onClick={lambda e: any -> None { addCert(); }}
+                        style={{
+                            "padding":"8px 12px",
+                            "backgroundColor":"#6e11b0",
+                            "color":"white",
+                            "border":"none",
+                            "borderRadius":"6px",
+                            "cursor":"pointer"
+                        }}
+                    >
+                        Add
+                    </button>
                 </div>
 
-            </div>;
-        }
+                {certs.length == 0 and <p style={{ "color":"grey" }}>No certifications added</p>}
+                {certs.length > 0 and <div style={{
+                    "display":"flex",
+                    "flexWrap":"wrap",
+                    "gap":"8px"
+                }}>
+                    {certs.map(lambda c: any, idx: any -> any {
+                        return <div key={idx} style={{
+                            "display":"flex",
+                            "alignItems":"center",
+                            "gap":"6px",
+                            "padding":"4px 10px",
+                            "backgroundColor":"#0d0d0d",
+                            "borderRadius":"9999px",
+                            "fontSize":"0.85rem",
+                            "color":"white"
+                        }}>
+                            <span>{c.title}</span>
+                            <span
+                                style={{
+                                    "color":"#dc2626",
+                                    "cursor":"pointer",
+                                    "fontWeight":"700"
+                                }}
+                                onClick={lambda e: any -> None { removeCert(c.title); }}
+                            >
+                                ×
+                            </span>
+                        </div>;
+                    })}
+                </div>}
+            </div>
 
+        </div>;
     }
+}
+
     let step3Content = None;
     if currentStep == 3 {
         step3Content = <div style={{ "height":"60vh" }}>hello</div>;

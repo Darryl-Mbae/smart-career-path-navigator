@@ -1869,22 +1869,26 @@ function Onboarding() {
         "style": {
           "color": "grey"
         }
-      }, ["No skills added"]), skills.length > 0 && skills.map(function (s, idx) {
+      }, ["No skills added"]), skills.length > 0 && __jacJsx("div", {
+        "style": {
+          "display": "flex",
+          "flexWrap": "wrap",
+          "gap": "8px"
+        }
+      }, [skills.map(function (s, idx) {
         return __jacJsx("div", {
           "key": idx,
           "style": {
             "display": "flex",
-            "justifyContent": "space-between",
-            "padding": "8px 12px",
+            "alignItems": "center",
+            "gap": "6px",
+            "padding": "4px 10px",
             "backgroundColor": "#0d0d0d",
-            "borderRadius": "6px",
-            "marginBottom": "8px"
-          }
-        }, [__jacJsx("div", {
-          "style": {
+            "borderRadius": "9999px",
+            "fontSize": "0.85rem",
             "color": "white"
           }
-        }, [s.name]), __jacJsx("div", {
+        }, [__jacJsx("span", {}, [s.name]), __jacJsx("span", {
           "style": {
             "color": "#dc2626",
             "cursor": "pointer",
@@ -1893,8 +1897,8 @@ function Onboarding() {
           "onClick": function onClick(e) {
             removeSkill(s.name);
           }
-        }, ["X"])]);
-      })]), __jacJsx("div", {
+        }, ["×"])]);
+      })])]), __jacJsx("div", {
         "style": {
           "marginBottom": "25px"
         }
@@ -1946,22 +1950,26 @@ function Onboarding() {
         "style": {
           "color": "grey"
         }
-      }, ["No interests added"]), interests.length > 0 && interests.map(function (i, idx) {
+      }, ["No interests added"]), interests.length > 0 && __jacJsx("div", {
+        "style": {
+          "display": "flex",
+          "flexWrap": "wrap",
+          "gap": "8px"
+        }
+      }, [interests.map(function (i, idx) {
         return __jacJsx("div", {
           "key": idx,
           "style": {
             "display": "flex",
-            "justifyContent": "space-between",
-            "padding": "8px 12px",
+            "alignItems": "center",
+            "gap": "6px",
+            "padding": "4px 10px",
             "backgroundColor": "#0d0d0d",
-            "borderRadius": "6px",
-            "marginBottom": "8px"
-          }
-        }, [__jacJsx("div", {
-          "style": {
+            "borderRadius": "9999px",
+            "fontSize": "0.85rem",
             "color": "white"
           }
-        }, [i.name]), __jacJsx("div", {
+        }, [__jacJsx("span", {}, [i.name]), __jacJsx("span", {
           "style": {
             "color": "#dc2626",
             "cursor": "pointer",
@@ -1970,8 +1978,8 @@ function Onboarding() {
           "onClick": function onClick(e) {
             removeInterest(i.name);
           }
-        }, ["X"])]);
-      })]), __jacJsx("div", {}, [__jacJsx("h2", {
+        }, ["×"])]);
+      })])]), __jacJsx("div", {}, [__jacJsx("h2", {
         "style": {
           "color": "white",
           "marginBottom": "8px"
@@ -2019,22 +2027,26 @@ function Onboarding() {
         "style": {
           "color": "grey"
         }
-      }, ["No certifications added"]), certs.length > 0 && certs.map(function (c, idx) {
+      }, ["No certifications added"]), certs.length > 0 && __jacJsx("div", {
+        "style": {
+          "display": "flex",
+          "flexWrap": "wrap",
+          "gap": "8px"
+        }
+      }, [certs.map(function (c, idx) {
         return __jacJsx("div", {
           "key": idx,
           "style": {
             "display": "flex",
-            "justifyContent": "space-between",
-            "padding": "8px 12px",
+            "alignItems": "center",
+            "gap": "6px",
+            "padding": "4px 10px",
             "backgroundColor": "#0d0d0d",
-            "borderRadius": "6px",
-            "marginBottom": "8px"
-          }
-        }, [__jacJsx("div", {
-          "style": {
+            "borderRadius": "9999px",
+            "fontSize": "0.85rem",
             "color": "white"
           }
-        }, [c.title]), __jacJsx("div", {
+        }, [__jacJsx("span", {}, [c.title]), __jacJsx("span", {
           "style": {
             "color": "#dc2626",
             "cursor": "pointer",
@@ -2043,8 +2055,8 @@ function Onboarding() {
           "onClick": function onClick(e) {
             removeCert(c.title);
           }
-        }, ["X"])]);
-      })])]);
+        }, ["×"])]);
+      })])])]);
     }
   }
   var step3Content = null;
