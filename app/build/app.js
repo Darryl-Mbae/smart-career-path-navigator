@@ -1,3 +1,7 @@
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
 function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
 function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
@@ -1110,35 +1114,190 @@ function Onboarding() {
     _useState36 = _slicedToArray(_useState35, 2),
     resumeHover = _useState36[0],
     setResumeHover = _useState36[1];
-  var _useState37 = useState(false),
+  var _useState37 = useState(""),
     _useState38 = _slicedToArray(_useState37, 2),
-    dragActive = _useState38[0],
-    setDragActive = _useState38[1];
-  var _useState39 = useState(""),
+    alertMessage = _useState38[0],
+    setAlertMessage = _useState38[1];
+  var _useState39 = useState(false),
     _useState40 = _slicedToArray(_useState39, 2),
-    fileName = _useState40[0],
-    setFileName = _useState40[1];
-  var _useState41 = useState(null),
+    alertVisible = _useState40[0],
+    setAlertVisible = _useState40[1];
+  var _useState41 = useState(false),
     _useState42 = _slicedToArray(_useState41, 2),
-    file = _useState42[0],
-    setFile = _useState42[1];
+    allowSkip = _useState42[0],
+    setAllowSkip = _useState42[1];
   var _useState43 = useState(false),
     _useState44 = _slicedToArray(_useState43, 2),
-    isLoading = _useState44[0],
-    setIsLoading = _useState44[1];
-  var _useState45 = useState(false),
+    dragActive = _useState44[0],
+    setDragActive = _useState44[1];
+  var _useState45 = useState(""),
     _useState46 = _slicedToArray(_useState45, 2),
-    showManualEntry = _useState46[0],
-    setShowManualEntry = _useState46[1];
-  var _useState47 = useState(false),
+    fileName = _useState46[0],
+    setFileName = _useState46[1];
+  var _useState47 = useState(null),
     _useState48 = _slicedToArray(_useState47, 2),
-    canProceed = _useState48[0],
-    setCanProceed = _useState48[1];
+    file = _useState48[0],
+    setFile = _useState48[1];
   var _useState49 = useState(""),
     _useState50 = _slicedToArray(_useState49, 2),
-    alertMessage = _useState50[0],
-    setAlertMessage = _useState50[1];
+    error = _useState50[0],
+    setError = _useState50[1];
+  var _useState51 = useState(false),
+    _useState52 = _slicedToArray(_useState51, 2),
+    isLoading = _useState52[0],
+    setIsLoading = _useState52[1];
+  var _useState53 = useState(false),
+    _useState54 = _slicedToArray(_useState53, 2),
+    showManualEntry = _useState54[0],
+    setShowManualEntry = _useState54[1];
+  var _useState55 = useState(false),
+    _useState56 = _slicedToArray(_useState55, 2),
+    canProceed = _useState56[0],
+    setCanProceed = _useState56[1];
   var navigate = useNavigate();
+  var _useState57 = useState([]),
+    _useState58 = _slicedToArray(_useState57, 2),
+    skills = _useState58[0],
+    setSkills = _useState58[1];
+  var _useState59 = useState([]),
+    _useState60 = _slicedToArray(_useState59, 2),
+    interests = _useState60[0],
+    setInterests = _useState60[1];
+  var _useState61 = useState([]),
+    _useState62 = _slicedToArray(_useState61, 2),
+    certs = _useState62[0],
+    setCerts = _useState62[1];
+  var _useState63 = useState(""),
+    _useState64 = _slicedToArray(_useState63, 2),
+    newSkill = _useState64[0],
+    setNewSkill = _useState64[1];
+  var _useState65 = useState(""),
+    _useState66 = _slicedToArray(_useState65, 2),
+    newInterest = _useState66[0],
+    setNewInterest = _useState66[1];
+  var _useState67 = useState(""),
+    _useState68 = _slicedToArray(_useState67, 2),
+    newCert = _useState68[0],
+    setNewCert = _useState68[1];
+  var _useState69 = useState(true),
+    _useState70 = _slicedToArray(_useState69, 2),
+    step2Loading = _useState70[0],
+    setStep2Loading = _useState70[1];
+  var _useState71 = useState(false),
+    _useState72 = _slicedToArray(_useState71, 2),
+    savingProfile = _useState72[0],
+    setSavingProfile = _useState72[1];
+  function showAlert(msg) {
+    setAlertMessage(msg);
+    setAlertVisible(true);
+    setTimeout(function () {
+      setAlertVisible(false);
+    }, 3500);
+  }
+  function loadStep2() {
+    return _loadStep.apply(this, arguments);
+  }
+  function _loadStep() {
+    _loadStep = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
+      var profile, body;
+      return _regenerator().w(function (_context3) {
+        while (1) switch (_context3.n) {
+          case 0:
+            setStep2Loading(true);
+            _context3.n = 1;
+            return __jacSpawn("get_user_profile", "", {});
+          case 1:
+            profile = _context3.v;
+            if (profile && profile.reports && profile.reports.length > 0) {
+              body = profile.reports[0]["body"];
+              setSkills("skills" in body ? body["skills"] : []);
+              setInterests("interests" in body ? body["interests"] : []);
+              setCerts("certifications" in body ? body["certifications"] : []);
+            }
+            setStep2Loading(false);
+          case 2:
+            return _context3.a(2);
+        }
+      }, _callee3);
+    }));
+    return _loadStep.apply(this, arguments);
+  }
+  useEffect(function () {
+    if (currentStep === 2) {
+      loadStep2();
+    }
+  }, [currentStep]);
+  function addSkill() {
+    if (newSkill.trim().length === 0) {
+      return;
+    }
+    setSkills(skills.concat([{
+      "name": newSkill,
+      "description": ""
+    }]));
+    setNewSkill("");
+  }
+  function addInterest() {
+    if (newInterest.trim().length === 0) {
+      return;
+    }
+    setInterests(interests.concat([{
+      "name": newInterest,
+      "description": ""
+    }]));
+    setNewInterest("");
+  }
+  function addCert() {
+    if (newCert.trim().length === 0) {
+      return;
+    }
+    setCerts(certs.concat([{
+      "title": newCert,
+      "provider": "",
+      "url": ""
+    }]));
+    setNewCert("");
+  }
+  function removeSkill(name) {
+    setSkills(skills.filter(function (s) {
+      return s.name !== name;
+    }));
+  }
+  function removeInterest(name) {
+    setInterests(interests.filter(function (i) {
+      return i.name !== name;
+    }));
+  }
+  function removeCert(name) {
+    setCerts(certs.filter(function (c) {
+      return c.title !== name;
+    }));
+  }
+  function saveStep2() {
+    return _saveStep.apply(this, arguments);
+  }
+  function _saveStep() {
+    _saveStep = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
+      return _regenerator().w(function (_context4) {
+        while (1) switch (_context4.n) {
+          case 0:
+            setSavingProfile(true);
+            _context4.n = 1;
+            return __jacSpawn("update_user_profile", "", {
+              "updated_skills": skills,
+              "updated_interests": interests,
+              "updated_certifications": certs
+            });
+          case 1:
+            setSavingProfile(false);
+            setCurrentStep(3);
+          case 2:
+            return _context4.a(2);
+        }
+      }, _callee4);
+    }));
+    return _saveStep.apply(this, arguments);
+  }
   useEffect(function () {
     var percent = currentStep / 4 * 100;
     setProgress(percent + "%");
@@ -1189,6 +1348,7 @@ function Onboarding() {
     if (pickedFile) {
       setFileName(pickedFile.name);
       setFile(pickedFile);
+      setError("");
       setCanProceed(true);
     }
   }
@@ -1208,6 +1368,7 @@ function Onboarding() {
       setFileName(droppedFile.name);
       setFile(droppedFile);
       e.dataTransfer.clearData();
+      setError("");
       setCanProceed(true);
     }
   }
@@ -1215,88 +1376,95 @@ function Onboarding() {
     return _handleStep1Next.apply(this, arguments);
   }
   function _handleStep1Next() {
-    _handleStep1Next = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
+    _handleStep1Next = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee5() {
       var base64Data, result, user_skills, _t;
-      return _regenerator().w(function (_context3) {
-        while (1) switch (_context3.p = _context3.n) {
+      return _regenerator().w(function (_context5) {
+        while (1) switch (_context5.p = _context5.n) {
           case 0:
             if (!(!canProceed || isLoading || !file)) {
-              _context3.n = 1;
+              _context5.n = 1;
               break;
             }
-            return _context3.a(2);
+            return _context5.a(2);
           case 1:
             setIsLoading(true);
+            setError("");
             setShowManualEntry(false);
-            _context3.p = 2;
-            _context3.n = 3;
+            _context5.p = 2;
+            _context5.n = 3;
             return __jacSpawn("create_resume_node", "", {});
           case 3:
-            _context3.n = 4;
+            _context5.n = 4;
             return fileToBase64(file);
           case 4:
-            base64Data = _context3.v;
-            _context3.n = 5;
+            base64Data = _context5.v;
+            _context5.n = 5;
             return __jacSpawn("upload_resume", "", {
               "file": base64Data,
               "name": file.name,
               "mime": file.type
             });
           case 5:
-            result = _context3.v;
+            result = _context5.v;
             if (result) {
-              _context3.n = 6;
+              _context5.n = 6;
               break;
             }
-            showTemporaryAlert("Resume upload failed");
+            setError("Resume upload failed");
             setShowManualEntry(true);
             setIsLoading(false);
-            return _context3.a(2);
+            return _context5.a(2);
           case 6:
-            _context3.n = 7;
+            _context5.n = 7;
             return __jacSpawn("save_resume", "", {});
           case 7:
-            _context3.n = 8;
+            _context5.n = 8;
             return __jacSpawn("update_resume_upload_status", "", {});
           case 8:
-            _context3.n = 9;
+            _context5.n = 9;
             return __jacSpawn("analyze_cv", "", {});
           case 9:
-            user_skills = _context3.v;
-            if (!(!user_skills || !user_skills.reports || user_skills.reports.length === 0 || user_skills.reports[0]["status"] !== "Success")) {
-              _context3.n = 10;
+            user_skills = _context5.v;
+            if (!(!user_skills || !user_skills.reports || user_skills.reports.length === 0)) {
+              _context5.n = 10;
               break;
             }
-            showTemporaryAlert("Something went wrong. Please upload another document or enter details manually.");
+            showAlert("Something went wrong. Please upload another document or enter details manually.");
+            setAllowSkip(true);
             setShowManualEntry(true);
             setIsLoading(false);
-            return _context3.a(2);
+            return _context5.a(2);
           case 10:
-            setCurrentStep(2);
-            _context3.n = 12;
-            break;
-          case 11:
-            _context3.p = 11;
-            _t = _context3.v;
-            console.log(_t);
-            showTemporaryAlert("Something went wrong");
+            if (!(user_skills.reports[0]["status"] !== "Success")) {
+              _context5.n = 11;
+              break;
+            }
+            showAlert("Something went wrong. Please upload another document or enter details manually.");
+            setAllowSkip(true);
             setShowManualEntry(true);
-          case 12:
-            _context3.p = 12;
             setIsLoading(false);
-            return _context3.f(12);
+            return _context5.a(2);
+          case 11:
+            setCurrentStep(2);
+            _context5.n = 13;
+            break;
+          case 12:
+            _context5.p = 12;
+            _t = _context5.v;
+            console.log(_t);
+            showAlert("Something went wrong. Try again later");
+            setAllowSkip(true);
+            setShowManualEntry(true);
           case 13:
-            return _context3.a(2);
+            _context5.p = 13;
+            setIsLoading(false);
+            return _context5.f(13);
+          case 14:
+            return _context5.a(2);
         }
-      }, _callee3, null, [[2, 11, 12, 13]]);
+      }, _callee5, null, [[2, 12, 13, 14]]);
     }));
     return _handleStep1Next.apply(this, arguments);
-  }
-  function showTemporaryAlert(msg) {
-    setAlertMessage(msg);
-    setTimeout(function () {
-      setAlertMessage("");
-    }, 4000);
   }
   var wrapperStyle = {
     "width": "100%",
@@ -1400,6 +1568,8 @@ function Onboarding() {
     };
     if (isActive || props.step.id < currentStep) {
       circleStyle["backgroundColor"] = "#6e11b0";
+    } else {
+      circleStyle["backgroundColor"] = "black";
     }
     if (isActive) {
       circleStyle["boxShadow"] = "0 0 20px rgba(110, 17, 176, 0.5)";
@@ -1419,6 +1589,8 @@ function Onboarding() {
       };
       if (props.step.id < currentStep) {
         connectorStyle["borderLeft"] = "2px dashed #6e11b0";
+      } else {
+        connectorStyle["borderLeft"] = "2px dashed grey";
       }
       connectorDisplay = __jacJsx("div", {
         "style": connectorStyle
@@ -1443,7 +1615,7 @@ function Onboarding() {
         "marginInline": "auto",
         "marginBottom": "45px"
       }
-    }, [" ", __jacJsx("div", {
+    }, [__jacJsx("div", {
       "style": circleStyle
     }, [__jacJsx("div", {
       "style": {
@@ -1478,24 +1650,18 @@ function Onboarding() {
       }
     }, ["Uploaded: ", fileName]);
   }
-  var alertDisplay = null;
-  if (alertMessage && alertMessage !== "") {
-    alertDisplay = __jacJsx("div", {
+  var errorDisplay = null;
+  if (error && error !== "") {
+    errorDisplay = __jacJsx("div", {
       "style": {
-        "position": "fixed",
-        "top": "20px",
-        "right": "20px",
-        "backgroundColor": "#dc2626",
-        "color": "white",
-        "padding": "12px 20px",
-        "borderRadius": "6px",
-        "zIndex": "9999",
-        "boxShadow": "0 0 15px rgba(0,0,0,0.3)"
+        "marginTop": "12px",
+        "color": "#dc2626",
+        "fontSize": "14px"
       }
-    }, [alertMessage]);
+    }, [error]);
   }
   var manualSkipDisplay = null;
-  if (showManualEntry && currentStep === 1) {
+  if (allowSkip && currentStep === 1) {
     manualSkipDisplay = __jacJsx("div", {
       "style": {
         "fontSize": "15px",
@@ -1505,6 +1671,7 @@ function Onboarding() {
         "fontWeight": "500"
       },
       "onClick": function onClick(e) {
+        setAllowSkip(false);
         setCurrentStep(2);
       }
     }, ["Skip →"]);
@@ -1556,11 +1723,10 @@ function Onboarding() {
         "color": "#6e11b0"
       }
     }, [])]), __jacJsx("p", {
-      "style": {
+      "style": _defineProperty(_defineProperty({
         "color": "grey",
-        "marginBlock": "20px",
-        "fontSize": ".9em"
-      }
+        "marginBlock": "0px"
+      }, "marginBlock", "20px"), "fontSize", ".9em")
     }, ["Supported formats: PDF, DOC, DOCX (Max 5MB)"]), __jacJsx("input", {
       "type": "file",
       "accept": ".pdf,.doc,.docx",
@@ -1582,11 +1748,142 @@ function Onboarding() {
   }
   var step2Content = null;
   if (currentStep === 2) {
-    step2Content = __jacJsx("div", {
-      "style": {
-        "height": "60vh"
-      }
-    }, ["hello"]);
+    if (step2Loading) {
+      step2Content = step2LoadingView;
+    } else {
+      step2Content = __jacJsx("div", {
+        "style": {
+          "height": "65vh",
+          "overflowY": "auto",
+          "paddingRight": "10px"
+        }
+      }, [__jacJsx("div", {
+        "style": {
+          "marginBottom": "25px"
+        }
+      }, [__jacJsx("h2", {
+        "style": {
+          "color": "white",
+          "marginBottom": "8px"
+        }
+      }, ["Skills"]), __jacJsx("div", {
+        "style": {
+          "display": "flex",
+          "flexDirection": "row",
+          "gap": "10px",
+          "marginBottom": "12px"
+        }
+      }, [__jacJsx("input", {
+        "type": "text",
+        "value": newSkill,
+        "onChange": function onChange(e) {
+          setNewSkill(e.target.value);
+        },
+        "placeholder": "Add new skill",
+        "style": {
+          "flex": "1",
+          "backgroundColor": "#0b0b0b",
+          "border": "1px solid #333",
+          "color": "white",
+          "padding": "8px",
+          "borderRadius": "6px"
+        }
+      }, []), __jacJsx("button", {
+        "onClick": function onClick(e) {
+          addSkill();
+        },
+        "style": {
+          "padding": "8px 12px",
+          "backgroundColor": "#6e11b0",
+          "color": "white",
+          "border": "none",
+          "borderRadius": "6px",
+          "cursor": "pointer"
+        }
+      }, ["Add"])]), skillsList]), __jacJsx("div", {
+        "style": {
+          "marginBottom": "25px"
+        }
+      }, [__jacJsx("h2", {
+        "style": {
+          "color": "white",
+          "marginBottom": "8px"
+        }
+      }, ["Interests"]), __jacJsx("div", {
+        "style": {
+          "display": "flex",
+          "flexDirection": "row",
+          "gap": "10px",
+          "marginBottom": "12px"
+        }
+      }, [__jacJsx("input", {
+        "type": "text",
+        "value": newInterest,
+        "onChange": function onChange(e) {
+          setNewInterest(e.target.value);
+        },
+        "placeholder": "Add new interest",
+        "style": {
+          "flex": "1",
+          "backgroundColor": "#0b0b0b",
+          "border": "1px solid #333",
+          "color": "white",
+          "padding": "8px",
+          "borderRadius": "6px"
+        }
+      }, []), __jacJsx("button", {
+        "onClick": function onClick(e) {
+          addInterest();
+        },
+        "style": {
+          "padding": "8px 12px",
+          "backgroundColor": "#6e11b0",
+          "color": "white",
+          "border": "none",
+          "borderRadius": "6px",
+          "cursor": "pointer"
+        }
+      }, ["Add"])]), interestsList]), __jacJsx("div", {}, [__jacJsx("h2", {
+        "style": {
+          "color": "white",
+          "marginBottom": "8px"
+        }
+      }, ["Certifications"]), __jacJsx("div", {
+        "style": {
+          "display": "flex",
+          "flexDirection": "row",
+          "gap": "10px",
+          "marginBottom": "12px"
+        }
+      }, [__jacJsx("input", {
+        "type": "text",
+        "value": newCert,
+        "onChange": function onChange(e) {
+          setNewCert(e.target.value);
+        },
+        "placeholder": "Add certification",
+        "style": {
+          "flex": "1",
+          "backgroundColor": "#0b0b0b",
+          "border": "1px solid #333",
+          "color": "white",
+          "padding": "8px",
+          "borderRadius": "6px"
+        }
+      }, []), __jacJsx("button", {
+        "onClick": function onClick(e) {
+          addCert();
+        },
+        "style": {
+          "padding": "8px 12px",
+          "backgroundColor": "#6e11b0",
+          "color": "white",
+          "border": "none",
+          "borderRadius": "6px",
+          "cursor": "pointer"
+        }
+      }, ["Add"])]), certList])]);
+    }
   }
   var step3Content = null;
   if (currentStep === 3) {
@@ -1638,9 +1935,36 @@ function Onboarding() {
     "style": nextBtnBaseStyle,
     "disabled": currentStep === 1 && !canProceed || isLoading
   }, [nextBtnContent]);
+  var step2LoadingView = __jacJsx("div", {
+    "style": {
+      "color": "white",
+      "fontSize": "1rem",
+      "marginTop": "20px"
+    }
+  }, ["Loading your profile..."]);
+  var skillsList = [];
+  var interestsList = [];
+  var certList = [];
+  var alertBox = null;
+  if (alertVisible) {
+    alertBox = __jacJsx("div", {
+      "style": {
+        "position": "absolute",
+        "top": "20px",
+        "right": "20px",
+        "padding": "12px 20px",
+        "backgroundColor": "#dc2626",
+        "color": "white",
+        "borderRadius": "6px",
+        "fontWeight": "600",
+        "boxShadow": "0 0 15px rgba(0,0,0,0.4)",
+        "transition": "0.3s ease"
+      }
+    }, [alertMessage]);
+  }
   return __jacJsx("div", {
     "style": wrapperStyle
-  }, [alertDisplay, __jacJsx("div", {
+  }, [alertBox, __jacJsx("div", {
     "style": {
       "width": "100%",
       "height": "100%",
