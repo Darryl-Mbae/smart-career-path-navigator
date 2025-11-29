@@ -1191,10 +1191,10 @@ def Onboarding() -> any {
     let [progress, setProgress] = useState("25%");
     let [resumeHover, setResumeHover] = useState(False);
 
+    # Alerts + skip
     let [alertMessage, setAlertMessage] = useState("");
     let [alertVisible, setAlertVisible] = useState(False);
     let [allowSkip, setAllowSkip] = useState(False);
-
 
     # File upload states for step 1
     let [dragActive, setDragActive] = useState(False);
@@ -1207,7 +1207,7 @@ def Onboarding() -> any {
 
     let navigate = useNavigate();
 
-        # ---------------- Step 2 States ----------------
+    # ---------------- Step 2 States ----------------
     let [skills, setSkills] = useState([]);
     let [interests, setInterests] = useState([]);
     let [certs, setCerts] = useState([]);
@@ -1221,30 +1221,39 @@ def Onboarding() -> any {
 
     #-------------------- alert ----------------
     def showAlert(msg: str) {
-    setAlertMessage(msg);
-    setAlertVisible(True);
+        setAlertMessage(msg);
+        setAlertVisible(True);
 
-    setTimeout(lambda -> None {
-        setAlertVisible(False);
-    }, 3500);
-}
-
+        setTimeout(lambda -> None {
+            setAlertVisible(False);
+        }, 3500);
+    }
 
     # ---------------- Load User Profile (Step 2) ----------------
     async def loadStep2() -> None {
         setStep2Loading(True);
 
-        let profile = await root spawn get_user_profile();
+        try {
+            let profile = await root spawn get_user_profile();
 
-        if profile and profile.reports and profile.reports.length > 0 {
-            let body = profile.reports[0]["body"];
+            if profile and profile.reports and profile.reports.length > 0 {
+                let body = profile.reports[0]["body"];
 
-            setSkills(body["skills"] if "skills" in body else []);
-            setInterests(body["interests"] if "interests" in body else []);
-            setCerts(body["certifications"] if "certifications" in body else []);
+                # Ensure data shapes: skills -> [{ name: "x" }], interests similarly, certs -> [{ title: "x" }]
+                setSkills(body["skills"] if "skills" in body else []);
+                setInterests(body["interests"] if "interests" in body else []);
+                setCerts(body["certifications"] if "certifications" in body else []);
+            } else {
+                setSkills([]);
+                setInterests([]);
+                setCerts([]);
+            }
+        } except Exception as err {
+            console.log(err);
+            showAlert("Failed to load profile. Try again later.");
+        } finally {
+            setStep2Loading(False);
         }
-
-        setStep2Loading(False);
     }
 
     useEffect(lambda -> None {
@@ -1256,19 +1265,29 @@ def Onboarding() -> any {
     # ---------------- Add to UI ----------------
     def addSkill() {
         if newSkill.trim().length == 0 { return; }
-        setSkills(skills.concat([{"name": newSkill, "description": ""}]));
+        # Avoid duplicates by name (case-insensitive)
+        let exists = skills.filter(lambda s: any -> bool { return s.name.toLowerCase() == newSkill.trim().toLowerCase(); }).length > 0;
+        if not exists {
+            setSkills(skills.concat([{"name": newSkill.trim(), "description": ""}]));
+        }
         setNewSkill("");
     }
 
     def addInterest() {
         if newInterest.trim().length == 0 { return; }
-        setInterests(interests.concat([{"name": newInterest, "description": ""}]));
+        let exists = interests.filter(lambda i: any -> bool { return i.name.toLowerCase() == newInterest.trim().toLowerCase(); }).length > 0;
+        if not exists {
+            setInterests(interests.concat([{"name": newInterest.trim(), "description": ""}]));
+        }
         setNewInterest("");
     }
 
     def addCert() {
         if newCert.trim().length == 0 { return; }
-        setCerts(certs.concat([{"title": newCert, "provider": "", "url": ""}]));
+        let exists = certs.filter(lambda c: any -> bool { return ("title" in c and c.title.toLowerCase() == newCert.trim().toLowerCase()); }).length > 0;
+        if not exists {
+            setCerts(certs.concat([{"title": newCert.trim(), "provider": "", "url": ""}]));
+        }
         setNewCert("");
     }
 
@@ -1285,21 +1304,33 @@ def Onboarding() -> any {
         setCerts(certs.filter(lambda c: any -> bool { return c.title != name; }));
     }
 
-
     # ---------------- Save All (Step 2 Next) ----------------
     async def saveStep2() -> None {
+        if savingProfile { return; }
         setSavingProfile(True);
 
-        await root spawn update_user_profile(
-            updated_skills=skills,
-            updated_interests=interests,
-            updated_certifications=certs
-        );
+        try {
+            let result = await root spawn update_user_profile(
+                updated_skills=skills,
+                updated_interests=interests,
+                updated_certifications=certs
+            );
 
-        setSavingProfile(False);
-        setCurrentStep(3);
+            # If the walker returns something truthy consider it success; otherwise show error.
+            if result {
+                setAllowSkip(False);
+                setShowManualEntry(False);
+                setCurrentStep(3);
+            } else {
+                showAlert("Failed to save profile. Please try again.");
+            }
+        } except Exception as err {
+            console.log(err);
+            showAlert("An error occurred while saving. Try again.");
+        } finally {
+            setSavingProfile(False);
+        }
     }
-
 
     useEffect(lambda -> None {
         let percent = (currentStep / 4) * 100;
@@ -1310,28 +1341,28 @@ def Onboarding() -> any {
         {
             id: 1,
             title: "Upload Your CV",
-            description: "Let our AI analyze your experience and extract your current skills.",
+            description: "",
             icon: <CloudUpload style={{ "fontSize": "0.75rem" }} />,
             completed: False
         },
         {
             id: 2,
-            title: "Review & Update Skills",
-            description: "Confirm AI-detected skills and add any we might have missed.",
+            title: "Review & Update Profile",
+            description: "",
             icon: <Brain style={{ "fontSize": "0.75rem" }} />,
             completed: False
         },
         {
             id: 3,
             title: "Set Career Goals",
-            description: "Choose your target roles, industries, and career aspirations.",
+            description: "",
             icon: <Goal style={{ "fontSize": "0.75rem" }} />,
             completed: False
         },
         {
             id: 4,
             title: "Get Your Roadmap",
-            description: "Explore your personalized learning path and skill gap analysis.",
+            description: "",
             icon: <Node style={{ "fontSize": "0.75rem" }} />,
             completed: False
         }
@@ -1391,9 +1422,10 @@ def Onboarding() -> any {
             );
 
             if not result {
-                setError("Resume upload failed");
+                showAlert("Resume upload failed");
                 setShowManualEntry(True);
                 setIsLoading(False);
+                setAllowSkip(True);
                 return;
             }
 
@@ -1413,19 +1445,34 @@ def Onboarding() -> any {
             if user_skills.reports[0]["status"] != "Success" {
                 showAlert("Something went wrong. Please upload another document or enter details manually.");
                 setAllowSkip(True);
-
                 setShowManualEntry(True);
                 setIsLoading(False);
                 return;
             }
 
+            # parse the analyzer output to prefill step2 states if present
+            try {
+                let body = user_skills.reports[0]["body"] if "body" in user_skills.reports[0] else {};
+                let detected_skills = body["skills"] if "skills" in body else [];
+                let detected_interests = body["interests"] if "interests" in body else [];
+                let detected_certs = body["certifications"] if "certifications" in body else [];
+
+                setSkills(detected_skills);
+                setInterests(detected_interests);
+                setCerts(detected_certs);
+            } except Exception as e {
+                console.log(e);
+                # non-fatal; continue to step 2
+            }
+
+            # proceed to step 2
+            setAllowSkip(False);
             setCurrentStep(2);
 
         } except Exception as err {
             console.log(err);
             showAlert("Something went wrong. Try again later");
             setAllowSkip(True);
-
             setShowManualEntry(True);
         } finally {
             setIsLoading(False);
@@ -1523,10 +1570,13 @@ def Onboarding() -> any {
     let nextBtnContent = None;
     if currentStep == 1 and isLoading {
         nextBtnContent = LoadingDots();
+    } elif currentStep == 2 and savingProfile {
+        nextBtnContent = LoadingDots();
     } else {
         nextBtnContent = <label>Next</label>;
     }
 
+    
 
     # Steps list (left column)
     def Step(props: any) -> any {
@@ -1636,16 +1686,6 @@ def Onboarding() -> any {
         </div>;
     }
 
-    # Error display block
-    let errorDisplay = None;
-    if error and error != "" {
-        errorDisplay = <div style={{
-            "marginTop": "12px",
-            "color": "#dc2626",
-            "fontSize": "14px"
-        }}>{error}</div>;
-    }
-
     # Manual skip link block
     let manualSkipDisplay = None;
     if allowSkip and currentStep == 1 {
@@ -1665,7 +1705,6 @@ def Onboarding() -> any {
             Skip →
         </div>;
     }
-
 
     # Step 1 content
     let step1Content = None;
@@ -1736,9 +1775,8 @@ def Onboarding() -> any {
         </div>;
     }
 
-    # Placeholders for steps 2-4
-        let step2Content = None;
-
+    # ---------------- Step 2 content ----------------
+    let step2Content = None;
     if currentStep == 2 {
         if step2Loading {
             step2Content = step2LoadingView;
@@ -1763,7 +1801,8 @@ def Onboarding() -> any {
                             type="text"
                             value={newSkill}
                             onChange={lambda e: any -> None { setNewSkill(e.target.value); }}
-                            placeholder="Add new skill"
+                            onKeyDown={lambda e: any -> None { if e.key == "Enter" { addSkill(); } }}
+                            placeholder="Python, Project Management, etc."
                             style={{
                                 "flex":"1",
                                 "backgroundColor":"#0b0b0b",
@@ -1773,7 +1812,6 @@ def Onboarding() -> any {
                                 "borderRadius":"6px"
                             }}
                         />
-
                         <button
                             onClick={lambda e: any -> None { addSkill(); }}
                             style={{
@@ -1789,7 +1827,23 @@ def Onboarding() -> any {
                         </button>
                     </div>
 
-                    {skillsList}
+                    {skills.length == 0 and <p style={{ "color":"grey" }}>No skills added</p>}
+                    {skills.length > 0 and skills.map(lambda s: any, idx: any -> any {
+                        return <div key={idx} style={{
+                            "display":"flex",
+                            "justifyContent":"space-between",
+                            "padding":"8px 12px",
+                            "backgroundColor":"#0d0d0d",
+                            "borderRadius":"6px",
+                            "marginBottom":"8px"
+                        }}>
+                            <div style={{ "color":"white" }}>{s.name}</div>
+                            <div style={{ "color":"#dc2626", "cursor":"pointer", "fontWeight":"700" }}
+                                onClick={lambda e: any -> None { removeSkill(s.name); }}>
+                                X
+                            </div>
+                        </div>;
+                    })}
                 </div>
 
                 # ---------- Interests ----------
@@ -1806,6 +1860,7 @@ def Onboarding() -> any {
                             type="text"
                             value={newInterest}
                             onChange={lambda e: any -> None { setNewInterest(e.target.value); }}
+                            onKeyDown={lambda e: any -> None { if e.key == "Enter" { addInterest(); } }}
                             placeholder="Add new interest"
                             style={{
                                 "flex":"1",
@@ -1816,7 +1871,6 @@ def Onboarding() -> any {
                                 "borderRadius":"6px"
                             }}
                         />
-
                         <button
                             onClick={lambda e: any -> None { addInterest(); }}
                             style={{
@@ -1832,7 +1886,23 @@ def Onboarding() -> any {
                         </button>
                     </div>
 
-                    {interestsList}
+                    {interests.length == 0 and <p style={{ "color":"grey" }}>No interests added</p>}
+                    {interests.length > 0 and interests.map(lambda i: any, idx: any -> any {
+                        return <div key={idx} style={{
+                            "display":"flex",
+                            "justifyContent":"space-between",
+                            "padding":"8px 12px",
+                            "backgroundColor":"#0d0d0d",
+                            "borderRadius":"6px",
+                            "marginBottom":"8px"
+                        }}>
+                            <div style={{ "color":"white" }}>{i.name}</div>
+                            <div style={{ "color":"#dc2626", "cursor":"pointer", "fontWeight":"700" }}
+                                onClick={lambda e: any -> None { removeInterest(i.name); }}>
+                                X
+                            </div>
+                        </div>;
+                    })}
                 </div>
 
                 # ---------- Certifications ----------
@@ -1849,6 +1919,7 @@ def Onboarding() -> any {
                             type="text"
                             value={newCert}
                             onChange={lambda e: any -> None { setNewCert(e.target.value); }}
+                            onKeyDown={lambda e: any -> None { if e.key == "Enter" { addCert(); } }}
                             placeholder="Add certification"
                             style={{
                                 "flex":"1",
@@ -1859,7 +1930,6 @@ def Onboarding() -> any {
                                 "borderRadius":"6px"
                             }}
                         />
-
                         <button
                             onClick={lambda e: any -> None { addCert(); }}
                             style={{
@@ -1875,14 +1945,29 @@ def Onboarding() -> any {
                         </button>
                     </div>
 
-                    {certList}
+                    {certs.length == 0 and <p style={{ "color":"grey" }}>No certifications added</p>}
+                    {certs.length > 0 and certs.map(lambda c: any, idx: any -> any {
+                        return <div key={idx} style={{
+                            "display":"flex",
+                            "justifyContent":"space-between",
+                            "padding":"8px 12px",
+                            "backgroundColor":"#0d0d0d",
+                            "borderRadius":"6px",
+                            "marginBottom":"8px"
+                        }}>
+                            <div style={{ "color":"white" }}>{c.title}</div>
+                            <div style={{ "color":"#dc2626", "cursor":"pointer", "fontWeight":"700" }}
+                                onClick={lambda e: any -> None { removeCert(c.title); }}>
+                                X
+                            </div>
+                        </div>;
+                    })}
                 </div>
 
             </div>;
         }
+
     }
-
-
     let step3Content = None;
     if currentStep == 3 {
         step3Content = <div style={{ "height":"60vh" }}>hello</div>;
@@ -1916,10 +2001,10 @@ def Onboarding() -> any {
         onClick={lambda e: any -> None {
             if currentStep == 1 {
                 handleStep1Next();
-            } else {
-                if currentStep < 4 {
-                    setCurrentStep(currentStep + 1);
-                }
+            } elif currentStep == 2 {
+                saveStep2();
+            } elif currentStep < 4 {
+                setCurrentStep(currentStep + 1);
             }
         }}
         onMouseEnter={lambda e: any -> None { setNavBtnHover(True); }}
@@ -1930,90 +2015,12 @@ def Onboarding() -> any {
         {nextBtnContent}
     </button>;
 
-        # Loading view for Step 2
+    # Loading view for Step 2
     let step2LoadingView = <div style={{
         "color":"white",
         "fontSize":"1rem",
         "marginTop":"20px"
     }}>Loading your profile...</div>;
-
-    # ---------------- Render Skills List ----------------
-    let skillsList = [];
-    for i = 0 to i < len(skills) by i += 1 {
-        let item = skills[i];
-
-        skillsList.push(
-            <div key={i} style={{
-                "display":"flex",
-                "flexDirection":"row",
-                "justifyContent":"space-between",
-                "padding":"8px 12px",
-                "backgroundColor":"#0d0d0d",
-                "borderRadius":"6px",
-                "marginBottom":"8px"
-            }}>
-                <div style={{ "color":"white" }}>{item.name}</div>
-
-                <div
-                    style={{ "color":"#dc2626", "cursor":"pointer" }}
-                    onClick={{removeSkill(item.name)}}
-                >Remove</div>
-            </div>
-        );
-    }
-
-
-    # ---------------- Render Interests List ----------------
-    let interestsList = [];
-    for i = 0 to i < len(interests) by i += 1 {
-        let item = interests[i];
-
-        interestsList.push(
-            <div key={i} style={{
-                "display":"flex",
-                "flexDirection":"row",
-                "justifyContent":"space-between",
-                "padding":"8px 12px",
-                "backgroundColor":"#0d0d0d",
-                "borderRadius":"6px",
-                "marginBottom":"8px"
-            }}>
-                <div style={{ "color":"white" }}>{item.name}</div>
-
-                <div
-                    style={{ "color":"#dc2626", "cursor":"pointer" }}
-                    onClick={{removeInterest(item.name)}}
-                >Remove</div>
-            </div>
-        );
-    }
-
-
-    # ---------------- Render Certifications List ----------------
-    let certList = [];
-    for i = 0 to i < len(certs) by i += 1 {
-        let item = certs[i];
-
-        certList.push(
-            <div key={i} style={{
-                "display":"flex",
-                "flexDirection":"row",
-                "justifyContent":"space-between",
-                "padding":"8px 12px",
-                "backgroundColor":"#0d0d0d",
-                "borderRadius":"6px",
-                "marginBottom":"8px"
-            }}>
-                <div style={{ "color":"white" }}>{item.title}</div>
-
-                <div
-                    style={{ "color":"#dc2626", "cursor":"pointer" }}
-                    onClick={{ removeCert(item.title)}}
-                >Remove</div>
-            </div>
-        );
-    }
-
 
     let alertBox = None;
     if alertVisible {
@@ -2032,8 +2039,6 @@ def Onboarding() -> any {
             {alertMessage}
         </div>;
     }
-
-
 
     return <div style={wrapperStyle}>
 

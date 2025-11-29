@@ -193,14 +193,24 @@ function Onboarding() {
   }
   async function loadStep2() {
     setStep2Loading(true);
-    let profile = await __jacSpawn("get_user_profile", "", {});
-    if (profile && profile.reports && profile.reports.length > 0) {
-      let body = profile.reports[0]["body"];
-      setSkills("skills" in body ? body["skills"] : []);
-      setInterests("interests" in body ? body["interests"] : []);
-      setCerts("certifications" in body ? body["certifications"] : []);
+    try {
+      let profile = await __jacSpawn("get_user_profile", "", {});
+      if (profile && profile.reports && profile.reports.length > 0) {
+        let body = profile.reports[0]["body"];
+        setSkills("skills" in body ? body["skills"] : []);
+        setInterests("interests" in body ? body["interests"] : []);
+        setCerts("certifications" in body ? body["certifications"] : []);
+      } else {
+        setSkills([]);
+        setInterests([]);
+        setCerts([]);
+      }
+    } catch (err) {
+      console.log(err);
+      showAlert("Failed to load profile. Try again later.");
+    } finally {
+      setStep2Loading(false);
     }
-    setStep2Loading(false);
   }
   useEffect(() => {
     if (currentStep === 2) {
@@ -211,21 +221,36 @@ function Onboarding() {
     if (newSkill.trim().length === 0) {
       return;
     }
-    setSkills(skills.concat([{"name": newSkill, "description": ""}]));
+    let exists = skills.filter(s => {
+      return s.name.toLowerCase() === newSkill.trim().toLowerCase();
+    }).length > 0;
+    if (!exists) {
+      setSkills(skills.concat([{"name": newSkill.trim(), "description": ""}]));
+    }
     setNewSkill("");
   }
   function addInterest() {
     if (newInterest.trim().length === 0) {
       return;
     }
-    setInterests(interests.concat([{"name": newInterest, "description": ""}]));
+    let exists = interests.filter(i => {
+      return i.name.toLowerCase() === newInterest.trim().toLowerCase();
+    }).length > 0;
+    if (!exists) {
+      setInterests(interests.concat([{"name": newInterest.trim(), "description": ""}]));
+    }
     setNewInterest("");
   }
   function addCert() {
     if (newCert.trim().length === 0) {
       return;
     }
-    setCerts(certs.concat([{"title": newCert, "provider": "", "url": ""}]));
+    let exists = certs.filter(c => {
+      return "title" in c && c.title.toLowerCase() === newCert.trim().toLowerCase();
+    }).length > 0;
+    if (!exists) {
+      setCerts(certs.concat([{"title": newCert.trim(), "provider": "", "url": ""}]));
+    }
     setNewCert("");
   }
   function removeSkill(name) {
@@ -244,16 +269,31 @@ function Onboarding() {
     }));
   }
   async function saveStep2() {
+    if (savingProfile) {
+      return;
+    }
     setSavingProfile(true);
-    await __jacSpawn("update_user_profile", "", {"updated_skills": skills, "updated_interests": interests, "updated_certifications": certs});
-    setSavingProfile(false);
-    setCurrentStep(3);
+    try {
+      let result = await __jacSpawn("update_user_profile", "", {"updated_skills": skills, "updated_interests": interests, "updated_certifications": certs});
+      if (result) {
+        setAllowSkip(false);
+        setShowManualEntry(false);
+        setCurrentStep(3);
+      } else {
+        showAlert("Failed to save profile. Please try again.");
+      }
+    } catch (err) {
+      console.log(err);
+      showAlert("An error occurred while saving. Try again.");
+    } finally {
+      setSavingProfile(false);
+    }
   }
   useEffect(() => {
     let percent = currentStep / 4 * 100;
     setProgress(percent + "%");
   }, [currentStep]);
-  let steps = [{id: 1, title: "Upload Your CV", description: "Let our AI analyze your experience and extract your current skills.", icon: __jacJsx(CloudUpload, {"style": {"fontSize": "0.75rem"}}, []), completed: false}, {id: 2, title: "Review & Update Skills", description: "Confirm AI-detected skills and add any we might have missed.", icon: __jacJsx(Brain, {"style": {"fontSize": "0.75rem"}}, []), completed: false}, {id: 3, title: "Set Career Goals", description: "Choose your target roles, industries, and career aspirations.", icon: __jacJsx(Goal, {"style": {"fontSize": "0.75rem"}}, []), completed: false}, {id: 4, title: "Get Your Roadmap", description: "Explore your personalized learning path and skill gap analysis.", icon: __jacJsx(Node, {"style": {"fontSize": "0.75rem"}}, []), completed: false}];
+  let steps = [{id: 1, title: "Upload Your CV", description: "", icon: __jacJsx(CloudUpload, {"style": {"fontSize": "0.75rem"}}, []), completed: false}, {id: 2, title: "Review & Update Profile", description: "", icon: __jacJsx(Brain, {"style": {"fontSize": "0.75rem"}}, []), completed: false}, {id: 3, title: "Set Career Goals", description: "", icon: __jacJsx(Goal, {"style": {"fontSize": "0.75rem"}}, []), completed: false}, {id: 4, title: "Get Your Roadmap", description: "", icon: __jacJsx(Node, {"style": {"fontSize": "0.75rem"}}, []), completed: false}];
   function handleFileSelect(e) {
     let pickedFile = e.target.files[0];
     if (pickedFile) {
@@ -295,9 +335,10 @@ function Onboarding() {
       let base64Data = await fileToBase64(file);
       let result = await __jacSpawn("upload_resume", "", {"file": base64Data, "name": file.name, "mime": file.type});
       if (!result) {
-        setError("Resume upload failed");
+        showAlert("Resume upload failed");
         setShowManualEntry(true);
         setIsLoading(false);
+        setAllowSkip(true);
         return;
       }
       await __jacSpawn("save_resume", "", {});
@@ -317,6 +358,18 @@ function Onboarding() {
         setIsLoading(false);
         return;
       }
+      try {
+        let body = "body" in user_skills.reports[0] ? user_skills.reports[0]["body"] : {};
+        let detected_skills = "skills" in body ? body["skills"] : [];
+        let detected_interests = "interests" in body ? body["interests"] : [];
+        let detected_certs = "certifications" in body ? body["certifications"] : [];
+        setSkills(detected_skills);
+        setInterests(detected_interests);
+        setCerts(detected_certs);
+      } catch (e) {
+        console.log(e);
+      }
+      setAllowSkip(false);
       setCurrentStep(2);
     } catch (err) {
       console.log(err);
@@ -346,6 +399,8 @@ function Onboarding() {
   }
   let nextBtnContent = null;
   if (currentStep === 1 && isLoading) {
+    nextBtnContent = LoadingDots();
+  } else if (currentStep === 2 && savingProfile) {
     nextBtnContent = LoadingDots();
   } else {
     nextBtnContent = __jacJsx("label", {}, ["Next"]);
@@ -384,10 +439,6 @@ function Onboarding() {
   if (fileName && fileName !== "") {
     uploadedFileDisplay = __jacJsx("div", {"style": {"marginTop": "20px", "fontSize": "14px", "color": "white", "fontWeight": "500"}}, ["Uploaded: ", fileName]);
   }
-  let errorDisplay = null;
-  if (error && error !== "") {
-    errorDisplay = __jacJsx("div", {"style": {"marginTop": "12px", "color": "#dc2626", "fontSize": "14px"}}, [error]);
-  }
   let manualSkipDisplay = null;
   if (allowSkip && currentStep === 1) {
     manualSkipDisplay = __jacJsx("div", {"style": {"fontSize": "15px", "cursor": "pointer", "color": "white", "textDecoration": "underline", "fontWeight": "500"}, "onClick": e => {
@@ -414,17 +465,41 @@ function Onboarding() {
     } else {
       step2Content = __jacJsx("div", {"style": {"height": "65vh", "overflowY": "auto", "paddingRight": "10px"}}, [__jacJsx("div", {"style": {"marginBottom": "25px"}}, [__jacJsx("h2", {"style": {"color": "white", "marginBottom": "8px"}}, ["Skills"]), __jacJsx("div", {"style": {"display": "flex", "flexDirection": "row", "gap": "10px", "marginBottom": "12px"}}, [__jacJsx("input", {"type": "text", "value": newSkill, "onChange": e => {
         setNewSkill(e.target.value);
-      }, "placeholder": "Add new skill", "style": {"flex": "1", "backgroundColor": "#0b0b0b", "border": "1px solid #333", "color": "white", "padding": "8px", "borderRadius": "6px"}}, []), __jacJsx("button", {"onClick": e => {
+      }, "onKeyDown": e => {
+        if (e.key === "Enter") {
+          addSkill();
+        }
+      }, "placeholder": "Python, Project Management, etc.", "style": {"flex": "1", "backgroundColor": "#0b0b0b", "border": "1px solid #333", "color": "white", "padding": "8px", "borderRadius": "6px"}}, []), __jacJsx("button", {"onClick": e => {
         addSkill();
-      }, "style": {"padding": "8px 12px", "backgroundColor": "#6e11b0", "color": "white", "border": "none", "borderRadius": "6px", "cursor": "pointer"}}, ["Add"])]), skillsList]), __jacJsx("div", {"style": {"marginBottom": "25px"}}, [__jacJsx("h2", {"style": {"color": "white", "marginBottom": "8px"}}, ["Interests"]), __jacJsx("div", {"style": {"display": "flex", "flexDirection": "row", "gap": "10px", "marginBottom": "12px"}}, [__jacJsx("input", {"type": "text", "value": newInterest, "onChange": e => {
+      }, "style": {"padding": "8px 12px", "backgroundColor": "#6e11b0", "color": "white", "border": "none", "borderRadius": "6px", "cursor": "pointer"}}, ["Add"])]), skills.length === 0 && __jacJsx("p", {"style": {"color": "grey"}}, ["No skills added"]), skills.length > 0 && skills.map((s, idx) => {
+        return __jacJsx("div", {"key": idx, "style": {"display": "flex", "justifyContent": "space-between", "padding": "8px 12px", "backgroundColor": "#0d0d0d", "borderRadius": "6px", "marginBottom": "8px"}}, [__jacJsx("div", {"style": {"color": "white"}}, [s.name]), __jacJsx("div", {"style": {"color": "#dc2626", "cursor": "pointer", "fontWeight": "700"}, "onClick": e => {
+          removeSkill(s.name);
+        }}, ["X"])]);
+      })]), __jacJsx("div", {"style": {"marginBottom": "25px"}}, [__jacJsx("h2", {"style": {"color": "white", "marginBottom": "8px"}}, ["Interests"]), __jacJsx("div", {"style": {"display": "flex", "flexDirection": "row", "gap": "10px", "marginBottom": "12px"}}, [__jacJsx("input", {"type": "text", "value": newInterest, "onChange": e => {
         setNewInterest(e.target.value);
+      }, "onKeyDown": e => {
+        if (e.key === "Enter") {
+          addInterest();
+        }
       }, "placeholder": "Add new interest", "style": {"flex": "1", "backgroundColor": "#0b0b0b", "border": "1px solid #333", "color": "white", "padding": "8px", "borderRadius": "6px"}}, []), __jacJsx("button", {"onClick": e => {
         addInterest();
-      }, "style": {"padding": "8px 12px", "backgroundColor": "#6e11b0", "color": "white", "border": "none", "borderRadius": "6px", "cursor": "pointer"}}, ["Add"])]), interestsList]), __jacJsx("div", {}, [__jacJsx("h2", {"style": {"color": "white", "marginBottom": "8px"}}, ["Certifications"]), __jacJsx("div", {"style": {"display": "flex", "flexDirection": "row", "gap": "10px", "marginBottom": "12px"}}, [__jacJsx("input", {"type": "text", "value": newCert, "onChange": e => {
+      }, "style": {"padding": "8px 12px", "backgroundColor": "#6e11b0", "color": "white", "border": "none", "borderRadius": "6px", "cursor": "pointer"}}, ["Add"])]), interests.length === 0 && __jacJsx("p", {"style": {"color": "grey"}}, ["No interests added"]), interests.length > 0 && interests.map((i, idx) => {
+        return __jacJsx("div", {"key": idx, "style": {"display": "flex", "justifyContent": "space-between", "padding": "8px 12px", "backgroundColor": "#0d0d0d", "borderRadius": "6px", "marginBottom": "8px"}}, [__jacJsx("div", {"style": {"color": "white"}}, [i.name]), __jacJsx("div", {"style": {"color": "#dc2626", "cursor": "pointer", "fontWeight": "700"}, "onClick": e => {
+          removeInterest(i.name);
+        }}, ["X"])]);
+      })]), __jacJsx("div", {}, [__jacJsx("h2", {"style": {"color": "white", "marginBottom": "8px"}}, ["Certifications"]), __jacJsx("div", {"style": {"display": "flex", "flexDirection": "row", "gap": "10px", "marginBottom": "12px"}}, [__jacJsx("input", {"type": "text", "value": newCert, "onChange": e => {
         setNewCert(e.target.value);
+      }, "onKeyDown": e => {
+        if (e.key === "Enter") {
+          addCert();
+        }
       }, "placeholder": "Add certification", "style": {"flex": "1", "backgroundColor": "#0b0b0b", "border": "1px solid #333", "color": "white", "padding": "8px", "borderRadius": "6px"}}, []), __jacJsx("button", {"onClick": e => {
         addCert();
-      }, "style": {"padding": "8px 12px", "backgroundColor": "#6e11b0", "color": "white", "border": "none", "borderRadius": "6px", "cursor": "pointer"}}, ["Add"])]), certList])]);
+      }, "style": {"padding": "8px 12px", "backgroundColor": "#6e11b0", "color": "white", "border": "none", "borderRadius": "6px", "cursor": "pointer"}}, ["Add"])]), certs.length === 0 && __jacJsx("p", {"style": {"color": "grey"}}, ["No certifications added"]), certs.length > 0 && certs.map((c, idx) => {
+        return __jacJsx("div", {"key": idx, "style": {"display": "flex", "justifyContent": "space-between", "padding": "8px 12px", "backgroundColor": "#0d0d0d", "borderRadius": "6px", "marginBottom": "8px"}}, [__jacJsx("div", {"style": {"color": "white"}}, [c.title]), __jacJsx("div", {"style": {"color": "#dc2626", "cursor": "pointer", "fontWeight": "700"}, "onClick": e => {
+          removeCert(c.title);
+        }}, ["X"])]);
+      })])]);
     }
   }
   let step3Content = null;
@@ -444,10 +519,10 @@ function Onboarding() {
   let nextBtn = __jacJsx("button", {"type": "button", "onClick": e => {
     if (currentStep === 1) {
       handleStep1Next();
-    } else {
-      if (currentStep < 4) {
-        setCurrentStep(currentStep + 1);
-      }
+    } else if (currentStep === 2) {
+      saveStep2();
+    } else if (currentStep < 4) {
+      setCurrentStep(currentStep + 1);
     }
   }, "onMouseEnter": e => {
     setNavBtnHover(true);
@@ -455,9 +530,6 @@ function Onboarding() {
     setNavBtnHover(false);
   }, "style": nextBtnBaseStyle, "disabled": currentStep === 1 && !canProceed || isLoading}, [nextBtnContent]);
   let step2LoadingView = __jacJsx("div", {"style": {"color": "white", "fontSize": "1rem", "marginTop": "20px"}}, ["Loading your profile..."]);
-  let skillsList = [];
-  let interestsList = [];
-  let certList = [];
   let alertBox = null;
   if (alertVisible) {
     alertBox = __jacJsx("div", {"style": {"position": "absolute", "top": "20px", "right": "20px", "padding": "12px 20px", "backgroundColor": "#dc2626", "color": "white", "borderRadius": "6px", "fontWeight": "600", "boxShadow": "0 0 15px rgba(0,0,0,0.4)", "transition": "0.3s ease"}}, [alertMessage]);
