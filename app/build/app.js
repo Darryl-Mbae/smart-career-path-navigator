@@ -1199,26 +1199,41 @@ function Onboarding() {
   }
   function _loadStep() {
     _loadStep = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
-      var profile, body;
+      var profile, body, _t;
       return _regenerator().w(function (_context3) {
-        while (1) switch (_context3.n) {
+        while (1) switch (_context3.p = _context3.n) {
           case 0:
             setStep2Loading(true);
-            _context3.n = 1;
+            _context3.p = 1;
+            _context3.n = 2;
             return __jacSpawn("get_user_profile", "", {});
-          case 1:
+          case 2:
             profile = _context3.v;
             if (profile && profile.reports && profile.reports.length > 0) {
               body = profile.reports[0]["body"];
               setSkills("skills" in body ? body["skills"] : []);
               setInterests("interests" in body ? body["interests"] : []);
               setCerts("certifications" in body ? body["certifications"] : []);
+            } else {
+              setSkills([]);
+              setInterests([]);
+              setCerts([]);
             }
+            _context3.n = 4;
+            break;
+          case 3:
+            _context3.p = 3;
+            _t = _context3.v;
+            console.log(_t);
+            showAlert("Failed to load profile. Try again later.");
+          case 4:
+            _context3.p = 4;
             setStep2Loading(false);
-          case 2:
+            return _context3.f(4);
+          case 5:
             return _context3.a(2);
         }
-      }, _callee3);
+      }, _callee3, null, [[1, 3, 4, 5]]);
     }));
     return _loadStep.apply(this, arguments);
   }
@@ -1231,31 +1246,46 @@ function Onboarding() {
     if (newSkill.trim().length === 0) {
       return;
     }
-    setSkills(skills.concat([{
-      "name": newSkill,
-      "description": ""
-    }]));
+    var exists = skills.filter(function (s) {
+      return s.name.toLowerCase() === newSkill.trim().toLowerCase();
+    }).length > 0;
+    if (!exists) {
+      setSkills(skills.concat([{
+        "name": newSkill.trim(),
+        "description": ""
+      }]));
+    }
     setNewSkill("");
   }
   function addInterest() {
     if (newInterest.trim().length === 0) {
       return;
     }
-    setInterests(interests.concat([{
-      "name": newInterest,
-      "description": ""
-    }]));
+    var exists = interests.filter(function (i) {
+      return i.name.toLowerCase() === newInterest.trim().toLowerCase();
+    }).length > 0;
+    if (!exists) {
+      setInterests(interests.concat([{
+        "name": newInterest.trim(),
+        "description": ""
+      }]));
+    }
     setNewInterest("");
   }
   function addCert() {
     if (newCert.trim().length === 0) {
       return;
     }
-    setCerts(certs.concat([{
-      "title": newCert,
-      "provider": "",
-      "url": ""
-    }]));
+    var exists = certs.filter(function (c) {
+      return "title" in c && c.title.toLowerCase() === newCert.trim().toLowerCase();
+    }).length > 0;
+    if (!exists) {
+      setCerts(certs.concat([{
+        "title": newCert.trim(),
+        "provider": "",
+        "url": ""
+      }]));
+    }
     setNewCert("");
   }
   function removeSkill(name) {
@@ -1278,23 +1308,48 @@ function Onboarding() {
   }
   function _saveStep() {
     _saveStep = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
+      var result, _t2;
       return _regenerator().w(function (_context4) {
-        while (1) switch (_context4.n) {
+        while (1) switch (_context4.p = _context4.n) {
           case 0:
+            if (!savingProfile) {
+              _context4.n = 1;
+              break;
+            }
+            return _context4.a(2);
+          case 1:
             setSavingProfile(true);
-            _context4.n = 1;
+            _context4.p = 2;
+            _context4.n = 3;
             return __jacSpawn("update_user_profile", "", {
               "updated_skills": skills,
               "updated_interests": interests,
               "updated_certifications": certs
             });
-          case 1:
+          case 3:
+            result = _context4.v;
+            if (result) {
+              setAllowSkip(false);
+              setShowManualEntry(false);
+              setCurrentStep(3);
+            } else {
+              showAlert("Failed to save profile. Please try again.");
+            }
+            _context4.n = 5;
+            break;
+          case 4:
+            _context4.p = 4;
+            _t2 = _context4.v;
+            console.log(_t2);
+            showAlert("An error occurred while saving. Try again.");
+          case 5:
+            _context4.p = 5;
             setSavingProfile(false);
-            setCurrentStep(3);
-          case 2:
+            return _context4.f(5);
+          case 6:
             return _context4.a(2);
         }
-      }, _callee4);
+      }, _callee4, null, [[2, 4, 5, 6]]);
     }));
     return _saveStep.apply(this, arguments);
   }
@@ -1305,7 +1360,7 @@ function Onboarding() {
   var steps = [{
     id: 1,
     title: "Upload Your CV",
-    description: "Let our AI analyze your experience and extract your current skills.",
+    description: "",
     icon: __jacJsx(CloudUpload, {
       "style": {
         "fontSize": "0.75rem"
@@ -1314,8 +1369,8 @@ function Onboarding() {
     completed: false
   }, {
     id: 2,
-    title: "Review & Update Skills",
-    description: "Confirm AI-detected skills and add any we might have missed.",
+    title: "Review & Update Profile",
+    description: "",
     icon: __jacJsx(Brain, {
       "style": {
         "fontSize": "0.75rem"
@@ -1325,7 +1380,7 @@ function Onboarding() {
   }, {
     id: 3,
     title: "Set Career Goals",
-    description: "Choose your target roles, industries, and career aspirations.",
+    description: "",
     icon: __jacJsx(Goal, {
       "style": {
         "fontSize": "0.75rem"
@@ -1335,7 +1390,7 @@ function Onboarding() {
   }, {
     id: 4,
     title: "Get Your Roadmap",
-    description: "Explore your personalized learning path and skill gap analysis.",
+    description: "",
     icon: __jacJsx(Node, {
       "style": {
         "fontSize": "0.75rem"
@@ -1377,7 +1432,7 @@ function Onboarding() {
   }
   function _handleStep1Next() {
     _handleStep1Next = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee5() {
-      var base64Data, result, user_skills, _t;
+      var base64Data, result, user_skills, body, detected_skills, detected_interests, detected_certs, _t3;
       return _regenerator().w(function (_context5) {
         while (1) switch (_context5.p = _context5.n) {
           case 0:
@@ -1410,9 +1465,10 @@ function Onboarding() {
               _context5.n = 6;
               break;
             }
-            setError("Resume upload failed");
+            showAlert("Resume upload failed");
             setShowManualEntry(true);
             setIsLoading(false);
+            setAllowSkip(true);
             return _context5.a(2);
           case 6:
             _context5.n = 7;
@@ -1445,13 +1501,25 @@ function Onboarding() {
             setIsLoading(false);
             return _context5.a(2);
           case 11:
+            try {
+              body = "body" in user_skills.reports[0] ? user_skills.reports[0]["body"] : {};
+              detected_skills = "skills" in body ? body["skills"] : [];
+              detected_interests = "interests" in body ? body["interests"] : [];
+              detected_certs = "certifications" in body ? body["certifications"] : [];
+              setSkills(detected_skills);
+              setInterests(detected_interests);
+              setCerts(detected_certs);
+            } catch (e) {
+              console.log(e);
+            }
+            setAllowSkip(false);
             setCurrentStep(2);
             _context5.n = 13;
             break;
           case 12:
             _context5.p = 12;
-            _t = _context5.v;
-            console.log(_t);
+            _t3 = _context5.v;
+            console.log(_t3);
             showAlert("Something went wrong. Try again later");
             setAllowSkip(true);
             setShowManualEntry(true);
@@ -1546,6 +1614,8 @@ function Onboarding() {
   }
   var nextBtnContent = null;
   if (currentStep === 1 && isLoading) {
+    nextBtnContent = LoadingDots();
+  } else if (currentStep === 2 && savingProfile) {
     nextBtnContent = LoadingDots();
   } else {
     nextBtnContent = __jacJsx("label", {}, ["Next"]);
@@ -1649,16 +1719,6 @@ function Onboarding() {
         "fontWeight": "500"
       }
     }, ["Uploaded: ", fileName]);
-  }
-  var errorDisplay = null;
-  if (error && error !== "") {
-    errorDisplay = __jacJsx("div", {
-      "style": {
-        "marginTop": "12px",
-        "color": "#dc2626",
-        "fontSize": "14px"
-      }
-    }, [error]);
   }
   var manualSkipDisplay = null;
   if (allowSkip && currentStep === 1) {
@@ -1779,7 +1839,12 @@ function Onboarding() {
         "onChange": function onChange(e) {
           setNewSkill(e.target.value);
         },
-        "placeholder": "Add new skill",
+        "onKeyDown": function onKeyDown(e) {
+          if (e.key === "Enter") {
+            addSkill();
+          }
+        },
+        "placeholder": "Python, Project Management, etc.",
         "style": {
           "flex": "1",
           "backgroundColor": "#0b0b0b",
@@ -1800,7 +1865,36 @@ function Onboarding() {
           "borderRadius": "6px",
           "cursor": "pointer"
         }
-      }, ["Add"])]), skillsList]), __jacJsx("div", {
+      }, ["Add"])]), skills.length === 0 && __jacJsx("p", {
+        "style": {
+          "color": "grey"
+        }
+      }, ["No skills added"]), skills.length > 0 && skills.map(function (s, idx) {
+        return __jacJsx("div", {
+          "key": idx,
+          "style": {
+            "display": "flex",
+            "justifyContent": "space-between",
+            "padding": "8px 12px",
+            "backgroundColor": "#0d0d0d",
+            "borderRadius": "6px",
+            "marginBottom": "8px"
+          }
+        }, [__jacJsx("div", {
+          "style": {
+            "color": "white"
+          }
+        }, [s.name]), __jacJsx("div", {
+          "style": {
+            "color": "#dc2626",
+            "cursor": "pointer",
+            "fontWeight": "700"
+          },
+          "onClick": function onClick(e) {
+            removeSkill(s.name);
+          }
+        }, ["X"])]);
+      })]), __jacJsx("div", {
         "style": {
           "marginBottom": "25px"
         }
@@ -1821,6 +1915,11 @@ function Onboarding() {
         "value": newInterest,
         "onChange": function onChange(e) {
           setNewInterest(e.target.value);
+        },
+        "onKeyDown": function onKeyDown(e) {
+          if (e.key === "Enter") {
+            addInterest();
+          }
         },
         "placeholder": "Add new interest",
         "style": {
@@ -1843,7 +1942,36 @@ function Onboarding() {
           "borderRadius": "6px",
           "cursor": "pointer"
         }
-      }, ["Add"])]), interestsList]), __jacJsx("div", {}, [__jacJsx("h2", {
+      }, ["Add"])]), interests.length === 0 && __jacJsx("p", {
+        "style": {
+          "color": "grey"
+        }
+      }, ["No interests added"]), interests.length > 0 && interests.map(function (i, idx) {
+        return __jacJsx("div", {
+          "key": idx,
+          "style": {
+            "display": "flex",
+            "justifyContent": "space-between",
+            "padding": "8px 12px",
+            "backgroundColor": "#0d0d0d",
+            "borderRadius": "6px",
+            "marginBottom": "8px"
+          }
+        }, [__jacJsx("div", {
+          "style": {
+            "color": "white"
+          }
+        }, [i.name]), __jacJsx("div", {
+          "style": {
+            "color": "#dc2626",
+            "cursor": "pointer",
+            "fontWeight": "700"
+          },
+          "onClick": function onClick(e) {
+            removeInterest(i.name);
+          }
+        }, ["X"])]);
+      })]), __jacJsx("div", {}, [__jacJsx("h2", {
         "style": {
           "color": "white",
           "marginBottom": "8px"
@@ -1860,6 +1988,11 @@ function Onboarding() {
         "value": newCert,
         "onChange": function onChange(e) {
           setNewCert(e.target.value);
+        },
+        "onKeyDown": function onKeyDown(e) {
+          if (e.key === "Enter") {
+            addCert();
+          }
         },
         "placeholder": "Add certification",
         "style": {
@@ -1882,7 +2015,36 @@ function Onboarding() {
           "borderRadius": "6px",
           "cursor": "pointer"
         }
-      }, ["Add"])]), certList])]);
+      }, ["Add"])]), certs.length === 0 && __jacJsx("p", {
+        "style": {
+          "color": "grey"
+        }
+      }, ["No certifications added"]), certs.length > 0 && certs.map(function (c, idx) {
+        return __jacJsx("div", {
+          "key": idx,
+          "style": {
+            "display": "flex",
+            "justifyContent": "space-between",
+            "padding": "8px 12px",
+            "backgroundColor": "#0d0d0d",
+            "borderRadius": "6px",
+            "marginBottom": "8px"
+          }
+        }, [__jacJsx("div", {
+          "style": {
+            "color": "white"
+          }
+        }, [c.title]), __jacJsx("div", {
+          "style": {
+            "color": "#dc2626",
+            "cursor": "pointer",
+            "fontWeight": "700"
+          },
+          "onClick": function onClick(e) {
+            removeCert(c.title);
+          }
+        }, ["X"])]);
+      })])]);
     }
   }
   var step3Content = null;
@@ -1920,10 +2082,10 @@ function Onboarding() {
     "onClick": function onClick(e) {
       if (currentStep === 1) {
         handleStep1Next();
-      } else {
-        if (currentStep < 4) {
-          setCurrentStep(currentStep + 1);
-        }
+      } else if (currentStep === 2) {
+        saveStep2();
+      } else if (currentStep < 4) {
+        setCurrentStep(currentStep + 1);
       }
     },
     "onMouseEnter": function onMouseEnter(e) {
@@ -1942,9 +2104,6 @@ function Onboarding() {
       "marginTop": "20px"
     }
   }, ["Loading your profile..."]);
-  var skillsList = [];
-  var interestsList = [];
-  var certList = [];
   var alertBox = null;
   if (alertVisible) {
     alertBox = __jacJsx("div", {
