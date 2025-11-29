@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import { Mail, Brain, CloudUpload, Check, Goal, Route as Node, ChevronUp, ChevronLeft } from "lucide-react";
 import { Accordion } from "radix-ui";
 import { Router, Routes, Route, Link, Navigate, useNavigate, jacSignup, jacLogin, jacLogout, jacIsLoggedIn } from "@jac-client/utils";
+import { fileToBase64 } from "./fileutils.js";
+import "./styles.css";
 function Website() {
   function NavBar() {
     let links = ["CHANGELOG", "PRICING", "FAQs", "RESOURCES"];
@@ -154,36 +156,202 @@ function Auth() {
     setError("");
   }, "style": {"color": "#6e11b0", "cursor": "pointer", "fontWeight": "600", "marginLeft": "5px"}}, ["Sign In"])])])]), __jacJsx("div", {"style": {"width": "50%", "height": "100%", "position": "absolute", "top": "0px", "left": isSignIn ? "50%" : "0px", "transition": "all 300ms ease-in", "display": "flex", "justifyContent": "center", "alignItems": "center", "pointerEvents": "none"}}, [__jacJsx("div", {"style": {"margin": "auto", "backgroundColor": "#6e11b0", "width": "97%", "height": "97%", "zIndex": "9999", "borderRadius": "10px", "display": "flex", "justifyContent": "center", "alignItems": "center", "overflow": "hidden"}}, [])])]);
 }
+function LoadingDots() {
+  return __jacJsx("div", {"style": {"display": "flex", "justifyContent": "center", "alignItems": "center", "gap": "6px", "height": "20px"}}, [__jacJsx("span", {"className": "loading-dot"}, []), __jacJsx("span", {"className": "loading-dot"}, []), __jacJsx("span", {"className": "loading-dot"}, [])]);
+}
 function Onboarding() {
   let [currentStep, setCurrentStep] = useState(1);
   let [stepCompleted, setStepCompleted] = useState(0);
-  let [navbtnHover, setNavBtnHover] = useState("");
-  let [progress, setProgress] = useState(25);
+  let [navbtnHover, setNavBtnHover] = useState(false);
+  let [progress, setProgress] = useState("25%");
   let [resumeHover, setResumeHover] = useState(false);
+  let [dragActive, setDragActive] = useState(false);
+  let [fileName, setFileName] = useState("");
+  let [file, setFile] = useState(null);
+  let [isLoading, setIsLoading] = useState(false);
+  let [showManualEntry, setShowManualEntry] = useState(false);
+  let [canProceed, setCanProceed] = useState(false);
+  let [alertMessage, setAlertMessage] = useState("");
+  let navigate = useNavigate();
   useEffect(() => {
     let percent = currentStep / 4 * 100;
     setProgress(percent + "%");
   }, [currentStep]);
   let steps = [{id: 1, title: "Upload Your CV", description: "Let our AI analyze your experience and extract your current skills.", icon: __jacJsx(CloudUpload, {"style": {"fontSize": "0.75rem"}}, []), completed: false}, {id: 2, title: "Review & Update Skills", description: "Confirm AI-detected skills and add any we might have missed.", icon: __jacJsx(Brain, {"style": {"fontSize": "0.75rem"}}, []), completed: false}, {id: 3, title: "Set Career Goals", description: "Choose your target roles, industries, and career aspirations.", icon: __jacJsx(Goal, {"style": {"fontSize": "0.75rem"}}, []), completed: false}, {id: 4, title: "Get Your Roadmap", description: "Explore your personalized learning path and skill gap analysis.", icon: __jacJsx(Node, {"style": {"fontSize": "0.75rem"}}, []), completed: false}];
-  function Step(props) {
-    console.log(props);
-    return __jacJsx("div", {"style": {"display": "flex", "flexDirection": "row", "gap": "36px", "alignItems": "center", "width": "75%", "marginInline": "auto", "marginBottom": "45px"}}, [__jacJsx("div", {"style": {"width": "40px", "aspectRatio": "1", "borderRadius": "50%", "display": "flex", "alignItems": "center", "justifyContent": "center", "color": "white", "position": "relative", "zIndex": "1", "transition": "all 0.2s ease", "boxShadow": props.step.id === currentStep ? "0 0 20px rgba(110, 17, 176, 0.5)" : "none", "backgroundColor": props.step.id <= currentStep ? "#6e11b0" : "black"}}, [__jacJsx("div", {"style": {"display": "flex", "alignItems": "center", "justifyContent": "center"}}, [props.step.icon, props.step.id !== 4 && __jacJsx("div", {"style": {"position": "absolute", "height": "calc(100% + 65px)", "width": "2px", "left": "calc(50% + 1px)", "top": "100%", "transform": "translateX(-50%)", "zIndex": "-1", "transition": "all 0.2s ease", "borderLeft": props.step.id < currentStep ? "2px dashed #6e11b0" : "2px dashed grey"}}, [])])]), __jacJsx("div", {}, [__jacJsx("h1", {"style": {"marginBottom": "0px", "fontWeight": "600", "color": props.step.id <= currentStep ? "white" : "rgba(255, 255, 255, 0.6); ", "fontSize": "1.15rem"}}, [props.step.title]), __jacJsx("p", {"style": {"color": "grey", "marginBlock": "0px", "marginTop": "10px"}}, [props.step.description])])]);
+  function handleFileSelect(e) {
+    let pickedFile = e.target.files[0];
+    if (pickedFile) {
+      setFileName(pickedFile.name);
+      setFile(pickedFile);
+      setCanProceed(true);
+    }
   }
-  return __jacJsx("div", {"style": {"width": "100%", "height": "100vh", "display": "grid", "gridTemplateColumns": "45% 55%", "position": "relative", "color": "white", "fontFamily": "system-ui, sans-serif"}}, [__jacJsx("div", {"style": {"width": "100%", "height": "100%", "display": "flex", "justifyContent": "center", "alignItems": "center"}}, [__jacJsx("div", {"style": {"margin": "auto", "backgroundColor": "#0b0b0b", "width": "95%", "height": "90%", "zIndex": "9999", "borderRadius": "10px", "display": "flex", "flexDirection": "column", "justifyContent": "center", "alignItems": "center", "overflow": "hidden"}}, [steps.map(step => {
-    return __jacJsx(Step, {"key": step.id, "step": step, "isActive": currentStep === step.id}, []);
-  }), "   "])]), __jacJsx("div", {"style": {"width": "100%", "height": "95%", "marginBlock": "auto", "display": "flex", "justifyContent": "center", "alignItems": "center"}}, [__jacJsx("div", {"style": {"width": "90%", "height": "90%", "display": "flex", "flexDirection": "column", "justifyContent": "center"}}, [__jacJsx("div", {"style": {"color": "grey", "textTransform": "uppercase"}}, ["Step ", currentStep, " of 4"]), __jacJsx("div", {"style": {"width": "80%", "height": "11px", "borderRadius": "20px", "backgroundColor": "#0b0b0b", "overflow": "hidden", "marginBlock": "20px"}}, [__jacJsx("div", {"style": {"height": "100%", "width": progress, "backgroundColor": "#6e11b0", "transition": "0.3s ease", "borderRadius": "20px"}}, [])]), currentStep === 1 && __jacJsx("div", {"style": {"height": "60vh"}}, [__jacJsx("div", {"style": {"marginBottom": "0px", "fontWeight": "600", "color": "white", "fontSize": "1.15rem"}}, ["Upload your CV"]), __jacJsx("p", {"style": {"color": "grey", "marginBlock": "0px", "marginTop": "10px"}}, ["Let us start by understanding your background"]), __jacJsx("div", {"onMouseEnter": e => {
-    setResumeHover(true);
-  }, "onMouseLeave": e => {
-    setResumeHover(false);
-  }, "style": {"marginBlock": "30px", "height": "40vh", "width": "80%", "borderRadius": "15px", "border": resumeHover ? "2px dashed #6e11b0" : "2px dashed grey", "backgroundColor": resumeHover ? "#0b0b0b" : "#101010ff", "display": "flex", "flexDirection": "column", "justifyContent": "center", "alignItems": "center"}}, [__jacJsx("div", {"style": {"width": "55px", "aspectRatio": "1", "borderRadius": "50%", "backgroundColor": "black", "display": "flex", "alignItems": "center", "justifyContent": "center", "marginBottom": "15px"}}, [__jacJsx(CloudUpload, {"style": {"fontSize": "0.75rem", "color": "#6e11b0"}}, [])]), __jacJsx("p", {"style": {"color": "grey", "marginBlock": "0px", "marginBlock": "20px", "fontSize": ".9em"}}, ["Supported formats: PDF, DOC, DOCX (Max 5MB)"]), __jacJsx("div", {}, []), __jacJsx("div", {"style": {"width": "auto", "padding": "1rem 1.5rem", "border": "none", "borderRadius": "0.5rem", "backgroundColor": "#6e11b0", "color": "white", "fontWeight": "600", "fontSize": "0.875rem", "cursor": "pointer", "transition": "all 0.2s ease", "marginTop": "10px", "boxShadow": "0 0 20px rgba(110, 17, 176, 0.2)"}}, ["Upload from Computer"])])]), currentStep === 2 && __jacJsx("div", {"style": {"height": "60vh"}}, ["hello"]), currentStep === 3 && __jacJsx("div", {"style": {"height": "60vh"}}, ["hello"]), currentStep === 4 && __jacJsx("div", {"style": {"height": "60vh"}}, ["hello"]), __jacJsx("div", {"style": {"display": "flex", "flexDirection": "row", "gap": "25px", "alignItems": "center"}}, [currentStep > 1 && __jacJsx("div", {"onClick": e => {
-    setCurrentStep(currentStep - 1);
-  }, "style": {"display": "flex", "flexDirection": "row", "alignItems": "center"}}, [" ", __jacJsx(ChevronLeft, {}, []), "Back"]), __jacJsx("button", {"type": "button", "onClick": e => {
-    setCurrentStep(currentStep + 1);
+  function handleDragOver(e) {
+    e.preventDefault();
+    setDragActive(true);
+  }
+  function handleDragLeave(e) {
+    e.preventDefault();
+    setDragActive(false);
+  }
+  function handleDrop(e) {
+    e.preventDefault();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      let droppedFile = e.dataTransfer.files[0];
+      setFileName(droppedFile.name);
+      setFile(droppedFile);
+      e.dataTransfer.clearData();
+      setCanProceed(true);
+    }
+  }
+  async function handleStep1Next() {
+    if (!canProceed || isLoading || !file) {
+      return;
+    }
+    setIsLoading(true);
+    setShowManualEntry(false);
+    try {
+      await __jacSpawn("create_resume_node", "", {});
+      let base64Data = await fileToBase64(file);
+      let result = await __jacSpawn("upload_resume", "", {"file": base64Data, "name": file.name, "mime": file.type});
+      if (!result) {
+        showTemporaryAlert("Resume upload failed");
+        setShowManualEntry(true);
+        setIsLoading(false);
+        return;
+      }
+      await __jacSpawn("save_resume", "", {});
+      await __jacSpawn("update_resume_upload_status", "", {});
+      let user_skills = await __jacSpawn("analyze_cv", "", {});
+      if (!user_skills || !user_skills.reports || user_skills.reports.length === 0 || user_skills.reports[0]["status"] !== "Success") {
+        showTemporaryAlert("Something went wrong. Please upload another document or enter details manually.");
+        setShowManualEntry(true);
+        setIsLoading(false);
+        return;
+      }
+      setCurrentStep(2);
+    } catch (err) {
+      console.log(err);
+      showTemporaryAlert("Something went wrong");
+      setShowManualEntry(true);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+  function showTemporaryAlert(msg) {
+    setAlertMessage(msg);
+    setTimeout(() => {
+      setAlertMessage("");
+    }, 4000);
+  }
+  let wrapperStyle = {"width": "100%", "height": "100vh", "display": "grid", "gridTemplateColumns": "45% 55%", "position": "relative", "color": "white", "fontFamily": "system-ui, sans-serif"};
+  let leftPanelInnerStyle = {"margin": "auto", "backgroundColor": "#0b0b0b", "width": "95%", "height": "90%", "zIndex": "9999", "borderRadius": "10px", "display": "flex", "flexDirection": "column", "justifyContent": "center", "alignItems": "center", "overflow": "hidden"};
+  let rightInnerStyle = {"width": "90%", "height": "90%", "display": "flex", "flexDirection": "column", "justifyContent": "center"};
+  let uploadBoxStyle = {"marginBlock": "30px", "height": "40vh", "width": "80%", "borderRadius": "15px", "display": "flex", "flexDirection": "column", "justifyContent": "center", "alignItems": "center", "transition": "0.2s ease"};
+  if (resumeHover) {
+    uploadBoxStyle["border"] = "2px dashed #6e11b0";
+    uploadBoxStyle["backgroundColor"] = "#0b0b0b";
+  } else {
+    uploadBoxStyle["border"] = "2px dashed grey";
+    uploadBoxStyle["backgroundColor"] = "#101010ff";
+  }
+  let uploadLabelStyle = {"width": "auto", "padding": "1rem 1.5rem", "border": "none", "borderRadius": "0.5rem", "backgroundColor": "#6e11b0", "color": "white", "fontWeight": "600", "fontSize": "0.875rem", "cursor": "pointer", "transition": "all 0.2s ease", "marginTop": "10px", "boxShadow": "0 0 20px rgba(110, 17, 176, 0.2)"};
+  let nextBtnBaseStyle = {"width": "180px", "border": "none", "paddingInline": "2.5rem", "paddingBlock": "1rem", "borderRadius": "5px", "cursor": "pointer", "fontSize": "16px", "transition": "transform 0.2s ease", "color": "white", "backgroundColor": "#6e11b0", "transform": navbtnHover ? "translateY(0.25rem)" : "translateY(0)"};
+  if (currentStep === 1 && !canProceed || isLoading) {
+    nextBtnBaseStyle["opacity"] = "0.4";
+    nextBtnBaseStyle["cursor"] = "not-allowed";
+  }
+  let nextBtnContent = null;
+  if (currentStep === 1 && isLoading) {
+    nextBtnContent = LoadingDots();
+  } else {
+    nextBtnContent = __jacJsx("label", {}, ["Next"]);
+  }
+  function Step(props) {
+    let isActive = props.step.id === currentStep;
+    let circleStyle = {"width": "40px", "aspectRatio": "1", "borderRadius": "50%", "display": "flex", "alignItems": "center", "justifyContent": "center", "color": "white", "position": "relative", "zIndex": "1", "transition": "all 0.2s ease", "boxShadow": "none", "backgroundColor": "#000000"};
+    if (isActive || props.step.id < currentStep) {
+      circleStyle["backgroundColor"] = "#6e11b0";
+    }
+    if (isActive) {
+      circleStyle["boxShadow"] = "0 0 20px rgba(110, 17, 176, 0.5)";
+    }
+    let connectorDisplay = null;
+    if (props.step.id !== 4) {
+      let connectorStyle = {"position": "absolute", "height": "calc(100% + 65px)", "width": "2px", "left": "calc(50% + 1px)", "top": "100%", "transform": "translateX(-50%)", "zIndex": "-1", "transition": "all 0.2s ease", "borderLeft": "2px dashed grey"};
+      if (props.step.id < currentStep) {
+        connectorStyle["borderLeft"] = "2px dashed #6e11b0";
+      }
+      connectorDisplay = __jacJsx("div", {"style": connectorStyle}, []);
+    }
+    let titleStyle = {"marginBottom": "0px", "fontWeight": "600", "color": "rgba(255, 255, 255, 0.6)", "fontSize": "1.15rem"};
+    if (props.step.id <= currentStep) {
+      titleStyle["color"] = "white";
+    }
+    return __jacJsx("div", {"style": {"display": "flex", "flexDirection": "row", "gap": "36px", "alignItems": "center", "width": "75%", "marginInline": "auto", "marginBottom": "45px"}}, [" ", __jacJsx("div", {"style": circleStyle}, [__jacJsx("div", {"style": {"display": "flex", "alignItems": "center", "justifyContent": "center"}}, [props.step.icon, connectorDisplay])]), __jacJsx("div", {}, [__jacJsx("h1", {"style": titleStyle}, [props.step.title]), __jacJsx("p", {"style": {"color": "grey", "marginBlock": "0px", "marginTop": "10px"}}, [props.step.description])])]);
+  }
+  let stepsList = steps.map(step => {
+    return __jacJsx(Step, {"key": step.id, "step": step}, []);
+  });
+  let uploadedFileDisplay = null;
+  if (fileName && fileName !== "") {
+    uploadedFileDisplay = __jacJsx("div", {"style": {"marginTop": "20px", "fontSize": "14px", "color": "white", "fontWeight": "500"}}, ["Uploaded: ", fileName]);
+  }
+  let alertDisplay = null;
+  if (alertMessage && alertMessage !== "") {
+    alertDisplay = __jacJsx("div", {"style": {"position": "fixed", "top": "20px", "right": "20px", "backgroundColor": "#dc2626", "color": "white", "padding": "12px 20px", "borderRadius": "6px", "zIndex": "9999", "boxShadow": "0 0 15px rgba(0,0,0,0.3)"}}, [alertMessage]);
+  }
+  let manualSkipDisplay = null;
+  if (showManualEntry && currentStep === 1) {
+    manualSkipDisplay = __jacJsx("div", {"style": {"fontSize": "15px", "cursor": "pointer", "color": "white", "textDecoration": "underline", "fontWeight": "500"}, "onClick": e => {
+      setCurrentStep(2);
+    }}, ["Skip →"]);
+  }
+  let step1Content = null;
+  if (currentStep === 1) {
+    step1Content = __jacJsx("div", {"style": {"height": "60vh"}}, [__jacJsx("div", {"style": {"marginBottom": "0px", "fontWeight": "600", "color": "white", "fontSize": "1.15rem"}}, ["Upload your CV"]), __jacJsx("p", {"style": {"color": "grey", "marginBlock": "0px", "marginTop": "10px"}}, ["Let us start by understanding your background"]), __jacJsx("div", {"onMouseEnter": e => {
+      setResumeHover(true);
+    }, "onMouseLeave": e => {
+      setResumeHover(false);
+    }, "onDragOver": handleDragOver, "onDragLeave": handleDragLeave, "onDrop": handleDrop, "style": uploadBoxStyle}, [__jacJsx("div", {"style": {"width": "55px", "aspectRatio": "1", "borderRadius": "50%", "backgroundColor": "black", "display": "flex", "alignItems": "center", "justifyContent": "center", "marginBottom": "15px"}}, [__jacJsx(CloudUpload, {"style": {"fontSize": "0.75rem", "color": "#6e11b0"}}, [])]), __jacJsx("p", {"style": {"color": "grey", "marginBlock": "20px", "fontSize": ".9em"}}, ["Supported formats: PDF, DOC, DOCX (Max 5MB)"]), __jacJsx("input", {"type": "file", "accept": ".pdf,.doc,.docx", "onChange": handleFileSelect, "style": {"display": "none"}, "id": "resumeInput"}, []), __jacJsx("label", {"for": "resumeInput", "style": uploadLabelStyle, "onMouseEnter": e => {
+      e.currentTarget.style.filter = "brightness(0.95)";
+    }, "onMouseLeave": e => {
+      e.currentTarget.style.filter = "brightness(1)";
+    }}, ["Upload from Computer"]), uploadedFileDisplay])]);
+  }
+  let step2Content = null;
+  if (currentStep === 2) {
+    step2Content = __jacJsx("div", {"style": {"height": "60vh"}}, ["hello"]);
+  }
+  let step3Content = null;
+  if (currentStep === 3) {
+    step3Content = __jacJsx("div", {"style": {"height": "60vh"}}, ["hello"]);
+  }
+  let step4Content = null;
+  if (currentStep === 4) {
+    step4Content = __jacJsx("div", {"style": {"height": "60vh"}}, ["hello"]);
+  }
+  let backNav = null;
+  if (currentStep > 1) {
+    backNav = __jacJsx("div", {"onClick": e => {
+      setCurrentStep(currentStep - 1);
+    }, "style": {"display": "flex", "flexDirection": "row", "alignItems": "center", "cursor": "pointer"}}, [__jacJsx(ChevronLeft, {}, []), "Back"]);
+  }
+  let nextBtn = __jacJsx("button", {"type": "button", "onClick": e => {
+    if (currentStep === 1) {
+      handleStep1Next();
+    } else {
+      if (currentStep < 4) {
+        setCurrentStep(currentStep + 1);
+      }
+    }
   }, "onMouseEnter": e => {
     setNavBtnHover(true);
   }, "onMouseLeave": e => {
     setNavBtnHover(false);
-  }, "style": {"width": "180px", "backgroundColor": "#6e11b0", "color": "white", "border": "none", "paddingInline": "2.5rem", "paddingBlock": "1rem", "borderRadius": "5px", "cursor": "pointer", "fontSize": "16px", "transform": navbtnHover ? "translateY(0.25rem)" : "translateY(0)", "transition": "transform 0.2s ease"}}, ["Next"])])])])]);
+  }, "style": nextBtnBaseStyle, "disabled": currentStep === 1 && !canProceed || isLoading}, [nextBtnContent]);
+  return __jacJsx("div", {"style": wrapperStyle}, [alertDisplay, __jacJsx("div", {"style": {"width": "100%", "height": "100%", "display": "flex", "justifyContent": "center", "alignItems": "center"}}, [__jacJsx("div", {"style": leftPanelInnerStyle}, [stepsList])]), __jacJsx("div", {"style": {"width": "100%", "height": "95%", "marginBlock": "auto", "display": "flex", "justifyContent": "center", "alignItems": "center"}}, [__jacJsx("div", {"style": rightInnerStyle}, [__jacJsx("div", {"style": {"color": "grey", "textTransform": "uppercase"}}, ["Step ", currentStep, " of 4"]), __jacJsx("div", {"style": {"width": "80%", "height": "11px", "borderRadius": "20px", "backgroundColor": "#0b0b0b", "overflow": "hidden", "marginBlock": "20px"}}, [__jacJsx("div", {"style": {"height": "100%", "width": progress, "backgroundColor": "#6e11b0", "transition": "0.3s ease", "borderRadius": "20px"}}, [])]), step1Content, step2Content, step3Content, step4Content, __jacJsx("div", {"style": {"display": "flex", "flexDirection": "row", "gap": "25px", "alignItems": "center", "marginTop": "20px"}}, [backNav, nextBtn, manualSkipDisplay])])])]);
 }
 function Dashboard() {
   return __jacJsx("div", {}, []);
@@ -207,4 +375,4 @@ function app() {
   document.head.appendChild(fontLink);
   return __jacJsx(Router, {}, [__jacJsx("div", {}, [__jacJsx(Routes, {}, [__jacJsx(Route, {"path": "/", "element": __jacJsx(Website, {}, [])}, []), __jacJsx(Route, {"path": "/auth", "element": __jacJsx(Auth, {}, [])}, []), __jacJsx(Route, {"path": "/onboarding", "element": __jacJsx(Onboarding, {}, [])}, []), __jacJsx(Route, {"path": "/dashboard", "element": __jacJsx(Dashboard, {}, [])}, [])])])]);
 }
-export { Auth, Dashboard, Onboarding, Website, app };
+export { Auth, Dashboard, LoadingDots, Onboarding, Website, app };
