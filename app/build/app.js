@@ -1,7 +1,3 @@
-function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
-function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
-function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
-function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
 function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
 function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
@@ -1126,22 +1122,22 @@ function Onboarding() {
     _useState42 = _slicedToArray(_useState41, 2),
     file = _useState42[0],
     setFile = _useState42[1];
-  var _useState43 = useState(""),
+  var _useState43 = useState(false),
     _useState44 = _slicedToArray(_useState43, 2),
-    error = _useState44[0],
-    setError = _useState44[1];
+    isLoading = _useState44[0],
+    setIsLoading = _useState44[1];
   var _useState45 = useState(false),
     _useState46 = _slicedToArray(_useState45, 2),
-    isLoading = _useState46[0],
-    setIsLoading = _useState46[1];
+    showManualEntry = _useState46[0],
+    setShowManualEntry = _useState46[1];
   var _useState47 = useState(false),
     _useState48 = _slicedToArray(_useState47, 2),
-    showManualEntry = _useState48[0],
-    setShowManualEntry = _useState48[1];
-  var _useState49 = useState(false),
+    canProceed = _useState48[0],
+    setCanProceed = _useState48[1];
+  var _useState49 = useState(""),
     _useState50 = _slicedToArray(_useState49, 2),
-    canProceed = _useState50[0],
-    setCanProceed = _useState50[1];
+    alertMessage = _useState50[0],
+    setAlertMessage = _useState50[1];
   var navigate = useNavigate();
   useEffect(function () {
     var percent = currentStep / 4 * 100;
@@ -1193,7 +1189,6 @@ function Onboarding() {
     if (pickedFile) {
       setFileName(pickedFile.name);
       setFile(pickedFile);
-      setError("");
       setCanProceed(true);
     }
   }
@@ -1213,7 +1208,6 @@ function Onboarding() {
       setFileName(droppedFile.name);
       setFile(droppedFile);
       e.dataTransfer.clearData();
-      setError("");
       setCanProceed(true);
     }
   }
@@ -1233,7 +1227,6 @@ function Onboarding() {
             return _context3.a(2);
           case 1:
             setIsLoading(true);
-            setError("");
             setShowManualEntry(false);
             _context3.p = 2;
             _context3.n = 3;
@@ -1255,7 +1248,8 @@ function Onboarding() {
               _context3.n = 6;
               break;
             }
-            setError("Resume upload failed");
+            showTemporaryAlert("Resume upload failed");
+            setShowManualEntry(true);
             setIsLoading(false);
             return _context3.a(2);
           case 6:
@@ -1269,42 +1263,40 @@ function Onboarding() {
             return __jacSpawn("analyze_cv", "", {});
           case 9:
             user_skills = _context3.v;
-            if (!(!user_skills || !user_skills.reports || user_skills.reports.length === 0)) {
+            if (!(!user_skills || !user_skills.reports || user_skills.reports.length === 0 || user_skills.reports[0]["status"] !== "Success")) {
               _context3.n = 10;
               break;
             }
-            setError("Something went wrong. Please upload another document or enter details manually.");
+            showTemporaryAlert("Something went wrong. Please upload another document or enter details manually.");
             setShowManualEntry(true);
             setIsLoading(false);
             return _context3.a(2);
           case 10:
-            if (!(user_skills.reports[0]["status"] !== "Success")) {
-              _context3.n = 11;
-              break;
-            }
-            setError("Something went wrong. Please upload another document or enter details manually.");
-            setShowManualEntry(true);
-            setIsLoading(false);
-            return _context3.a(2);
-          case 11:
             setCurrentStep(2);
-            _context3.n = 13;
+            _context3.n = 12;
             break;
-          case 12:
-            _context3.p = 12;
+          case 11:
+            _context3.p = 11;
             _t = _context3.v;
             console.log(_t);
-            setError("Something went wrong");
-          case 13:
-            _context3.p = 13;
+            showTemporaryAlert("Something went wrong");
+            setShowManualEntry(true);
+          case 12:
+            _context3.p = 12;
             setIsLoading(false);
-            return _context3.f(13);
-          case 14:
+            return _context3.f(12);
+          case 13:
             return _context3.a(2);
         }
-      }, _callee3, null, [[2, 12, 13, 14]]);
+      }, _callee3, null, [[2, 11, 12, 13]]);
     }));
     return _handleStep1Next.apply(this, arguments);
+  }
+  function showTemporaryAlert(msg) {
+    setAlertMessage(msg);
+    setTimeout(function () {
+      setAlertMessage("");
+    }, 4000);
   }
   var wrapperStyle = {
     "width": "100%",
@@ -1408,8 +1400,6 @@ function Onboarding() {
     };
     if (isActive || props.step.id < currentStep) {
       circleStyle["backgroundColor"] = "#6e11b0";
-    } else {
-      circleStyle["backgroundColor"] = "black";
     }
     if (isActive) {
       circleStyle["boxShadow"] = "0 0 20px rgba(110, 17, 176, 0.5)";
@@ -1429,8 +1419,6 @@ function Onboarding() {
       };
       if (props.step.id < currentStep) {
         connectorStyle["borderLeft"] = "2px dashed #6e11b0";
-      } else {
-        connectorStyle["borderLeft"] = "2px dashed grey";
       }
       connectorDisplay = __jacJsx("div", {
         "style": connectorStyle
@@ -1455,7 +1443,7 @@ function Onboarding() {
         "marginInline": "auto",
         "marginBottom": "45px"
       }
-    }, [__jacJsx("div", {
+    }, [" ", __jacJsx("div", {
       "style": circleStyle
     }, [__jacJsx("div", {
       "style": {
@@ -1485,39 +1473,41 @@ function Onboarding() {
       "style": {
         "marginTop": "20px",
         "fontSize": "14px",
-        "color": "#1e293b",
+        "color": "white",
         "fontWeight": "500"
       }
     }, ["Uploaded: ", fileName]);
   }
-  var errorDisplay = null;
-  if (error && error !== "") {
-    errorDisplay = __jacJsx("div", {
+  var alertDisplay = null;
+  if (alertMessage && alertMessage !== "") {
+    alertDisplay = __jacJsx("div", {
       "style": {
-        "marginTop": "12px",
-        "color": "#dc2626",
-        "fontSize": "14px"
+        "position": "fixed",
+        "top": "20px",
+        "right": "20px",
+        "backgroundColor": "#dc2626",
+        "color": "white",
+        "padding": "12px 20px",
+        "borderRadius": "6px",
+        "zIndex": "9999",
+        "boxShadow": "0 0 15px rgba(0,0,0,0.3)"
       }
-    }, [error]);
+    }, [alertMessage]);
   }
   var manualSkipDisplay = null;
-  if (showManualEntry) {
+  if (showManualEntry && currentStep === 1) {
     manualSkipDisplay = __jacJsx("div", {
       "style": {
-        "marginTop": "10px",
-        "fontSize": "14px"
-      }
-    }, [__jacJsx("span", {
-      "style": {
-        "color": "#1e293b",
-        "textDecoration": "underline",
+        "fontSize": "15px",
         "cursor": "pointer",
-        "fontWeight": "600"
+        "color": "white",
+        "textDecoration": "underline",
+        "fontWeight": "500"
       },
       "onClick": function onClick(e) {
-        navigate("/dashboard");
+        setCurrentStep(2);
       }
-    }, ["Skip →"])]);
+    }, ["Skip →"]);
   }
   var step1Content = null;
   if (currentStep === 1) {
@@ -1566,10 +1556,11 @@ function Onboarding() {
         "color": "#6e11b0"
       }
     }, [])]), __jacJsx("p", {
-      "style": _defineProperty(_defineProperty({
+      "style": {
         "color": "grey",
-        "marginBlock": "0px"
-      }, "marginBlock", "20px"), "fontSize", ".9em")
+        "marginBlock": "20px",
+        "fontSize": ".9em"
+      }
     }, ["Supported formats: PDF, DOC, DOCX (Max 5MB)"]), __jacJsx("input", {
       "type": "file",
       "accept": ".pdf,.doc,.docx",
@@ -1587,7 +1578,7 @@ function Onboarding() {
       "onMouseLeave": function onMouseLeave(e) {
         e.currentTarget.style.filter = "brightness(1)";
       }
-    }, ["Upload from Computer"]), uploadedFileDisplay, errorDisplay, manualSkipDisplay])]);
+    }, ["Upload from Computer"]), uploadedFileDisplay])]);
   }
   var step2Content = null;
   if (currentStep === 2) {
@@ -1649,7 +1640,7 @@ function Onboarding() {
   }, [nextBtnContent]);
   return __jacJsx("div", {
     "style": wrapperStyle
-  }, [__jacJsx("div", {
+  }, [alertDisplay, __jacJsx("div", {
     "style": {
       "width": "100%",
       "height": "100%",
@@ -1700,7 +1691,7 @@ function Onboarding() {
       "alignItems": "center",
       "marginTop": "20px"
     }
-  }, [backNav, nextBtn])])])]);
+  }, [backNav, nextBtn, manualSkipDisplay])])])]);
 }
 function Dashboard() {
   return __jacJsx("div", {}, []);
