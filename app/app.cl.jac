@@ -13,7 +13,11 @@ import from "@jac-client/utils" {
     jacLogout,
     jacIsLoggedIn
 }
+import from .fileutils {
+    fileToBase64
+}
 
+import ".styles.css";
 
     def Website() -> any {
 
@@ -1164,350 +1168,594 @@ def Auth() -> any {
     </div>;
 }
 
+def LoadingDots() -> any {
+    return <div style={{
+        "display": "flex",
+        "justifyContent": "center",
+        "alignItems": "center",
+        "gap": "6px",
+        "height": "20px"
+    }}>
+        <span className="loading-dot"></span>
+        <span className="loading-dot"></span>
+        <span className="loading-dot"></span>
+    </div>;
+}
 
 
-    def Onboarding() -> any {
+def Onboarding() -> any {
 
-        let [currentStep, setCurrentStep] = useState(1);
-        let [stepCompleted,setStepCompleted] = useState(0);
-        let [navbtnHover, setNavBtnHover] = useState("");
-        let [progress,setProgress] = useState(25);
-        let [resumeHover,setResumeHover] = useState(false);
+    # ------------------------ State ------------------------
+    let [currentStep, setCurrentStep] = useState(1);
+    let [stepCompleted, setStepCompleted] = useState(0);
+    let [navbtnHover, setNavBtnHover] = useState(False);
+    let [progress, setProgress] = useState("25%");
+    let [resumeHover, setResumeHover] = useState(False);
 
+    # File upload states for step 1
+    let [dragActive, setDragActive] = useState(False);
+    let [fileName, setFileName] = useState("");
+    let [file, setFile] = useState(None);
+    let [error, setError] = useState("");
+    let [isLoading, setIsLoading] = useState(False);
+    let [showManualEntry, setShowManualEntry] = useState(False);
+    let [canProceed, setCanProceed] = useState(False);
 
-        useEffect(lambda -> None {
-            let percent = (currentStep / 4) * 100;
-            setProgress(percent + "%");
-        }, [currentStep]);
+    let navigate = useNavigate();
 
+    useEffect(lambda -> None {
+        let percent = (currentStep / 4) * 100;
+        setProgress(percent + "%");
+    }, [currentStep]);
 
-        let steps = [
-            {
-                id: 1,
-                title: "Upload Your CV",
-                description: "Let our AI analyze your experience and extract your current skills.",
-                icon: <CloudUpload style={{
-                    "fontSize":"0.75rem"
-                }}/>,
-                completed: false
-            },
-            {
-                id: 2,
-                title: "Review & Update Skills",
-                description: "Confirm AI-detected skills and add any we might have missed.",
-                icon:<Brain style={{
-                    "fontSize":"0.75rem"
-                }} />,
-                completed: false
-            },
-            {
-                id: 3,
-                title: "Set Career Goals",
-                description: "Choose your target roles, industries, and career aspirations.",
-                icon:  <Goal style={{
-                    "fontSize":"0.75rem"
-                }}/>,
-                completed: false
-            },
-            {
-                id: 4,
-                title: "Get Your Roadmap",
-                description: "Explore your personalized learning path and skill gap analysis.",
-                icon: <Node style={{
-                    "fontSize":"0.75rem"
-                }} />,
-                completed: false
+    # ------------------------ Steps data ------------------------
+    let steps = [
+        {
+            id: 1,
+            title: "Upload Your CV",
+            description: "Let our AI analyze your experience and extract your current skills.",
+            icon: <CloudUpload style={{ "fontSize": "0.75rem" }} />,
+            completed: False
+        },
+        {
+            id: 2,
+            title: "Review & Update Skills",
+            description: "Confirm AI-detected skills and add any we might have missed.",
+            icon: <Brain style={{ "fontSize": "0.75rem" }} />,
+            completed: False
+        },
+        {
+            id: 3,
+            title: "Set Career Goals",
+            description: "Choose your target roles, industries, and career aspirations.",
+            icon: <Goal style={{ "fontSize": "0.75rem" }} />,
+            completed: False
+        },
+        {
+            id: 4,
+            title: "Get Your Roadmap",
+            description: "Explore your personalized learning path and skill gap analysis.",
+            icon: <Node style={{ "fontSize": "0.75rem" }} />,
+            completed: False
+        }
+    ];
+
+    # ------------------------ File Handlers ------------------------
+    def handleFileSelect(e: any) -> None {
+        let pickedFile = e.target.files[0];
+        if pickedFile {
+            setFileName(pickedFile.name);
+            setFile(pickedFile);
+            setError("");
+            setCanProceed(True);
+        }
+    }
+
+    def handleDragOver(e: any) -> None {
+        e.preventDefault();
+        setDragActive(True);
+    }
+
+    def handleDragLeave(e: any) -> None {
+        e.preventDefault();
+        setDragActive(False);
+    }
+
+    def handleDrop(e: any) -> None {
+        e.preventDefault();
+        setDragActive(False);
+        if e.dataTransfer.files and e.dataTransfer.files.length > 0 {
+            let droppedFile = e.dataTransfer.files[0];
+            setFileName(droppedFile.name);
+            setFile(droppedFile);
+            e.dataTransfer.clearData();
+            setError("");
+            setCanProceed(True);
+        }
+    }
+
+    # ------------------------ Step 1 Upload flow executed by Next button ------------------------
+    async def handleStep1Next() -> None {
+        if not canProceed or isLoading or not file {
+            return;
+        }
+
+        setIsLoading(True);
+        setError("");
+        setShowManualEntry(False);
+
+        try {
+            root spawn create_resume_node();
+
+            let base64Data = await fileToBase64(file);
+
+            let result = await root spawn upload_resume(
+                file=base64Data,
+                name=file.name,
+                mime=file.type
+            );
+
+            if not result {
+                setError("Resume upload failed");
+                setIsLoading(False);
+                return;
             }
-        ];
 
+            root spawn save_resume();
+            root spawn update_resume_upload_status();
 
-        def Step(props:any) -> any {
-            console.log(props);
-            return <div style={{
-                "display":"flex",
-                "flexDirection":"row",
-                "gap":"36px",
-                "alignItems":"center",
-                "width":"75%",
-                "marginInline":"auto",
-                "marginBottom":"45px"
-            }}>
+            let user_skills = await root spawn analyze_cv();
+
+            if not user_skills or not user_skills.reports or user_skills.reports.length == 0 {
+                setError("Something went wrong. Please upload another document or enter details manually.");
+                setShowManualEntry(True);
+                setIsLoading(False);
+                return;
+            }
+
+            if user_skills.reports[0]["status"] != "Success" {
+                setError("Something went wrong. Please upload another document or enter details manually.");
+                setShowManualEntry(True);
+                setIsLoading(False);
+                return;
+            }
+
+            setCurrentStep(2);
+
+        } except Exception as err {
+            console.log(err);
+            setError("Something went wrong");
+        } finally {
+            setIsLoading(False);
+        }
+    }
+
+    # ------------------------ Styles (computed outside JSX) ------------------------
+    let wrapperStyle = {
+        "width": "100%",
+        "height": "100vh",
+        "display": "grid",
+        "gridTemplateColumns": "45% 55%",
+        "position": "relative",
+        "color": "white",
+        "fontFamily": "system-ui, sans-serif"
+    };
+
+    let leftPanelInnerStyle = {
+        "margin": "auto",
+        "backgroundColor": "#0b0b0b",
+        "width": "95%",
+        "height": "90%",
+        "zIndex": "9999",
+        "borderRadius": "10px",
+        "display": "flex",
+        "flexDirection": "column",
+        "justifyContent": "center",
+        "alignItems": "center",
+        "overflow": "hidden"
+    };
+
+    let rightInnerStyle = {
+        "width":"90%",
+        "height":"90%",
+        "display":"flex",
+        "flexDirection":"column",
+        "justifyContent":"center"
+    };
+
+    let uploadBoxStyle = {
+        "marginBlock":"30px",
+        "height":"40vh",
+        "width":"80%",
+        "borderRadius":"15px",
+        "display":"flex",
+        "flexDirection":"column",
+        "justifyContent":"center",
+        "alignItems":"center",
+        "transition":"0.2s ease"
+    };
+
+    if resumeHover {
+        uploadBoxStyle["border"] = "2px dashed #6e11b0";
+        uploadBoxStyle["backgroundColor"] = "#0b0b0b";
+    } else {
+        uploadBoxStyle["border"] = "2px dashed grey";
+        uploadBoxStyle["backgroundColor"] = "#101010ff";
+    }
+
+    let uploadLabelStyle = {
+        "width": "auto",
+        "padding": "1rem 1.5rem",
+        "border": "none",
+        "borderRadius": "0.5rem",
+        "backgroundColor": "#6e11b0",
+        "color": "white",
+        "fontWeight": "600",
+        "fontSize": "0.875rem",
+        "cursor": "pointer",
+        "transition": "all 0.2s ease",
+        "marginTop":"10px",
+        "boxShadow": "0 0 20px rgba(110, 17, 176, 0.2)"
+    };
+
+    let nextBtnBaseStyle = {
+        "width": "180px",
+        "border": "none",
+        "paddingInline": "2.5rem",
+        "paddingBlock": "1rem",
+        "borderRadius": "5px",
+        "cursor": "pointer",
+        "fontSize": "16px",
+        "transition": "transform 0.2s ease",
+        "color": "white",
+        "backgroundColor": "#6e11b0",
+        "transform": ( "translateY(0.25rem)" if navbtnHover else "translateY(0)" )
+    };
+
+    # Disabled look for Step 1 Next: purple but faded (opacity 0.4) and not-allowed cursor
+    if currentStep == 1 and (not canProceed or isLoading) {
+        nextBtnBaseStyle["opacity"] = "0.4";
+        nextBtnBaseStyle["cursor"] = "not-allowed";
+    }
+
+    # Next button content computed (no inline conditions)
+    let nextBtnContent = None;
+    if currentStep == 1 and isLoading {
+        nextBtnContent = LoadingDots();
+    } else {
+        nextBtnContent = <label>Next</label>;
+    }
+
+    # ------------------------ Computed UI blocks (no inline conditionals in JSX) ------------------------
+
+    # Steps list (left column)
+    def Step(props: any) -> any {
+        let isActive = (props.step.id == currentStep);
+        let circleStyle = {
+            "width": "40px",
+            "aspectRatio": "1",
+            "borderRadius": "50%",
+            "display": "flex",
+            "alignItems": "center",
+            "justifyContent": "center",
+            "color": "white",
+            "position": "relative",
+            "zIndex": "1",
+            "transition": "all 0.2s ease",
+            "boxShadow": "none",
+            "backgroundColor": "#000000"
+        };
+
+        if isActive or props.step.id < currentStep {
+            circleStyle["backgroundColor"] = "#6e11b0";
+        } else {
+            circleStyle["backgroundColor"] = "black";
+        }
+
+        if isActive {
+            circleStyle["boxShadow"] = "0 0 20px rgba(110, 17, 176, 0.5)";
+        }
+
+        let connectorDisplay = None;
+        if props.step.id != 4 {
+            let connectorStyle = {
+                "position":"absolute",
+                "height":"calc(100% + 65px)",
+                "width":"2px",
+                "left":"calc(50% + 1px)",
+                "top":"100%",
+                "transform":"translateX(-50%)",
+                "zIndex":"-1",
+                "transition":"all 0.2s ease",
+                "borderLeft":"2px dashed grey"
+            };
+            if props.step.id < currentStep {
+                connectorStyle["borderLeft"] = "2px dashed #6e11b0";
+            } else {
+                connectorStyle["borderLeft"] = "2px dashed grey";
+            }
+            connectorDisplay = <div style={connectorStyle}></div>;
+        }
+
+        let titleStyle = {
+            "marginBottom":"0px",
+            "fontWeight":"600",
+            "color":"rgba(255, 255, 255, 0.6)",
+            "fontSize":"1.15rem"
+        };
+        if props.step.id <= currentStep {
+            titleStyle["color"] = "white";
+        }
+
+        return <div style={{
+            "display":"flex",
+            "flexDirection":"row",
+            "gap":"36px",
+            "alignItems":"center",
+            "width":"75%",
+            "marginInline":"auto",
+            "marginBottom":"45px"
+        }}>
+            <div style={circleStyle}>
                 <div style={{
-                    "width":"40px",
-                    "aspectRatio":"1",
-                    "borderRadius":"50%",
                     "display":"flex",
                     "alignItems":"center",
                     "justifyContent":"center",
-                    "color":"white",
-                    "position":"relative",
-                    "zIndex":"1",
-                    "transition": "all 0.2s ease",
-                    "boxShadow": ("0 0 20px rgba(110, 17, 176, 0.5)" if props.step.id == currentStep else "none"),
-                    "backgroundColor":("#6e11b0" if props.step.id <= currentStep else "black")
+                }}>
+                    { props.step.icon }
+                    { connectorDisplay }
+                </div>
+            </div>
+            <div>
+                <h1 style={titleStyle}>{props.step.title}</h1>
+                <p style={{
+                    "color":"grey",
+                    "marginBlock":"0px",
+                    "marginTop":"10px"
+                }}>{props.step.description}</p>
+            </div>
+        </div>;
+    }
+
+    let stepsList = steps.map(
+        lambda step: any -> any {
+            return <Step key={step.id} step={step} />;
+        }
+    );
+
+    # Uploaded file display block
+    let uploadedFileDisplay = None;
+    if fileName and fileName != "" {
+        uploadedFileDisplay = <div style={{
+            "marginTop": "20px",
+            "fontSize": "14px",
+            "color": "#1e293b",
+            "fontWeight": "500"
+        }}>
+            Uploaded: {fileName}
+        </div>;
+    }
+
+    # Error display block
+    let errorDisplay = None;
+    if error and error != "" {
+        errorDisplay = <div style={{
+            "marginTop": "12px",
+            "color": "#dc2626",
+            "fontSize": "14px"
+        }}>{error}</div>;
+    }
+
+    # Manual skip link block
+    let manualSkipDisplay = None;
+    if showManualEntry {
+        manualSkipDisplay = <div style={{
+            "marginTop": "10px",
+            "fontSize": "14px"
+        }}>
+            <span
+                style={{
+                    "color": "#1e293b",
+                    "textDecoration": "underline",
+                    "cursor": "pointer",
+                    "fontWeight": "600"
+                }}
+                onClick={lambda e: any -> None { navigate("/dashboard"); }}
+            >
+                Skip →
+            </span>
+        </div>;
+    }
+
+    # Step 1 content
+    let step1Content = None;
+    if currentStep == 1 {
+        step1Content = <div style={{ "height":"60vh" }}>
+            <div style={{
+                "marginBottom":"0px",
+                "fontWeight":"600",
+                "color":"white",
+                "fontSize":"1.15rem"
+            }}>Upload your CV</div>
+            <p style={{
+                "color":"grey",
+                "marginBlock":"0px",
+                "marginTop":"10px"
+            }}>Let us start by understanding your background</p>
+
+            <div
+                onMouseEnter={lambda e: any -> None { setResumeHover(True); }}
+                onMouseLeave={lambda e: any -> None { setResumeHover(False); }}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                style={uploadBoxStyle}
+            >
+                <div style={{
+                    "width":"55px",
+                    "aspectRatio":"1",
+                    "borderRadius":"50%",
+                    "backgroundColor":"black",
+                    "display":"flex",
+                    "alignItems":"center",
+                    "justifyContent":"center",
+                    "marginBottom":"15px"
+                }}>
+                    <CloudUpload style={{ "fontSize":"0.75rem", "color":"#6e11b0" }} />
+                </div>
+
+                <p style={{
+                    "color":"grey",
+                    "marginBlock":"0px",
+                    "marginBlock":"20px",
+                    "fontSize":".9em"
+                }}>
+                    Supported formats: PDF, DOC, DOCX (Max 5MB)
+                </p>
+
+                # Hidden file input + label (Option A)
+                <input
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    onChange={handleFileSelect}
+                    style={{ "display": "none" }}
+                    id="resumeInput"
+                />
+
+                <label
+                    for="resumeInput"
+                    style={uploadLabelStyle}
+                    onMouseEnter={lambda e: any -> None { e.currentTarget.style.filter = "brightness(0.95)"; }}
+                    onMouseLeave={lambda e: any -> None { e.currentTarget.style.filter = "brightness(1)"; }}
+                >
+                    Upload from Computer
+                </label>
+
+                {uploadedFileDisplay}
+                {errorDisplay}
+                {manualSkipDisplay}
+
+            </div>
+        </div>;
+    }
+
+    # Placeholders for steps 2-4
+    let step2Content = None;
+    if currentStep == 2 {
+        step2Content = <div style={{ "height":"60vh" }}>hello</div>;
+    }
+
+    let step3Content = None;
+    if currentStep == 3 {
+        step3Content = <div style={{ "height":"60vh" }}>hello</div>;
+    }
+
+    let step4Content = None;
+    if currentStep == 4 {
+        step4Content = <div style={{ "height":"60vh" }}>hello</div>;
+    }
+
+    # Navigation controls computed
+    let backNav = None;
+    if currentStep > 1 {
+        backNav = <div
+            onClick={lambda e: any -> None { setCurrentStep(currentStep - 1); }}
+            style={{
+                "display":"flex",
+                "flexDirection":"row",
+                "alignItems":"center",
+                "cursor":"pointer"
+            }}
+        >
+            <ChevronLeft/>
+            Back
+        </div>;
+    }
+
+    # Next button (single implementation)
+    let nextBtn = <button
+        type="button"
+        onClick={lambda e: any -> None {
+            if currentStep == 1 {
+                handleStep1Next();
+            } else {
+                if currentStep < 4 {
+                    setCurrentStep(currentStep + 1);
+                }
+            }
+        }}
+        onMouseEnter={lambda e: any -> None { setNavBtnHover(True); }}
+        onMouseLeave={lambda e: any -> None { setNavBtnHover(False); }}
+        style={nextBtnBaseStyle}
+        disabled={currentStep == 1 and (not canProceed or isLoading)}
+    >
+        {nextBtnContent}
+    </button>;
+
+    # ------------------------ Final JSX (no inline conditional expressions) ------------------------
+    return <div style={wrapperStyle}>
+
+        <div style={{
+            "width": "100%",
+            "height": "100%",
+            "display": "flex",
+            "justifyContent": "center",
+            "alignItems": "center"
+        }}>
+            <div style={leftPanelInnerStyle}>
+                {stepsList}
+            </div>
+        </div>
+
+        <div style={{
+            "width": "100%",
+            "height": "95%",
+            "marginBlock":"auto",
+            "display": "flex",
+            "justifyContent": "center",
+            "alignItems": "center"
+        }}>
+            <div style={rightInnerStyle}>
+                <div style={{ "color":"grey", "textTransform":"uppercase" }}>Step {currentStep} of 4</div>
+
+                <div style={{
+                    "width":"80%",
+                    "height":"11px",
+                    "borderRadius":"20px",
+                    "backgroundColor": "#0b0b0b",
+                    "overflow":"hidden",
+                    "marginBlock":"20px"
                 }}>
                     <div style={{
-                        "display":"flex",
-                        "alignItems":"center",
-                        "justifyContent":"center",
-                    }}>
-                        { props.step.icon }
-                        { props.step.id != 4 &&
-                        <div style={{
-                            "position":"absolute",
-                            "height":"calc(100% + 65px)",
-                            "width":"2px",
-                            "left":"calc(50% + 1px)",
-                            "top":"100%",
-                            "transform":"translateX(-50%)",
-                            "zIndex":"-1",
-                            "transition": "all 0.2s ease",
-                            "borderLeft": ("2px dashed #6e11b0" if props.step.id < currentStep else "2px dashed grey")
-
-                        }}
-                        ></div>
-                        }
-                    </div>
-                    
+                        "height":"100%",
+                        "width": progress,
+                        "backgroundColor": "#6e11b0",
+                        "transition": "0.3s ease",
+                        "borderRadius":"20px"
+                    }}></div>
                 </div>
-                <div>
-                    <h1 style={{
-                        "marginBottom":"0px",
-                        "fontWeight":"600",
-                        "color":("white" if props.step.id <= currentStep else "rgba(255, 255, 255, 0.6); "),
-                        "fontSize":"1.15rem"
-                    }}>{props.step.title}</h1>
-                    <p style={{
-                        "color":"grey",
-                        "marginBlock":"0px",
-                        "marginTop":"10px"
-                    }}>{props.step.description}</p>
-                </div>
-            </div>;
-        }
 
+                {step1Content}
+                {step2Content}
+                {step3Content}
+                {step4Content}
 
-         return <div style={{
-            "width": "100%",
-            "height": "100vh",
-            "display": "grid",
-            "gridTemplateColumns": "45% 55%",
-            "position": "relative",
-            "color": "white",
-            "fontFamily": "system-ui, sans-serif"
-
-         }}>
                 <div style={{
-                        "width": "100%",
-                        "height": "100%",
-                        "display": "flex",
-                        "justifyContent": "center",
-                        "alignItems": "center"
-                    }}>
-                    <div
-                        style={{
-                            "margin": "auto",
-                            "backgroundColor": "#0b0b0b",
-                            "width": "95%",
-                            "height": "90%",
-                            "zIndex": "9999",
-                            "borderRadius": "10px",
-                            "display": "flex",
-                            "flexDirection" :"column",
-                            "justifyContent": "center",
-                            "alignItems": "center",
-                            "overflow": "hidden"
-                        }}
-                    >
-                     {steps.map(
-                        lambda step:any -> any { return 
-                        <Step
-                        key={step.id}
-                        step={step}
-                        isActive={currentStep == step.id}
-                        />;
-                        })}   
-                    </div>
+                    "display":"flex",
+                    "flexDirection":"row",
+                    "gap":"25px",
+                    "alignItems":"center",
+                    "marginTop":"20px"
+                }}>
+                    {backNav}
+                    {nextBtn}
                 </div>
-                <div style={{
-                        "width": "100%",
-                        "height": "95%",
-                        "marginBlock":"auto",
-                        "display": "flex",
-                        "justifyContent": "center",
-                        "alignItems": "center"
-                    }}>
-                    <div style={{
-                        "width":"90%",
-                        "height":"90%",
-                        "display":"flex",
-                        "flexDirection":"column",
-                        "justifyContent":"center"
-                        
-                     }}>
-                        <div style={{
-                            "color":"grey",
-                            "textTransform":"uppercase"
-                         }}>Step {currentStep} of 4</div>
-                        
-                        <div style={{
-                            "width":"80%",
-                            "height":"11px",
-                            "borderRadius":"20px",
-                            "backgroundColor": "#0b0b0b",
-                            "overflow":"hidden",
-                            "marginBlock":"20px"
-                         }}>
-                             <div
-                                style={{
-                                "height": "100%",
-                                "width":(progress),     
-                                "backgroundColor": "#6e11b0",
-                                "transition": "0.3s ease",
-                                "borderRadius":"20px"
-                                }}
-                             ></div>
-                        </div>
+            </div>
+        </div>
 
-                        { currentStep == 1 &&
-                        <div style={{
-                            "height":"60vh"
-                            }}>
-                            <div style={{
-                                "marginBottom":"0px",
-                                "fontWeight":"600",
-                                "color":"white",
-                                "fontSize":"1.15rem"
-                            }}>Upload your CV</div>
-                            <p style={{
-                                "color":"grey",
-                                "marginBlock":"0px",
-                                "marginTop":"10px"
-                                }}>Let us start by understanding your background</p>
-                            <div    
-                                onMouseEnter={lambda  e: any  -> None{ setResumeHover(true);} }
-                                onMouseLeave={lambda  e: any  -> None{ setResumeHover(false);} }
-                                style={{
-                                    "marginBlock":"30px",
-                                    "height":"40vh",
-                                    "width":"80%",
-                                    "borderRadius":"15px",
-                                    "border":("2px dashed #6e11b0" if resumeHover else "2px dashed grey"),
-                                    "backgroundColor": ( "#0b0b0b" if resumeHover else "#101010ff"),
-                                    "display":"flex",
-                                    "flexDirection":"column",
-                                    "justifyContent":"center",
-                                    "alignItems":"center"
+    </div>;
+}
 
-                                }}>
-                                    <div style={{
-                                        "width":"55px",
-                                        "aspectRatio":"1",
-                                        "borderRadius":"50%",
-                                        "backgroundColor":"black",
-                                        "display":"flex",
-                                        "alignItems":"center",
-                                        "justifyContent":"center",
-                                        "marginBottom":"15px"
-
-                                    }}>
-                                     <CloudUpload style={{
-                                        "fontSize":"0.75rem",
-                                        "color":"#6e11b0"
-
-                                    }} /></div>
-                                    <p style={{
-                                         "color":"grey",
-                                        "marginBlock":"0px",
-                                        "marginBlock":"20px",
-                                        "fontSize":".9em"
-                                    }}>
-                                    Supported formats: PDF, DOC, DOCX (Max 5MB)</p>
-                                    <div></div>
-                                    <div style={{
-                                        "width": "auto",
-                                        "padding": "1rem 1.5rem",
-                                        "border": "none",
-                                        "borderRadius": "0.5rem",
-                                        "backgroundColor": "#6e11b0",
-                                        "color": "white",
-                                        "fontWeight": "600",
-                                        "fontSize": "0.875rem",
-                                        "cursor": "pointer",
-                                        "transition": "all 0.2s ease",
-                                        "marginTop":"10px",
-                                        "boxShadow": "0 0 20px rgba(110, 17, 176, 0.2)"
-                                    }}>Upload from Computer</div>
-                                </div>
-                        </div>}
-
-                        { currentStep == 2 && 
-                        <div style={{
-                            "height":"60vh"
-                        }}>hello</div>
-                        }
-
-                        { currentStep == 3 && 
-                        <div style={{
-                            "height":"60vh"
-                        }}>hello</div>
-                        }
-
-                        { currentStep == 4 && 
-                        <div style={{
-                            "height":"60vh"
-                        }}>hello</div>
-                        }
-
-                        <div style={{
-                            "display":"flex",
-                            "flexDirection":"row",
-                            "gap":"25px",
-                            "alignItems":"center"
-                            }}>
-
-                            { currentStep > 1 &&
-                            <div 
-                                onClick={lambda  e: any  -> None{setCurrentStep(currentStep - 1);}}
-                                style={{
-                                    "display":"flex",
-                                    "flexDirection":"row",
-                                    "alignItems":"center"
-                                }}> 
-                                <ChevronLeft/>
-                                Back
-                            </div>
-                            }
-
-                            <button
-                                type="button"
-                                onClick={lambda  e: any  -> None{setCurrentStep(currentStep + 1);}}
-                                onMouseEnter={lambda  e: any  -> None{ setNavBtnHover(true);} }
-                                onMouseLeave={lambda  e: any  -> None{ setNavBtnHover(false);} }
-                                style={{
-                                    "width": "180px",
-                                    "backgroundColor": "#6e11b0",
-                                    "color": "white",
-                                    "border": "none",
-                                    "paddingInline": "2.5rem",
-                                    "paddingBlock": "1rem",
-                                    "borderRadius": "5px",
-                                    "cursor": "pointer",
-                                    "fontSize": "16px",
-                                    "transform": (
-                                        "translateY(0.25rem)" if navbtnHover else "translateY(0)"
-                                    ),
-                                    "transition": "transform 0.2s ease"
-                                }}
-                                >
-                                Next
-                            </button>
-                        </div>
-                    </div>
-                    
-                </div>
-            </div>;
-    }
 
     def Dashboard() -> any {
          return <div>
