@@ -572,12 +572,12 @@ function Onboarding() {
       if (canGoLeft) {
         setCurrentRoleIndex(currentRoleIndex - 1);
       }
-    }, "style": {"position": "absolute", "left": "-12px", "top": "50%", "transform": "translateY(-50%)", "fontFamily": "Inter, sans-serif", "color": leftArrowColor, "cursor": leftArrowCursor, "fontSize": "1.8rem", "padding": "8px", "borderRadius": "50%", "transition": "all 0.25s ease", "userSelect": "none"}}, ["\u2039"]), __jacJsx("h3", {"style": {"color": "white", "margin": "0px", "fontSize": "1.1rem", "fontWeight": "600"}}, [currentRole.title]), __jacJsx("p", {"style": {"color": "grey", "fontSize": "0.88rem", "lineHeight": "1.35", "margin": "0px"}}, [currentRole.description]), __jacJsx("div", {"style": {"marginTop": "auto", "color": "#7f2ae6", "fontWeight": "600", "fontSize": "0.85rem"}}, ["Select →"]), __jacJsx("div", {"onClick": e => {
+    }, "style": {"position": "absolute", "left": "0px", "top": "50%", "transform": "translateY(-50%)", "fontFamily": "Inter, sans-serif", "color": leftArrowColor, "cursor": leftArrowCursor, "fontSize": "1.8rem", "padding": "8px", "borderRadius": "50%", "transition": "all 0.25s ease", "userSelect": "none"}}, ["\u2039"]), __jacJsx("h3", {"style": {"color": "white", "margin": "0px", "fontSize": "1.1rem", "fontWeight": "600"}}, [currentRole.title]), __jacJsx("p", {"style": {"color": "grey", "fontSize": "0.88rem", "lineHeight": "1.35", "margin": "0px"}}, [currentRole.description]), __jacJsx("div", {"style": {"marginTop": "auto", "color": "#7f2ae6", "fontWeight": "600", "fontSize": "0.85rem"}}, ["Select →"]), __jacJsx("div", {"onClick": e => {
       e.stopPropagation();
       if (canGoRight) {
         setCurrentRoleIndex(currentRoleIndex + 1);
       }
-    }, "style": {"position": "absolute", "right": "-12px", "top": "50%", "transform": "translateY(-50%)", "fontFamily": "Inter, sans-serif", "color": rightArrowColor, "cursor": rightArrowCursor, "fontSize": "1.8rem", "padding": "8px", "borderRadius": "50%", "transition": "all 0.25s ease", "userSelect": "none"}}, ["\u203a"])])])]);
+    }, "style": {"position": "absolute", "right": "0px", "top": "50%", "transform": "translateY(-50%)", "fontFamily": "Inter, sans-serif", "color": rightArrowColor, "cursor": rightArrowCursor, "fontSize": "1.8rem", "padding": "8px", "borderRadius": "50%", "transition": "all 0.25s ease", "userSelect": "none"}}, ["\u203a"])])])]);
   }
   let step4Content = null;
   if (currentStep === 4) {

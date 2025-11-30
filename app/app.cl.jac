@@ -2190,7 +2190,7 @@ def Onboarding() -> any {
                             }}
                             style={{
                                 "position":"absolute",
-                                "left":"-12px",
+                                "left":"0px",  # moved inside from -12px
                                 "top":"50%",
                                 "transform":"translateY(-50%)",
                                 "fontFamily":"Inter, sans-serif",
@@ -2205,6 +2205,7 @@ def Onboarding() -> any {
                         >
                             {"‹"}
                         </div>
+
 
                         <h3 style={{
                             "color":"white",
@@ -2242,7 +2243,7 @@ def Onboarding() -> any {
                             }}
                             style={{
                                 "position":"absolute",
-                                "right":"-12px",
+                                "right":"0px",  # moved inside from -12px
                                 "top":"50%",
                                 "transform":"translateY(-50%)",
                                 "fontFamily":"Inter, sans-serif",
@@ -2257,6 +2258,7 @@ def Onboarding() -> any {
                         >
                             {"›"}
                         </div>
+
 
                     </div>
 
