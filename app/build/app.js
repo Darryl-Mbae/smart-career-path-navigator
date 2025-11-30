@@ -1308,7 +1308,7 @@ function Onboarding() {
   }
   function _saveStep() {
     _saveStep = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
-      var result, _t2;
+      var result, roles, _t2;
       return _regenerator().w(function (_context4) {
         while (1) switch (_context4.p = _context4.n) {
           case 0:
@@ -1328,28 +1328,38 @@ function Onboarding() {
             });
           case 3:
             result = _context4.v;
-            if (result) {
-              setAllowSkip(false);
-              setShowManualEntry(false);
-              setCurrentStep(3);
-            } else {
-              showAlert("Failed to save profile. Please try again.");
+            if (!result) {
+              _context4.n = 5;
+              break;
             }
-            _context4.n = 5;
-            break;
+            _context4.n = 4;
+            return __jacSpawn("generate_role_suggestions", "", {});
           case 4:
-            _context4.p = 4;
+            roles = _context4.v;
+            console.log("Suggested roles:", roles.reports);
+            setAllowSkip(false);
+            setShowManualEntry(false);
+            setCurrentStep(3);
+            _context4.n = 6;
+            break;
+          case 5:
+            showAlert("Failed to save profile. Please try again.");
+          case 6:
+            _context4.n = 8;
+            break;
+          case 7:
+            _context4.p = 7;
             _t2 = _context4.v;
             console.log(_t2);
             showAlert("An error occurred while saving. Try again.");
-          case 5:
-            _context4.p = 5;
+          case 8:
+            _context4.p = 8;
             setSavingProfile(false);
-            return _context4.f(5);
-          case 6:
+            return _context4.f(8);
+          case 9:
             return _context4.a(2);
         }
-      }, _callee4, null, [[2, 4, 5, 6]]);
+      }, _callee4, null, [[2, 7, 8, 9]]);
     }));
     return _saveStep.apply(this, arguments);
   }
