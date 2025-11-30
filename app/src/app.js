@@ -185,6 +185,7 @@ function Onboarding() {
   let [step2Loading, setStep2Loading] = useState(true);
   let [savingProfile, setSavingProfile] = useState(false);
   let [suggestedRoles, setSuggestedRoles] = useState([]);
+  let [currentRoleIndex, setCurrentRoleIndex] = useState(0);
   function showAlert(msg) {
     setAlertMessage(msg);
     setAlertVisible(true);
@@ -543,19 +544,40 @@ function Onboarding() {
   }
   let step3Content = null;
   if (currentStep === 3) {
-    step3Content = __jacJsx("div", {"style": {"height": "65vh", "overflowY": "auto", "paddingRight": "10px"}}, [__jacJsx("h2", {"style": {"color": "white", "marginBottom": "10px", "fontSize": "1.3rem", "fontWeight": "600"}}, ["Your AI-Suggested Career Roles"]), __jacJsx("p", {"style": {"color": "grey", "marginTop": "0px", "marginBottom": "25px", "fontSize": "0.9rem"}}, ["Choose the role that aligns most with your goals. You can edit it later."]), __jacJsx("div", {"style": {"display": "grid", "gridTemplateColumns": "repeat(auto-fill, minmax(230px, 1fr))", "gap": "15px"}}, [suggestedRoles.length === 0 && __jacJsx("p", {"style": {"color": "grey"}}, ["No suggestions found"]), suggestedRoles.length > 0 && suggestedRoles.map((r, idx) => {
-      return __jacJsx("div", {"key": idx, "onClick": e => {
-        obj.selectedRole = r.title;
-      }, "style": {"backgroundColor": "#0e0e0e", "border": "1px solid #262626", "padding": "18px", "borderRadius": "12px", "cursor": "pointer", "transition": "all 0.25s ease", "display": "flex", "flexDirection": "column", "gap": "10px"}, "onMouseEnter": e => {
-        e.currentTarget.style.border = "1px solid #7f2ae6";
-        e.currentTarget.style.boxShadow = "0 0 10px #7f2ae6";
-        e.currentTarget.style.transform = "scale(1.02)";
-      }, "onMouseLeave": e => {
-        e.currentTarget.style.border = "1px solid #262626";
-        e.currentTarget.style.boxShadow = "none";
-        e.currentTarget.style.transform = "scale(1)";
-      }}, [__jacJsx("h3", {"style": {"color": "white", "margin": "0px", "fontSize": "1.05rem", "fontWeight": "600"}}, [r.title]), __jacJsx("p", {"style": {"color": "grey", "fontSize": "0.85rem", "lineHeight": "1.3", "margin": "0px"}}, [r.description]), __jacJsx("div", {"style": {"marginTop": "auto", "color": "#7f2ae6", "fontWeight": "600", "fontSize": "0.8rem"}}, ["Select →"])]);
-    })])]);
+    let totalRoles = suggestedRoles.length;
+    let currentRole = null;
+    if (totalRoles > 0) {
+      currentRole = suggestedRoles[currentRoleIndex];
+    }
+    let canGoLeft = currentRoleIndex > 0;
+    let canGoRight = currentRoleIndex < totalRoles - 1;
+    let arrowActiveColor = "#b37aff";
+    let arrowInactiveColor = "#2a2a2a";
+    let leftArrowColor = arrowInactiveColor;
+    let rightArrowColor = arrowInactiveColor;
+    let leftArrowCursor = "default";
+    let rightArrowCursor = "default";
+    if (canGoLeft) {
+      leftArrowColor = arrowActiveColor;
+      leftArrowCursor = "pointer";
+    }
+    if (canGoRight) {
+      rightArrowColor = arrowActiveColor;
+      rightArrowCursor = "pointer";
+    }
+    step3Content = __jacJsx("div", {"style": {"height": "65vh", "padding": "5px", "position": "relative", "display": "flex", "flexDirection": "column"}}, [__jacJsx("h2", {"style": {"color": "white", "marginBottom": "10px", "fontSize": "1.3rem", "fontWeight": "600"}}, ["Your AI-Suggested Career Roles"]), __jacJsx("p", {"style": {"color": "grey", "marginTop": "0px", "marginBottom": "25px", "fontSize": "0.9rem"}}, ["Slide through the suggested roles and select the one that fits you best."]), totalRoles === 0 && __jacJsx("p", {"style": {"color": "grey"}}, ["No suggestions found"]), totalRoles > 0 && __jacJsx("div", {"style": {"display": "flex", "alignItems": "center", "justifyContent": "center", "position": "relative", "height": "100%"}}, [__jacJsx("div", {"onClick": e => {
+      obj.selectedRole = currentRole.title;
+    }, "style": {"width": "85%", "backgroundColor": "#0e0e0e", "border": "1px solid #262626", "padding": "22px", "borderRadius": "12px", "cursor": "pointer", "transition": "all 0.25s ease", "display": "flex", "flexDirection": "column", "gap": "10px", "boxShadow": "0 0 6px rgba(0,0,0,0.4)", "position": "relative"}}, [__jacJsx("div", {"onClick": e => {
+      e.stopPropagation();
+      if (canGoLeft) {
+        setCurrentRoleIndex(currentRoleIndex - 1);
+      }
+    }, "style": {"position": "absolute", "left": "-12px", "top": "50%", "transform": "translateY(-50%)", "fontFamily": "Inter, sans-serif", "color": leftArrowColor, "cursor": leftArrowCursor, "fontSize": "1.8rem", "padding": "8px", "borderRadius": "50%", "transition": "all 0.25s ease", "userSelect": "none"}}, ["\u2039"]), __jacJsx("h3", {"style": {"color": "white", "margin": "0px", "fontSize": "1.1rem", "fontWeight": "600"}}, [currentRole.title]), __jacJsx("p", {"style": {"color": "grey", "fontSize": "0.88rem", "lineHeight": "1.35", "margin": "0px"}}, [currentRole.description]), __jacJsx("div", {"style": {"marginTop": "auto", "color": "#7f2ae6", "fontWeight": "600", "fontSize": "0.85rem"}}, ["Select →"]), __jacJsx("div", {"onClick": e => {
+      e.stopPropagation();
+      if (canGoRight) {
+        setCurrentRoleIndex(currentRoleIndex + 1);
+      }
+    }, "style": {"position": "absolute", "right": "-12px", "top": "50%", "transform": "translateY(-50%)", "fontFamily": "Inter, sans-serif", "color": rightArrowColor, "cursor": rightArrowCursor, "fontSize": "1.8rem", "padding": "8px", "borderRadius": "50%", "transition": "all 0.25s ease", "userSelect": "none"}}, ["\u203a"])])])]);
   }
   let step4Content = null;
   if (currentStep === 4) {
