@@ -635,7 +635,7 @@ walker generate_role_suggestions {
         if len(valid_roles) == 0 {
             print("ERROR: All LLM suggestions were malformed.\n");
             report {
-                "status": "Error",
+                "status": "Fail",
                 "message": "LLM returned invalid role objects.",
                 "body": []
             };

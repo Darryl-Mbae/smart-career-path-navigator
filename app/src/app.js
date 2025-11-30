@@ -184,6 +184,7 @@ function Onboarding() {
   let [newCert, setNewCert] = useState("");
   let [step2Loading, setStep2Loading] = useState(true);
   let [savingProfile, setSavingProfile] = useState(false);
+  let [suggestedRoles, setSuggestedRoles] = useState([]);
   function showAlert(msg) {
     setAlertMessage(msg);
     setAlertVisible(true);
@@ -276,8 +277,15 @@ function Onboarding() {
     try {
       let result = await __jacSpawn("update_user_profile", "", {"updated_skills": skills, "updated_interests": interests, "updated_certifications": certs});
       if (result) {
-        let roles = await __jacSpawn("generate_role_suggestions", "", {});
-        console.log("Suggested roles:", roles.reports);
+        let rolesReport = await __jacSpawn("generate_role_suggestions", "", {});
+        let latestReport = rolesReport.reports[rolesReport.reports.length - 1];
+        if (latestReport.status === "Success") {
+          setSuggestedRoles(latestReport.body);
+          console.log("Suggested roles saved in state:", latestReport.body);
+        } else {
+          showAlert("Failed to generate role suggestions: " + latestReport.message || "Unknown error");
+          setCurrentStep(1);
+        }
         setAllowSkip(false);
         setShowManualEntry(false);
         setCurrentStep(3);
