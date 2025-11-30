@@ -2086,9 +2086,108 @@ def Onboarding() -> any {
     }
 
     let step3Content = None;
-    if currentStep == 3 {
-        step3Content = <div style={{ "height":"60vh" }}>hello</div>;
-    }
+if currentStep == 3 {
+
+    step3Content = <div style={{
+        "height":"65vh",
+        "overflowY":"auto",
+        "paddingRight":"10px"
+    }}>
+
+        <h2 style={{
+            "color":"white",
+            "marginBottom":"10px",
+            "fontSize":"1.3rem",
+            "fontWeight":"600"
+        }}>
+            Your AI-Suggested Career Roles
+        </h2>
+
+        <p style={{
+            "color":"grey",
+            "marginTop":"0px",
+            "marginBottom":"25px",
+            "fontSize":"0.9rem"
+        }}>
+            Choose the role that aligns most with your goals. You can edit it later.
+        </p>
+
+        <div style={{
+            "display":"grid",
+            "gridTemplateColumns":"repeat(auto-fill, minmax(230px, 1fr))",
+            "gap":"15px"
+        }}>
+
+            {suggestedRoles.length == 0 and
+                <p style={{ "color":"grey" }}>No suggestions found</p>
+            }
+
+            {suggestedRoles.length > 0 and suggestedRoles.map(lambda r: any, idx: any -> any {
+
+                return <div
+                    key={idx}
+                    onClick={lambda e: any -> None {
+                        # When user selects a role, store it
+                        root.selectedRole = r.title;
+                    }}
+                    style={{
+                        "backgroundColor":"#0e0e0e",
+                        "border":"1px solid #262626",
+                        "padding":"18px",
+                        "borderRadius":"12px",
+                        "cursor":"pointer",
+                        "transition":"all 0.25s ease",
+                        "display":"flex",
+                        "flexDirection":"column",
+                        "gap":"10px"
+                    }}
+                    onMouseEnter={lambda e: any -> None {
+                        e.currentTarget.style.border = "1px solid #7f2ae6";
+                        e.currentTarget.style.boxShadow = "0 0 10px #7f2ae6";
+                        e.currentTarget.style.transform = "scale(1.02)";
+                    }}
+                    onMouseLeave={lambda e: any -> None {
+                        e.currentTarget.style.border = "1px solid #262626";
+                        e.currentTarget.style.boxShadow = "none";
+                        e.currentTarget.style.transform = "scale(1)";
+                    }}
+                >
+
+                    <h3 style={{
+                        "color":"white",
+                        "margin":"0px",
+                        "fontSize":"1.05rem",
+                        "fontWeight":"600"
+                    }}>
+                        {r.title}
+                    </h3>
+
+                    <p style={{
+                        "color":"grey",
+                        "fontSize":"0.85rem",
+                        "lineHeight":"1.3",
+                        "margin":"0px"
+                    }}>
+                        {r.description}
+                    </p>
+
+                    <div style={{
+                        "marginTop":"auto",
+                        "color":"#7f2ae6",
+                        "fontWeight":"600",
+                        "fontSize":"0.8rem"
+                    }}>
+                        Select →
+                    </div>
+
+                </div>;
+
+            })}
+        </div>
+
+    </div>;
+}
+
 
     let step4Content = None;
     if currentStep == 4 {
