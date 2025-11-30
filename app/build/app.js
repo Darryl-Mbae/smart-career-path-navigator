@@ -2225,7 +2225,7 @@ function Onboarding() {
       },
       "style": {
         "position": "absolute",
-        "left": "-12px",
+        "left": "0px",
         "top": "50%",
         "transform": "translateY(-50%)",
         "fontFamily": "Inter, sans-serif",
@@ -2267,7 +2267,7 @@ function Onboarding() {
       },
       "style": {
         "position": "absolute",
-        "right": "-12px",
+        "right": "0px",
         "top": "50%",
         "transform": "translateY(-50%)",
         "fontFamily": "Inter, sans-serif",
