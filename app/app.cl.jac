@@ -1313,14 +1313,22 @@ def Onboarding() -> any {
                 updated_certifications=certs
             );
 
-            # If the walker returns something truthy consider it success; otherwise show error.
             if result {
+
+                let roles = await root spawn generate_role_suggestions();
+                console.log("Suggested roles:", roles.reports);
+
+                # Example: you can store them for step 3
+                # setSuggestedRoles(roles.reports[0].body.roles);
+
                 setAllowSkip(False);
                 setShowManualEntry(False);
+
                 setCurrentStep(3);
             } else {
                 showAlert("Failed to save profile. Please try again.");
             }
+
         } except Exception as err {
             console.log(err);
             showAlert("An error occurred while saving. Try again.");
@@ -1328,6 +1336,7 @@ def Onboarding() -> any {
             setSavingProfile(False);
         }
     }
+
 
     useEffect(lambda -> None {
         let percent = (currentStep / 4) * 100;
@@ -1773,8 +1782,8 @@ def Onboarding() -> any {
     }
 
    # Step 2 content
-let step2Content = None;
-if currentStep == 2 {
+    let step2Content = None;
+    if currentStep == 2 {
     if step2Loading {
         step2Content = step2LoadingView;
     } else {
@@ -2066,7 +2075,7 @@ if currentStep == 2 {
 
         </div>;
     }
-}
+    }
 
     let step3Content = None;
     if currentStep == 3 {

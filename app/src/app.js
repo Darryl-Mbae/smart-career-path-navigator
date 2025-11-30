@@ -276,6 +276,8 @@ function Onboarding() {
     try {
       let result = await __jacSpawn("update_user_profile", "", {"updated_skills": skills, "updated_interests": interests, "updated_certifications": certs});
       if (result) {
+        let roles = await __jacSpawn("generate_role_suggestions", "", {});
+        console.log("Suggested roles:", roles.reports);
         setAllowSkip(false);
         setShowManualEntry(false);
         setCurrentStep(3);
