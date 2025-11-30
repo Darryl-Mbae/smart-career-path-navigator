@@ -1187,6 +1187,10 @@ function Onboarding() {
     _useState72 = _slicedToArray(_useState71, 2),
     savingProfile = _useState72[0],
     setSavingProfile = _useState72[1];
+  var _useState73 = useState([]),
+    _useState74 = _slicedToArray(_useState73, 2),
+    suggestedRoles = _useState74[0],
+    setSuggestedRoles = _useState74[1];
   function showAlert(msg) {
     setAlertMessage(msg);
     setAlertVisible(true);
@@ -1308,7 +1312,7 @@ function Onboarding() {
   }
   function _saveStep() {
     _saveStep = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
-      var result, roles, _t2;
+      var result, rolesReport, latestReport, _t2;
       return _regenerator().w(function (_context4) {
         while (1) switch (_context4.p = _context4.n) {
           case 0:
@@ -1335,8 +1339,15 @@ function Onboarding() {
             _context4.n = 4;
             return __jacSpawn("generate_role_suggestions", "", {});
           case 4:
-            roles = _context4.v;
-            console.log("Suggested roles:", roles.reports);
+            rolesReport = _context4.v;
+            latestReport = rolesReport.reports[rolesReport.reports.length - 1];
+            if (latestReport.status === "Success") {
+              setSuggestedRoles(latestReport.body);
+              console.log("Suggested roles saved in state:", latestReport.body);
+            } else {
+              showAlert("Failed to generate role suggestions: " + latestReport.message || "Unknown error");
+              setCurrentStep(1);
+            }
             setAllowSkip(false);
             setShowManualEntry(false);
             setCurrentStep(3);

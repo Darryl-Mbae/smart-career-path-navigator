@@ -1215,6 +1215,8 @@ def Onboarding() -> any {
     let [newCert, setNewCert] = useState("");
     let [step2Loading, setStep2Loading] = useState(True);
     let [savingProfile, setSavingProfile] = useState(False);
+    let [suggestedRoles, setSuggestedRoles] = useState([]);
+
 
     # Alert 
     def showAlert(msg: str) {
@@ -1315,16 +1317,22 @@ def Onboarding() -> any {
 
             if result {
 
-                let roles = await root spawn generate_role_suggestions();
-                console.log("Suggested roles:", roles.reports);
+                let rolesReport = await root spawn generate_role_suggestions();
+                let latestReport = rolesReport.reports[rolesReport.reports.length - 1];
 
-                # Example: you can store them for step 3
-                # setSuggestedRoles(roles.reports[0].body.roles);
+                if latestReport.status == "Success" {
+                    # Store the array of suggestions in state
+                    setSuggestedRoles(latestReport.body);
+
+                    console.log("Suggested roles saved in state:", latestReport.body);
+                } else {
+                    showAlert("Failed to generate role suggestions: " + (latestReport.message or "Unknown error"));
+                }
 
                 setAllowSkip(False);
                 setShowManualEntry(False);
-
                 setCurrentStep(3);
+
             } else {
                 showAlert("Failed to save profile. Please try again.");
             }
