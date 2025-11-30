@@ -1185,45 +1185,192 @@ def LoadingDots() -> any {
 
 def Onboarding() -> any {
 
-    # ------------------------ State ------------------------
     let [currentStep, setCurrentStep] = useState(1);
     let [stepCompleted, setStepCompleted] = useState(0);
     let [navbtnHover, setNavBtnHover] = useState(False);
     let [progress, setProgress] = useState("25%");
     let [resumeHover, setResumeHover] = useState(False);
 
+    # Alerts + skip
+    let [alertMessage, setAlertMessage] = useState("");
+    let [alertVisible, setAlertVisible] = useState(False);
+    let [allowSkip, setAllowSkip] = useState(False);
+
     # File upload states for step 1
     let [dragActive, setDragActive] = useState(False);
     let [fileName, setFileName] = useState("");
     let [file, setFile] = useState(None);
+    let [error, setError] = useState("");
     let [isLoading, setIsLoading] = useState(False);
     let [showManualEntry, setShowManualEntry] = useState(False);
     let [canProceed, setCanProceed] = useState(False);
-
-    # Alert state
-    let [alertMessage, setAlertMessage] = useState("");
-
     let navigate = useNavigate();
+
+    # Step 2 States 
+    let [skills, setSkills] = useState([]);
+    let [interests, setInterests] = useState([]);
+    let [certs, setCerts] = useState([]);
+    let [newSkill, setNewSkill] = useState("");
+    let [newInterest, setNewInterest] = useState("");
+    let [newCert, setNewCert] = useState("");
+    let [step2Loading, setStep2Loading] = useState(True);
+    let [savingProfile, setSavingProfile] = useState(False);
+
+    # Alert 
+    def showAlert(msg: str) {
+        setAlertMessage(msg);
+        setAlertVisible(True);
+
+        setTimeout(lambda -> None {
+            setAlertVisible(False);
+        }, 3500);
+    }
+
+    # Load User Profile (Step 2)
+    async def loadStep2() -> None {
+        setStep2Loading(True);
+
+        try {
+            let profile = await root spawn get_user_profile();
+
+            if profile and profile.reports and profile.reports.length > 0 {
+                let body = profile.reports[0]["body"];
+
+                # Ensure data shapes: skills -> [{ name: "x" }], interests similarly, certs -> [{ title: "x" }]
+                setSkills(body["skills"] if "skills" in body else []);
+                setInterests(body["interests"] if "interests" in body else []);
+                setCerts(body["certifications"] if "certifications" in body else []);
+            } else {
+                setSkills([]);
+                setInterests([]);
+                setCerts([]);
+            }
+        } except Exception as err {
+            console.log(err);
+            showAlert("Failed to load profile. Try again later.");
+        } finally {
+            setStep2Loading(False);
+        }
+    }
+
+    useEffect(lambda -> None {
+        if currentStep == 2 {
+            loadStep2();
+        }
+    }, [currentStep]);
+
+    # Add to UI
+    def addSkill() {
+        if newSkill.trim().length == 0 { return; }
+        # Avoid duplicates by name (case-insensitive)
+        let exists = skills.filter(lambda s: any -> bool { return s.name.toLowerCase() == newSkill.trim().toLowerCase(); }).length > 0;
+        if not exists {
+            setSkills(skills.concat([{"name": newSkill.trim(), "description": ""}]));
+        }
+        setNewSkill("");
+    }
+
+    def addInterest() {
+        if newInterest.trim().length == 0 { return; }
+        let exists = interests.filter(lambda i: any -> bool { return i.name.toLowerCase() == newInterest.trim().toLowerCase(); }).length > 0;
+        if not exists {
+            setInterests(interests.concat([{"name": newInterest.trim(), "description": ""}]));
+        }
+        setNewInterest("");
+    }
+
+    def addCert() {
+        if newCert.trim().length == 0 { return; }
+        let exists = certs.filter(lambda c: any -> bool { return ("title" in c and c.title.toLowerCase() == newCert.trim().toLowerCase()); }).length > 0;
+        if not exists {
+            setCerts(certs.concat([{"title": newCert.trim(), "provider": "", "url": ""}]));
+        }
+        setNewCert("");
+    }
+
+    # Remove
+    def removeSkill(name: str) {
+        setSkills(skills.filter(lambda s: any -> bool { return s.name != name; }));
+    }
+
+    def removeInterest(name: str) {
+        setInterests(interests.filter(lambda i: any -> bool { return i.name != name; }));
+    }
+
+    def removeCert(name: str) {
+        setCerts(certs.filter(lambda c: any -> bool { return c.title != name; }));
+    }
+
+    # Save All (Step 2 Next)
+    async def saveStep2() -> None {
+        if savingProfile { return; }
+        setSavingProfile(True);
+
+        try {
+            let result = await root spawn update_user_profile(
+                updated_skills=skills,
+                updated_interests=interests,
+                updated_certifications=certs
+            );
+
+            # If the walker returns something truthy consider it success; otherwise show error.
+            if result {
+                setAllowSkip(False);
+                setShowManualEntry(False);
+                setCurrentStep(3);
+            } else {
+                showAlert("Failed to save profile. Please try again.");
+            }
+        } except Exception as err {
+            console.log(err);
+            showAlert("An error occurred while saving. Try again.");
+        } finally {
+            setSavingProfile(False);
+        }
+    }
 
     useEffect(lambda -> None {
         let percent = (currentStep / 4) * 100;
         setProgress(percent + "%");
     }, [currentStep]);
 
-    # ------------------------ Steps data ------------------------
     let steps = [
-        { id: 1, title: "Upload Your CV", description: "Let our AI analyze your experience and extract your current skills.", icon: <CloudUpload style={{ "fontSize": "0.75rem" }} />, completed: False },
-        { id: 2, title: "Review & Update Skills", description: "Confirm AI-detected skills and add any we might have missed.", icon: <Brain style={{ "fontSize": "0.75rem" }} />, completed: False },
-        { id: 3, title: "Set Career Goals", description: "Choose your target roles, industries, and career aspirations.", icon: <Goal style={{ "fontSize": "0.75rem" }} />, completed: False },
-        { id: 4, title: "Get Your Roadmap", description: "Explore your personalized learning path and skill gap analysis.", icon: <Node style={{ "fontSize": "0.75rem" }} />, completed: False }
+        {
+            id: 1,
+            title: "Upload Your CV",
+            description: "",
+            icon: <CloudUpload style={{ "fontSize": "0.75rem" }} />,
+            completed: False
+        },
+        {
+            id: 2,
+            title: "Review & Update Profile",
+            description: "",
+            icon: <Brain style={{ "fontSize": "0.75rem" }} />,
+            completed: False
+        },
+        {
+            id: 3,
+            title: "Set Career Goals",
+            description: "",
+            icon: <Goal style={{ "fontSize": "0.75rem" }} />,
+            completed: False
+        },
+        {
+            id: 4,
+            title: "Get Your Roadmap",
+            description: "",
+            icon: <Node style={{ "fontSize": "0.75rem" }} />,
+            completed: False
+        }
     ];
 
-    # ------------------------ File Handlers ------------------------
     def handleFileSelect(e: any) -> None {
         let pickedFile = e.target.files[0];
         if pickedFile {
             setFileName(pickedFile.name);
             setFile(pickedFile);
+            setError("");
             setCanProceed(True);
         }
     }
@@ -1246,17 +1393,18 @@ def Onboarding() -> any {
             setFileName(droppedFile.name);
             setFile(droppedFile);
             e.dataTransfer.clearData();
+            setError("");
             setCanProceed(True);
         }
     }
 
-    # ------------------------ Step 1 Upload flow executed by Next button ------------------------
     async def handleStep1Next() -> None {
         if not canProceed or isLoading or not file {
             return;
         }
 
         setIsLoading(True);
+        setError("");
         setShowManualEntry(False);
 
         try {
@@ -1264,12 +1412,17 @@ def Onboarding() -> any {
 
             let base64Data = await fileToBase64(file);
 
-            let result = await root spawn upload_resume(file=base64Data, name=file.name, mime=file.type);
+            let result = await root spawn upload_resume(
+                file=base64Data,
+                name=file.name,
+                mime=file.type
+            );
 
             if not result {
-                showTemporaryAlert("Resume upload failed");
+                showAlert("Resume upload failed");
                 setShowManualEntry(True);
                 setIsLoading(False);
+                setAllowSkip(True);
                 return;
             }
 
@@ -1278,140 +1431,778 @@ def Onboarding() -> any {
 
             let user_skills = await root spawn analyze_cv();
 
-            if not user_skills or not user_skills.reports or user_skills.reports.length == 0 or user_skills.reports[0]["status"] != "Success" {
-                showTemporaryAlert("Something went wrong. Please upload another document or enter details manually.");
+            if not user_skills or not user_skills.reports or user_skills.reports.length == 0 {
+                showAlert("Something went wrong. Please upload another document or enter details manually.");
+                setAllowSkip(True);
                 setShowManualEntry(True);
                 setIsLoading(False);
                 return;
             }
 
-            # Success → advance to step 2
+            if user_skills.reports[0]["status"] != "Success" {
+                showAlert("Something went wrong. Please upload another document or enter details manually.");
+                setAllowSkip(True);
+                setShowManualEntry(True);
+                setIsLoading(False);
+                return;
+            }
+
+            # parse the analyzer output to prefill step2 states if present
+            try {
+                let body = user_skills.reports[0]["body"] if "body" in user_skills.reports[0] else {};
+                let detected_skills = body["skills"] if "skills" in body else [];
+                let detected_interests = body["interests"] if "interests" in body else [];
+                let detected_certs = body["certifications"] if "certifications" in body else [];
+
+                setSkills(detected_skills);
+                setInterests(detected_interests);
+                setCerts(detected_certs);
+            } except Exception as e {
+                console.log(e);
+                # non-fatal; continue to step 2
+            }
+
+            # proceed to step 2
+            setAllowSkip(False);
             setCurrentStep(2);
 
         } except Exception as err {
             console.log(err);
-            showTemporaryAlert("Something went wrong");
+            showAlert("Something went wrong. Try again later");
+            setAllowSkip(True);
             setShowManualEntry(True);
         } finally {
             setIsLoading(False);
         }
     }
 
-    # ------------------------ Show temporary alert ------------------------
-    def showTemporaryAlert(msg: str) -> None {
-        setAlertMessage(msg);
-        setTimeout(lambda -> None { setAlertMessage(""); }, 4000);  # disappears after 4 seconds
+    let wrapperStyle = {
+        "width": "100%",
+        "height": "100vh",
+        "display": "grid",
+        "gridTemplateColumns": "45% 55%",
+        "position": "relative",
+        "color": "white",
+        "fontFamily": "system-ui, sans-serif"
+    };
+
+    let leftPanelInnerStyle = {
+        "margin": "auto",
+        "backgroundColor": "#0b0b0b",
+        "width": "95%",
+        "height": "90%",
+        "zIndex": "9999",
+        "borderRadius": "10px",
+        "display": "flex",
+        "flexDirection": "column",
+        "justifyContent": "center",
+        "alignItems": "center",
+        "overflow": "hidden"
+    };
+
+    let rightInnerStyle = {
+        "width":"90%",
+        "height":"90%",
+        "display":"flex",
+        "flexDirection":"column",
+        "justifyContent":"center"
+    };
+
+    let uploadBoxStyle = {
+        "marginBlock":"30px",
+        "height":"40vh",
+        "width":"80%",
+        "borderRadius":"15px",
+        "display":"flex",
+        "flexDirection":"column",
+        "justifyContent":"center",
+        "alignItems":"center",
+        "transition":"0.2s ease"
+    };
+
+    if resumeHover {
+        uploadBoxStyle["border"] = "2px dashed #6e11b0";
+        uploadBoxStyle["backgroundColor"] = "#0b0b0b";
+    } else {
+        uploadBoxStyle["border"] = "2px dashed grey";
+        uploadBoxStyle["backgroundColor"] = "#101010ff";
     }
 
-    # ------------------------ Styles (computed outside JSX) ------------------------
-    let wrapperStyle = { "width": "100%", "height": "100vh", "display": "grid", "gridTemplateColumns": "45% 55%", "position": "relative", "color": "white", "fontFamily": "system-ui, sans-serif" };
+    let uploadLabelStyle = {
+        "width": "auto",
+        "padding": "1rem 1.5rem",
+        "border": "none",
+        "borderRadius": "0.5rem",
+        "backgroundColor": "#6e11b0",
+        "color": "white",
+        "fontWeight": "600",
+        "fontSize": "0.875rem",
+        "cursor": "pointer",
+        "transition": "all 0.2s ease",
+        "marginTop":"10px",
+        "boxShadow": "0 0 20px rgba(110, 17, 176, 0.2)"
+    };
 
-    let leftPanelInnerStyle = { "margin": "auto", "backgroundColor": "#0b0b0b", "width": "95%", "height": "90%", "zIndex": "9999", "borderRadius": "10px", "display": "flex", "flexDirection": "column", "justifyContent": "center", "alignItems": "center", "overflow": "hidden" };
+    let nextBtnBaseStyle = {
+        "width": "180px",
+        "border": "none",
+        "paddingInline": "2.5rem",
+        "paddingBlock": "1rem",
+        "borderRadius": "5px",
+        "cursor": "pointer",
+        "fontSize": "16px",
+        "transition": "transform 0.2s ease",
+        "color": "white",
+        "backgroundColor": "#6e11b0",
+        "transform": ( "translateY(0.25rem)" if navbtnHover else "translateY(0)" )
+    };
 
-    let rightInnerStyle = { "width":"90%", "height":"90%", "display":"flex", "flexDirection":"column", "justifyContent":"center" };
+    # Disabled look for Step 1 Next:
+    if currentStep == 1 and (not canProceed or isLoading) {
+        nextBtnBaseStyle["opacity"] = "0.4";
+        nextBtnBaseStyle["cursor"] = "not-allowed";
+    }
 
-    let uploadBoxStyle = { "marginBlock":"30px", "height":"40vh", "width":"80%", "borderRadius":"15px", "display":"flex", "flexDirection":"column", "justifyContent":"center", "alignItems":"center", "transition":"0.2s ease" };
-    if resumeHover { uploadBoxStyle["border"] = "2px dashed #6e11b0"; uploadBoxStyle["backgroundColor"] = "#0b0b0b"; }
-    else { uploadBoxStyle["border"] = "2px dashed grey"; uploadBoxStyle["backgroundColor"] = "#101010ff"; }
-
-    let uploadLabelStyle = { "width": "auto", "padding": "1rem 1.5rem", "border": "none", "borderRadius": "0.5rem", "backgroundColor": "#6e11b0", "color": "white", "fontWeight": "600", "fontSize": "0.875rem", "cursor": "pointer", "transition": "all 0.2s ease", "marginTop":"10px", "boxShadow": "0 0 20px rgba(110, 17, 176, 0.2)" };
-
-    let nextBtnBaseStyle = { "width": "180px", "border": "none", "paddingInline": "2.5rem", "paddingBlock": "1rem", "borderRadius": "5px", "cursor": "pointer", "fontSize": "16px", "transition": "transform 0.2s ease", "color": "white", "backgroundColor": "#6e11b0", "transform": ( "translateY(0.25rem)" if navbtnHover else "translateY(0)" ) };
-    if currentStep == 1 and (not canProceed or isLoading) { nextBtnBaseStyle["opacity"] = "0.4"; nextBtnBaseStyle["cursor"] = "not-allowed"; }
-
+    # Next button content computed 
     let nextBtnContent = None;
-    if currentStep == 1 and isLoading { nextBtnContent = LoadingDots(); }
-    else { nextBtnContent = <label>Next</label>; }
-
-    # ------------------------ Computed UI blocks ------------------------
-    # Steps list
-    def Step(props: any) -> any { 
-        let isActive = (props.step.id == currentStep); 
-        let circleStyle = { "width": "40px", "aspectRatio": "1", "borderRadius": "50%", "display": "flex", "alignItems": "center", "justifyContent": "center", "color": "white", "position": "relative", "zIndex": "1", "transition": "all 0.2s ease", "boxShadow": "none", "backgroundColor": "#000000" }; 
-        if isActive or props.step.id < currentStep { circleStyle["backgroundColor"] = "#6e11b0"; } 
-        if isActive { circleStyle["boxShadow"] = "0 0 20px rgba(110, 17, 176, 0.5)"; }
-        let connectorDisplay = None; 
-        if props.step.id != 4 { 
-            let connectorStyle = { "position":"absolute","height":"calc(100% + 65px)","width":"2px","left":"calc(50% + 1px)","top":"100%","transform":"translateX(-50%)","zIndex":"-1","transition":"all 0.2s ease","borderLeft":"2px dashed grey" }; 
-            if props.step.id < currentStep { connectorStyle["borderLeft"] = "2px dashed #6e11b0"; } 
-            connectorDisplay = <div style={connectorStyle}></div>; 
-        } 
-        let titleStyle = { "marginBottom":"0px", "fontWeight":"600", "color":"rgba(255, 255, 255, 0.6)", "fontSize":"1.15rem" }; 
-        if props.step.id <= currentStep { titleStyle["color"] = "white"; } 
-        return <div style={{ "display":"flex","flexDirection":"row","gap":"36px","alignItems":"center","width":"75%","marginInline":"auto","marginBottom":"45px" }}> <div style={circleStyle}><div style={{"display":"flex","alignItems":"center","justifyContent":"center"}}>{ props.step.icon }{ connectorDisplay }</div></div><div><h1 style={titleStyle}>{props.step.title}</h1><p style={{"color":"grey","marginBlock":"0px","marginTop":"10px"}}>{props.step.description}</p></div></div>; 
+    if currentStep == 1 and isLoading {
+        nextBtnContent = LoadingDots();
+    } elif currentStep == 2 and savingProfile {
+        nextBtnContent = LoadingDots();
+    } else {
+        nextBtnContent = <label>Next</label>;
     }
-    let stepsList = steps.map(lambda step: any -> any { return <Step key={step.id} step={step} />; });
 
-    # Uploaded file display
+    
+
+    # Steps list (left column)
+    def Step(props: any) -> any {
+        let isActive = (props.step.id == currentStep);
+        let circleStyle = {
+            "width": "40px",
+            "aspectRatio": "1",
+            "borderRadius": "50%",
+            "display": "flex",
+            "alignItems": "center",
+            "justifyContent": "center",
+            "color": "white",
+            "position": "relative",
+            "zIndex": "1",
+            "transition": "all 0.2s ease",
+            "boxShadow": "none",
+            "backgroundColor": "#000000"
+        };
+
+        if isActive or props.step.id < currentStep {
+            circleStyle["backgroundColor"] = "#6e11b0";
+        } else {
+            circleStyle["backgroundColor"] = "black";
+        }
+
+        if isActive {
+            circleStyle["boxShadow"] = "0 0 20px rgba(110, 17, 176, 0.5)";
+        }
+
+        let connectorDisplay = None;
+        if props.step.id != 4 {
+            let connectorStyle = {
+                "position":"absolute",
+                "height":"calc(100% + 65px)",
+                "width":"2px",
+                "left":"calc(50% + 1px)",
+                "top":"100%",
+                "transform":"translateX(-50%)",
+                "zIndex":"-1",
+                "transition":"all 0.2s ease",
+                "borderLeft":"2px dashed grey"
+            };
+            if props.step.id < currentStep {
+                connectorStyle["borderLeft"] = "2px dashed #6e11b0";
+            } else {
+                connectorStyle["borderLeft"] = "2px dashed grey";
+            }
+            connectorDisplay = <div style={connectorStyle}></div>;
+        }
+
+        let titleStyle = {
+            "marginBottom":"0px",
+            "fontWeight":"600",
+            "color":"rgba(255, 255, 255, 0.6)",
+            "fontSize":"1.15rem"
+        };
+        if props.step.id <= currentStep {
+            titleStyle["color"] = "white";
+        }
+
+        return <div style={{
+            "display":"flex",
+            "flexDirection":"row",
+            "gap":"36px",
+            "alignItems":"center",
+            "width":"75%",
+            "marginInline":"auto",
+            "marginBottom":"45px"
+        }}>
+            <div style={circleStyle}>
+                <div style={{
+                    "display":"flex",
+                    "alignItems":"center",
+                    "justifyContent":"center",
+                }}>
+                    { props.step.icon }
+                    { connectorDisplay }
+                </div>
+            </div>
+            <div>
+                <h1 style={titleStyle}>{props.step.title}</h1>
+                <p style={{
+                    "color":"grey",
+                    "marginBlock":"0px",
+                    "marginTop":"10px"
+                }}>{props.step.description}</p>
+            </div>
+        </div>;
+    }
+
+    let stepsList = steps.map(
+        lambda step: any -> any {
+            return <Step key={step.id} step={step} />;
+        }
+    );
+
+    # Uploaded file display block 
     let uploadedFileDisplay = None;
-    if fileName and fileName != "" { uploadedFileDisplay = <div style={{"marginTop": "20px","fontSize": "14px","color": "white","fontWeight": "500"}}>Uploaded: {fileName}</div>; }
-
-    # Temporary alert block
-    let alertDisplay = None;
-    if alertMessage and alertMessage != "" {
-        alertDisplay = <div style={{"position":"fixed","top":"20px","right":"20px","backgroundColor":"#dc2626","color":"white","padding":"12px 20px","borderRadius":"6px","zIndex":"9999","boxShadow":"0 0 15px rgba(0,0,0,0.3)"}}>{alertMessage}</div>;
+    if fileName and fileName != "" {
+        uploadedFileDisplay = <div style={{
+            "marginTop": "20px",
+            "fontSize": "14px",
+            "color": "white",
+            "fontWeight": "500"
+        }}>
+            Uploaded: {fileName}
+        </div>;
     }
 
-    # Manual skip link (appears only if analyze fails)
+    # Manual skip link block
     let manualSkipDisplay = None;
-    if showManualEntry and currentStep == 1 {
-        manualSkipDisplay = <div style={{"fontSize": "15px","cursor": "pointer","color": "white","textDecoration": "underline","fontWeight": "500"}} onClick={lambda e: any -> None { setCurrentStep(2); }}>Skip →</div>;
+    if allowSkip and currentStep == 1 {
+        manualSkipDisplay = <div
+            style={{
+                "fontSize": "15px",
+                "cursor": "pointer",
+                "color": "white",
+                "textDecoration": "underline",
+                "fontWeight": "500"
+            }}
+            onClick={lambda e: any -> None {
+                setAllowSkip(False);
+                setCurrentStep(2);
+            }}
+        >
+            Skip →
+        </div>;
     }
 
     # Step 1 content
     let step1Content = None;
     if currentStep == 1 {
         step1Content = <div style={{ "height":"60vh" }}>
-            <div style={{ "marginBottom":"0px", "fontWeight":"600", "color":"white","fontSize":"1.15rem" }}>Upload your CV</div>
-            <p style={{ "color":"grey", "marginBlock":"0px", "marginTop":"10px" }}>Let us start by understanding your background</p>
+            <div style={{
+                "marginBottom":"0px",
+                "fontWeight":"600",
+                "color":"white",
+                "fontSize":"1.15rem"
+            }}>Upload your CV</div>
+            <p style={{
+                "color":"grey",
+                "marginBlock":"0px",
+                "marginTop":"10px"
+            }}>Let us start by understanding your background</p>
 
-            <div onMouseEnter={lambda e: any -> None { setResumeHover(True); }} onMouseLeave={lambda e: any -> None { setResumeHover(False); }} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} style={uploadBoxStyle}>
-                <div style={{"width":"55px","aspectRatio":"1","borderRadius":"50%","backgroundColor":"black","display":"flex","alignItems":"center","justifyContent":"center","marginBottom":"15px"}}><CloudUpload style={{ "fontSize":"0.75rem", "color":"#6e11b0" }} /></div>
-                <p style={{ "color":"grey", "marginBlock":"20px", "fontSize":".9em" }}>Supported formats: PDF, DOC, DOCX (Max 5MB)</p>
-                <input type="file" accept=".pdf,.doc,.docx" onChange={handleFileSelect} style={{ "display": "none" }} id="resumeInput" />
-                <label for="resumeInput" style={uploadLabelStyle} onMouseEnter={lambda e: any -> None { e.currentTarget.style.filter = "brightness(0.95)"; }} onMouseLeave={lambda e: any -> None { e.currentTarget.style.filter = "brightness(1)"; }}>Upload from Computer</label>
+            <div
+                onMouseEnter={lambda e: any -> None { setResumeHover(True); }}
+                onMouseLeave={lambda e: any -> None { setResumeHover(False); }}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                style={uploadBoxStyle}
+            >
+                <div style={{
+                    "width":"55px",
+                    "aspectRatio":"1",
+                    "borderRadius":"50%",
+                    "backgroundColor":"black",
+                    "display":"flex",
+                    "alignItems":"center",
+                    "justifyContent":"center",
+                    "marginBottom":"15px"
+                }}>
+                    <CloudUpload style={{ "fontSize":"0.75rem", "color":"#6e11b0" }} />
+                </div>
+
+                <p style={{
+                    "color":"grey",
+                    "marginBlock":"0px",
+                    "marginBlock":"20px",
+                    "fontSize":".9em"
+                }}>
+                    Supported formats: PDF, DOC, DOCX (Max 5MB)
+                </p>
+
+                <input
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    onChange={handleFileSelect}
+                    style={{ "display": "none" }}
+                    id="resumeInput"
+                />
+
+                <label
+                    for="resumeInput"
+                    style={uploadLabelStyle}
+                    onMouseEnter={lambda e: any -> None { e.currentTarget.style.filter = "brightness(0.95)"; }}
+                    onMouseLeave={lambda e: any -> None { e.currentTarget.style.filter = "brightness(1)"; }}
+                >
+                    Upload from Computer
+                </label>
+
                 {uploadedFileDisplay}
+
             </div>
         </div>;
     }
 
-    # Steps 2-4 placeholders
-    let step2Content = None; if currentStep == 2 { step2Content = <div style={{ "height":"60vh" }}>hello</div>; }
-    let step3Content = None; if currentStep == 3 { step3Content = <div style={{ "height":"60vh" }}>hello</div>; }
-    let step4Content = None; if currentStep == 4 { step4Content = <div style={{ "height":"60vh" }}>hello</div>; }
+   # Step 2 content
+let step2Content = None;
+if currentStep == 2 {
+    if step2Loading {
+        step2Content = step2LoadingView;
+    } else {
+        step2Content = <div style={{
+            "height":"65vh",
+            "overflowY":"auto",
+            "paddingRight":"10px"
+        }}>
 
-    # Back navigation
-    let backNav = None;
-    if currentStep > 1 {
-        backNav = <div onClick={lambda e: any -> None { setCurrentStep(currentStep - 1); }} style={{ "display":"flex","flexDirection":"row","alignItems":"center","cursor":"pointer" }}><ChevronLeft/>Back</div>;
+            # Skills
+            <div style={{ "marginBottom":"25px" }}>
+                <h2 style={{ "color":"white", "marginBottom":"8px" }}>Skills</h2>
+
+                <div style={{
+                    "display":"flex",
+                    "flexDirection":"row",
+                    "alignItems":"center",
+                    "gap":"10px",
+                    "marginBottom":"12px"
+                }}>
+                    <input
+                        type="text"
+                        value={newSkill}
+                        onChange={lambda e: any -> None { setNewSkill(e.target.value); }}
+                        onKeyDown={lambda e: any -> None { if e.key == "Enter" { addSkill(); } }}
+                        placeholder="Python, Project Management, etc."
+                        style={{
+                            "width":"260px",
+                            "backgroundColor":"#0e0e0e",
+                            "border":"1px solid #262626",
+                            "color":"white",
+                            "padding":"10px",
+                            "borderRadius":"10px",
+                            "fontSize":"0.9rem",
+                            "transition":"all 0.25s ease",
+                            "boxShadow":"0 0 0 0 rgba(0,0,0,0)"
+                        }}
+                        onFocus={lambda e: any -> None {
+                            e.target.style.border = "1px solid #7f2ae6";
+                            e.target.style.boxShadow = "0 0 6px #7f2ae6";
+                        }}
+                        onBlur={lambda e: any -> None {
+                            e.target.style.border = "1px solid #262626";
+                            e.target.style.boxShadow = "none";
+                        }}
+                    />
+
+                    <button
+                        onClick={lambda e: any -> None { addSkill(); }}
+                        style={{
+                            "padding":"10px 16px",
+                            "backgroundColor":"#7f2ae6",
+                            "color":"white",
+                            "border":"none",
+                            "borderRadius":"10px",
+                            "cursor":"pointer",
+                            "fontWeight":"600",
+                            "transition":"all 0.25s ease"
+                        }}
+                        onMouseEnter={lambda e: any -> None {
+                            e.target.style.backgroundColor = "#9a48ff";
+                        }}
+                        onMouseLeave={lambda e: any -> None {
+                            e.target.style.backgroundColor = "#7f2ae6";
+                        }}
+                    >
+                        Add
+                    </button>
+                </div>
+
+                {skills.length == 0 and <p style={{ "color":"grey" }}>No skills added</p>}
+                {skills.length > 0 and <div style={{
+                    "display":"flex",
+                    "flexWrap":"wrap",
+                    "gap":"8px"
+                }}>
+                    {skills.map(lambda s: any, idx: any -> any {
+                        return <div key={idx} style={{
+                            "display":"flex",
+                            "alignItems":"center",
+                            "gap":"6px",
+                            "padding":"4px 10px",
+                            "backgroundColor":"#0d0d0d",
+                            "borderRadius":"9999px",
+                            "fontSize":"0.85rem",
+                            "color":"white"
+                        }}>
+                            <span>{s.name}</span>
+                            <span
+                                style={{
+                                    "color":"#dc2626",
+                                    "cursor":"pointer",
+                                    "fontWeight":"700"
+                                }}
+                                onClick={lambda e: any -> None { removeSkill(s.name); }}
+                            >
+                                ×
+                            </span>
+                        </div>;
+                    })}
+                </div>}
+            </div>
+
+            # Interests
+            <div style={{ "marginBottom":"25px" }}>
+                <h2 style={{ "color":"white", "marginBottom":"8px" }}>Interests</h2>
+
+                <div style={{
+                    "display":"flex",
+                    "flexDirection":"row",
+                    "alignItems":"center",
+                    "gap":"10px",
+                    "marginBottom":"12px"
+                }}>
+                    <input
+                        type="text"
+                        value={newInterest}
+                        onChange={lambda e: any -> None { setNewInterest(e.target.value); }}
+                        onKeyDown={lambda e: any -> None { if e.key == "Enter" { addInterest(); } }}
+                        placeholder="Add new interest"
+                        style={{
+                            "width":"260px",
+                            "backgroundColor":"#0e0e0e",
+                            "border":"1px solid #262626",
+                            "color":"white",
+                            "padding":"10px",
+                            "borderRadius":"10px",
+                            "fontSize":"0.9rem",
+                            "transition":"all 0.25s ease"
+                        }}
+                        onFocus={lambda e: any -> None {
+                            e.target.style.border = "1px solid #7f2ae6";
+                            e.target.style.boxShadow = "0 0 6px #7f2ae6";
+                        }}
+                        onBlur={lambda e: any -> None {
+                            e.target.style.border = "1px solid #262626";
+                            e.target.style.boxShadow = "none";
+                        }}
+                    />
+
+                    <button
+                        onClick={lambda e: any -> None { addInterest(); }}
+                        style={{
+                            "padding":"10px 16px",
+                            "backgroundColor":"#7f2ae6",
+                            "color":"white",
+                            "border":"none",
+                            "borderRadius":"10px",
+                            "cursor":"pointer",
+                            "fontWeight":"600",
+                            "transition":"all 0.25s ease"
+                        }}
+                        onMouseEnter={lambda e: any -> None {
+                            e.target.style.backgroundColor = "#9a48ff";
+                        }}
+                        onMouseLeave={lambda e: any -> None {
+                            e.target.style.backgroundColor = "#7f2ae6";
+                        }}
+                    >
+                        Add
+                    </button>
+                </div>
+
+                {interests.length == 0 and <p style={{ "color":"grey" }}>No interests added</p>}
+                {interests.length > 0 and <div style={{
+                    "display":"flex",
+                    "flexWrap":"wrap",
+                    "gap":"8px"
+                }}>
+                    {interests.map(lambda i: any, idx: any -> any {
+                        return <div key={idx} style={{
+                            "display":"flex",
+                            "alignItems":"center",
+                            "gap":"6px",
+                            "padding":"4px 10px",
+                            "backgroundColor":"#0d0d0d",
+                            "borderRadius":"9999px",
+                            "fontSize":"0.85rem",
+                            "color":"white"
+                        }}>
+                            <span>{i.name}</span>
+                            <span
+                                style={{
+                                    "color":"#dc2626",
+                                    "cursor":"pointer",
+                                    "fontWeight":"700"
+                                }}
+                                onClick={lambda e: any -> None { removeInterest(i.name); }}
+                            >
+                                ×
+                            </span>
+                        </div>;
+                    })}
+                </div>}
+            </div>
+
+            # Certifications
+            <div>
+                <h2 style={{ "color":"white", "marginBottom":"8px" }}>Certifications</h2>
+
+                <div style={{
+                    "display":"flex",
+                    "flexDirection":"row",
+                    "alignItems":"center",
+                    "gap":"10px",
+                    "marginBottom":"12px"
+                }}>
+                    <input
+                        type="text"
+                        value={newCert}
+                        onChange={lambda e: any -> None { setNewCert(e.target.value); }}
+                        onKeyDown={lambda e: any -> None { if e.key == "Enter" { addCert(); } }}
+                        placeholder="Add certification"
+                        style={{
+                            "width":"260px",
+                            "backgroundColor":"#0e0e0e",
+                            "border":"1px solid #262626",
+                            "color":"white",
+                            "padding":"10px",
+                            "borderRadius":"10px",
+                            "fontSize":"0.9rem",
+                            "transition":"all 0.25s ease"
+                        }}
+                        onFocus={lambda e: any -> None {
+                            e.target.style.border = "1px solid #7f2ae6";
+                            e.target.style.boxShadow = "0 0 6px #7f2ae6";
+                        }}
+                        onBlur={lambda e: any -> None {
+                            e.target.style.border = "1px solid #262626";
+                            e.target.style.boxShadow = "none";
+                        }}
+                    />
+
+                    <button
+                        onClick={lambda e: any -> None { addCert(); }}
+                        style={{
+                            "padding":"10px 16px",
+                            "backgroundColor":"#7f2ae6",
+                            "color":"white",
+                            "border":"none",
+                            "borderRadius":"10px",
+                            "cursor":"pointer",
+                            "fontWeight":"600",
+                            "transition":"all 0.25s ease"
+                        }}
+                        onMouseEnter={lambda e: any -> None {
+                            e.target.style.backgroundColor = "#9a48ff";
+                        }}
+                        onMouseLeave={lambda e: any -> None {
+                            e.target.style.backgroundColor = "#7f2ae6";
+                        }}
+                    >
+                        Add
+                    </button>
+                </div>
+
+                {certs.length == 0 and <p style={{ "color":"grey" }}>No certifications added</p>}
+                {certs.length > 0 and <div style={{
+                    "display":"flex",
+                    "flexWrap":"wrap",
+                    "gap":"8px"
+                }}>
+                    {certs.map(lambda c: any, idx: any -> any {
+                        return <div key={idx} style={{
+                            "display":"flex",
+                            "alignItems":"center",
+                            "gap":"6px",
+                            "padding":"4px 10px",
+                            "backgroundColor":"#0d0d0d",
+                            "borderRadius":"9999px",
+                            "fontSize":"0.85rem",
+                            "color":"white"
+                        }}>
+                            <span>{c.title}</span>
+                            <span
+                                style={{
+                                    "color":"#dc2626",
+                                    "cursor":"pointer",
+                                    "fontWeight":"700"
+                                }}
+                                onClick={lambda e: any -> None { removeCert(c.title); }}
+                            >
+                                ×
+                            </span>
+                        </div>;
+                    })}
+                </div>}
+            </div>
+
+        </div>;
+    }
+}
+
+    let step3Content = None;
+    if currentStep == 3 {
+        step3Content = <div style={{ "height":"60vh" }}>hello</div>;
     }
 
-    # Next button
-    let nextBtn = <button type="button" onClick={lambda e: any -> None { if currentStep == 1 { handleStep1Next(); } else { if currentStep < 4 { setCurrentStep(currentStep + 1); } }}} onMouseEnter={lambda e: any -> None { setNavBtnHover(True); }} onMouseLeave={lambda e: any -> None { setNavBtnHover(False); }} style={nextBtnBaseStyle} disabled={currentStep == 1 and (not canProceed or isLoading)}>{nextBtnContent}</button>;
+    let step4Content = None;
+    if currentStep == 4 {
+        step4Content = <div style={{ "height":"60vh" }}>hello</div>;
+    }
 
-    # ------------------------ Final JSX ------------------------
+    # Navigation controls computed
+    let backNav = None;
+    if currentStep > 1 {
+        backNav = <div
+            onClick={lambda e: any -> None { setCurrentStep(currentStep - 1); }}
+            style={{
+                "display":"flex",
+                "flexDirection":"row",
+                "alignItems":"center",
+                "cursor":"pointer"
+            }}
+        >
+            <ChevronLeft/>
+            Back
+        </div>;
+    }
+
+    # Next button 
+    let nextBtn = <button
+        type="button"
+        onClick={lambda e: any -> None {
+            if currentStep == 1 {
+                handleStep1Next();
+            } elif currentStep == 2 {
+                saveStep2();
+            } elif currentStep < 4 {
+                setCurrentStep(currentStep + 1);
+            }
+        }}
+        onMouseEnter={lambda e: any -> None { setNavBtnHover(True); }}
+        onMouseLeave={lambda e: any -> None { setNavBtnHover(False); }}
+        style={nextBtnBaseStyle}
+        disabled={currentStep == 1 and (not canProceed or isLoading)}
+    >
+        {nextBtnContent}
+    </button>;
+
+    # Loading view for Step 2
+    let step2LoadingView = <div style={{
+        "color":"white",
+        "fontSize":"1rem",
+        "marginTop":"20px"
+    }}>Loading your profile...</div>;
+
+    let alertBox = None;
+    if alertVisible {
+        alertBox = <div style={{
+            "position": "absolute",
+            "top": "20px",
+            "right": "20px",
+            "padding": "12px 20px",
+            "backgroundColor": "#dc2626",
+            "color": "white",
+            "borderRadius": "6px",
+            "fontWeight": "600",
+            "boxShadow": "0 0 15px rgba(0,0,0,0.4)",
+            "transition": "0.3s ease"
+        }}>
+            {alertMessage}
+        </div>;
+    }
+
     return <div style={wrapperStyle}>
-        {alertDisplay}
-        <div style={{ "width": "100%","height": "100%","display": "flex","justifyContent": "center","alignItems": "center" }}>
-            <div style={leftPanelInnerStyle}>{stepsList}</div>
+
+        {alertBox}
+
+        <div style={{
+            "width": "100%",
+            "height": "100%",
+            "display": "flex",
+            "justifyContent": "center",
+            "alignItems": "center"
+        }}>
+            <div style={leftPanelInnerStyle}>
+                {stepsList}
+            </div>
         </div>
-        <div style={{ "width": "100%","height": "95%","marginBlock":"auto","display": "flex","justifyContent": "center","alignItems": "center" }}>
+
+        <div style={{
+            "width": "100%",
+            "height": "95%",
+            "marginBlock":"auto",
+            "display": "flex",
+            "justifyContent": "center",
+            "alignItems": "center"
+        }}>
             <div style={rightInnerStyle}>
                 <div style={{ "color":"grey", "textTransform":"uppercase" }}>Step {currentStep} of 4</div>
-                <div style={{ "width":"80%","height":"11px","borderRadius":"20px","backgroundColor": "#0b0b0b","overflow":"hidden","marginBlock":"20px" }}>
-                    <div style={{ "height":"100%","width": progress,"backgroundColor": "#6e11b0","transition": "0.3s ease","borderRadius":"20px" }}></div>
+
+                <div style={{
+                    "width":"80%",
+                    "height":"11px",
+                    "borderRadius":"20px",
+                    "backgroundColor": "#0b0b0b",
+                    "overflow":"hidden",
+                    "marginBlock":"20px"
+                }}>
+                    <div style={{
+                        "height":"100%",
+                        "width": progress,
+                        "backgroundColor": "#6e11b0",
+                        "transition": "0.3s ease",
+                        "borderRadius":"20px"
+                    }}></div>
                 </div>
+
                 {step1Content}
                 {step2Content}
                 {step3Content}
                 {step4Content}
-                <div style={{ "display":"flex","flexDirection":"row","gap":"25px","alignItems":"center","marginTop":"20px" }}>
+
+                <div style={{
+                    "display":"flex",
+                    "flexDirection":"row",
+                    "gap":"25px",
+                    "alignItems":"center",
+                    "marginTop":"20px"
+                }}>
                     {backNav}
                     {nextBtn}
                     {manualSkipDisplay}
                 </div>
             </div>
         </div>
+
     </div>;
 }
 

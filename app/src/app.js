@@ -165,24 +165,141 @@ function Onboarding() {
   let [navbtnHover, setNavBtnHover] = useState(false);
   let [progress, setProgress] = useState("25%");
   let [resumeHover, setResumeHover] = useState(false);
+  let [alertMessage, setAlertMessage] = useState("");
+  let [alertVisible, setAlertVisible] = useState(false);
+  let [allowSkip, setAllowSkip] = useState(false);
   let [dragActive, setDragActive] = useState(false);
   let [fileName, setFileName] = useState("");
   let [file, setFile] = useState(null);
+  let [error, setError] = useState("");
   let [isLoading, setIsLoading] = useState(false);
   let [showManualEntry, setShowManualEntry] = useState(false);
   let [canProceed, setCanProceed] = useState(false);
-  let [alertMessage, setAlertMessage] = useState("");
   let navigate = useNavigate();
+  let [skills, setSkills] = useState([]);
+  let [interests, setInterests] = useState([]);
+  let [certs, setCerts] = useState([]);
+  let [newSkill, setNewSkill] = useState("");
+  let [newInterest, setNewInterest] = useState("");
+  let [newCert, setNewCert] = useState("");
+  let [step2Loading, setStep2Loading] = useState(true);
+  let [savingProfile, setSavingProfile] = useState(false);
+  function showAlert(msg) {
+    setAlertMessage(msg);
+    setAlertVisible(true);
+    setTimeout(() => {
+      setAlertVisible(false);
+    }, 3500);
+  }
+  async function loadStep2() {
+    setStep2Loading(true);
+    try {
+      let profile = await __jacSpawn("get_user_profile", "", {});
+      if (profile && profile.reports && profile.reports.length > 0) {
+        let body = profile.reports[0]["body"];
+        setSkills("skills" in body ? body["skills"] : []);
+        setInterests("interests" in body ? body["interests"] : []);
+        setCerts("certifications" in body ? body["certifications"] : []);
+      } else {
+        setSkills([]);
+        setInterests([]);
+        setCerts([]);
+      }
+    } catch (err) {
+      console.log(err);
+      showAlert("Failed to load profile. Try again later.");
+    } finally {
+      setStep2Loading(false);
+    }
+  }
+  useEffect(() => {
+    if (currentStep === 2) {
+      loadStep2();
+    }
+  }, [currentStep]);
+  function addSkill() {
+    if (newSkill.trim().length === 0) {
+      return;
+    }
+    let exists = skills.filter(s => {
+      return s.name.toLowerCase() === newSkill.trim().toLowerCase();
+    }).length > 0;
+    if (!exists) {
+      setSkills(skills.concat([{"name": newSkill.trim(), "description": ""}]));
+    }
+    setNewSkill("");
+  }
+  function addInterest() {
+    if (newInterest.trim().length === 0) {
+      return;
+    }
+    let exists = interests.filter(i => {
+      return i.name.toLowerCase() === newInterest.trim().toLowerCase();
+    }).length > 0;
+    if (!exists) {
+      setInterests(interests.concat([{"name": newInterest.trim(), "description": ""}]));
+    }
+    setNewInterest("");
+  }
+  function addCert() {
+    if (newCert.trim().length === 0) {
+      return;
+    }
+    let exists = certs.filter(c => {
+      return "title" in c && c.title.toLowerCase() === newCert.trim().toLowerCase();
+    }).length > 0;
+    if (!exists) {
+      setCerts(certs.concat([{"title": newCert.trim(), "provider": "", "url": ""}]));
+    }
+    setNewCert("");
+  }
+  function removeSkill(name) {
+    setSkills(skills.filter(s => {
+      return s.name !== name;
+    }));
+  }
+  function removeInterest(name) {
+    setInterests(interests.filter(i => {
+      return i.name !== name;
+    }));
+  }
+  function removeCert(name) {
+    setCerts(certs.filter(c => {
+      return c.title !== name;
+    }));
+  }
+  async function saveStep2() {
+    if (savingProfile) {
+      return;
+    }
+    setSavingProfile(true);
+    try {
+      let result = await __jacSpawn("update_user_profile", "", {"updated_skills": skills, "updated_interests": interests, "updated_certifications": certs});
+      if (result) {
+        setAllowSkip(false);
+        setShowManualEntry(false);
+        setCurrentStep(3);
+      } else {
+        showAlert("Failed to save profile. Please try again.");
+      }
+    } catch (err) {
+      console.log(err);
+      showAlert("An error occurred while saving. Try again.");
+    } finally {
+      setSavingProfile(false);
+    }
+  }
   useEffect(() => {
     let percent = currentStep / 4 * 100;
     setProgress(percent + "%");
   }, [currentStep]);
-  let steps = [{id: 1, title: "Upload Your CV", description: "Let our AI analyze your experience and extract your current skills.", icon: __jacJsx(CloudUpload, {"style": {"fontSize": "0.75rem"}}, []), completed: false}, {id: 2, title: "Review & Update Skills", description: "Confirm AI-detected skills and add any we might have missed.", icon: __jacJsx(Brain, {"style": {"fontSize": "0.75rem"}}, []), completed: false}, {id: 3, title: "Set Career Goals", description: "Choose your target roles, industries, and career aspirations.", icon: __jacJsx(Goal, {"style": {"fontSize": "0.75rem"}}, []), completed: false}, {id: 4, title: "Get Your Roadmap", description: "Explore your personalized learning path and skill gap analysis.", icon: __jacJsx(Node, {"style": {"fontSize": "0.75rem"}}, []), completed: false}];
+  let steps = [{id: 1, title: "Upload Your CV", description: "", icon: __jacJsx(CloudUpload, {"style": {"fontSize": "0.75rem"}}, []), completed: false}, {id: 2, title: "Review & Update Profile", description: "", icon: __jacJsx(Brain, {"style": {"fontSize": "0.75rem"}}, []), completed: false}, {id: 3, title: "Set Career Goals", description: "", icon: __jacJsx(Goal, {"style": {"fontSize": "0.75rem"}}, []), completed: false}, {id: 4, title: "Get Your Roadmap", description: "", icon: __jacJsx(Node, {"style": {"fontSize": "0.75rem"}}, []), completed: false}];
   function handleFileSelect(e) {
     let pickedFile = e.target.files[0];
     if (pickedFile) {
       setFileName(pickedFile.name);
       setFile(pickedFile);
+      setError("");
       setCanProceed(true);
     }
   }
@@ -202,6 +319,7 @@ function Onboarding() {
       setFileName(droppedFile.name);
       setFile(droppedFile);
       e.dataTransfer.clearData();
+      setError("");
       setCanProceed(true);
     }
   }
@@ -210,40 +328,57 @@ function Onboarding() {
       return;
     }
     setIsLoading(true);
+    setError("");
     setShowManualEntry(false);
     try {
       await __jacSpawn("create_resume_node", "", {});
       let base64Data = await fileToBase64(file);
       let result = await __jacSpawn("upload_resume", "", {"file": base64Data, "name": file.name, "mime": file.type});
       if (!result) {
-        showTemporaryAlert("Resume upload failed");
+        showAlert("Resume upload failed");
         setShowManualEntry(true);
         setIsLoading(false);
+        setAllowSkip(true);
         return;
       }
       await __jacSpawn("save_resume", "", {});
       await __jacSpawn("update_resume_upload_status", "", {});
       let user_skills = await __jacSpawn("analyze_cv", "", {});
-      if (!user_skills || !user_skills.reports || user_skills.reports.length === 0 || user_skills.reports[0]["status"] !== "Success") {
-        showTemporaryAlert("Something went wrong. Please upload another document or enter details manually.");
+      if (!user_skills || !user_skills.reports || user_skills.reports.length === 0) {
+        showAlert("Something went wrong. Please upload another document or enter details manually.");
+        setAllowSkip(true);
         setShowManualEntry(true);
         setIsLoading(false);
         return;
       }
+      if (user_skills.reports[0]["status"] !== "Success") {
+        showAlert("Something went wrong. Please upload another document or enter details manually.");
+        setAllowSkip(true);
+        setShowManualEntry(true);
+        setIsLoading(false);
+        return;
+      }
+      try {
+        let body = "body" in user_skills.reports[0] ? user_skills.reports[0]["body"] : {};
+        let detected_skills = "skills" in body ? body["skills"] : [];
+        let detected_interests = "interests" in body ? body["interests"] : [];
+        let detected_certs = "certifications" in body ? body["certifications"] : [];
+        setSkills(detected_skills);
+        setInterests(detected_interests);
+        setCerts(detected_certs);
+      } catch (e) {
+        console.log(e);
+      }
+      setAllowSkip(false);
       setCurrentStep(2);
     } catch (err) {
       console.log(err);
-      showTemporaryAlert("Something went wrong");
+      showAlert("Something went wrong. Try again later");
+      setAllowSkip(true);
       setShowManualEntry(true);
     } finally {
       setIsLoading(false);
     }
-  }
-  function showTemporaryAlert(msg) {
-    setAlertMessage(msg);
-    setTimeout(() => {
-      setAlertMessage("");
-    }, 4000);
   }
   let wrapperStyle = {"width": "100%", "height": "100vh", "display": "grid", "gridTemplateColumns": "45% 55%", "position": "relative", "color": "white", "fontFamily": "system-ui, sans-serif"};
   let leftPanelInnerStyle = {"margin": "auto", "backgroundColor": "#0b0b0b", "width": "95%", "height": "90%", "zIndex": "9999", "borderRadius": "10px", "display": "flex", "flexDirection": "column", "justifyContent": "center", "alignItems": "center", "overflow": "hidden"};
@@ -265,6 +400,8 @@ function Onboarding() {
   let nextBtnContent = null;
   if (currentStep === 1 && isLoading) {
     nextBtnContent = LoadingDots();
+  } else if (currentStep === 2 && savingProfile) {
+    nextBtnContent = LoadingDots();
   } else {
     nextBtnContent = __jacJsx("label", {}, ["Next"]);
   }
@@ -273,6 +410,8 @@ function Onboarding() {
     let circleStyle = {"width": "40px", "aspectRatio": "1", "borderRadius": "50%", "display": "flex", "alignItems": "center", "justifyContent": "center", "color": "white", "position": "relative", "zIndex": "1", "transition": "all 0.2s ease", "boxShadow": "none", "backgroundColor": "#000000"};
     if (isActive || props.step.id < currentStep) {
       circleStyle["backgroundColor"] = "#6e11b0";
+    } else {
+      circleStyle["backgroundColor"] = "black";
     }
     if (isActive) {
       circleStyle["boxShadow"] = "0 0 20px rgba(110, 17, 176, 0.5)";
@@ -282,6 +421,8 @@ function Onboarding() {
       let connectorStyle = {"position": "absolute", "height": "calc(100% + 65px)", "width": "2px", "left": "calc(50% + 1px)", "top": "100%", "transform": "translateX(-50%)", "zIndex": "-1", "transition": "all 0.2s ease", "borderLeft": "2px dashed grey"};
       if (props.step.id < currentStep) {
         connectorStyle["borderLeft"] = "2px dashed #6e11b0";
+      } else {
+        connectorStyle["borderLeft"] = "2px dashed grey";
       }
       connectorDisplay = __jacJsx("div", {"style": connectorStyle}, []);
     }
@@ -289,7 +430,7 @@ function Onboarding() {
     if (props.step.id <= currentStep) {
       titleStyle["color"] = "white";
     }
-    return __jacJsx("div", {"style": {"display": "flex", "flexDirection": "row", "gap": "36px", "alignItems": "center", "width": "75%", "marginInline": "auto", "marginBottom": "45px"}}, [" ", __jacJsx("div", {"style": circleStyle}, [__jacJsx("div", {"style": {"display": "flex", "alignItems": "center", "justifyContent": "center"}}, [props.step.icon, connectorDisplay])]), __jacJsx("div", {}, [__jacJsx("h1", {"style": titleStyle}, [props.step.title]), __jacJsx("p", {"style": {"color": "grey", "marginBlock": "0px", "marginTop": "10px"}}, [props.step.description])])]);
+    return __jacJsx("div", {"style": {"display": "flex", "flexDirection": "row", "gap": "36px", "alignItems": "center", "width": "75%", "marginInline": "auto", "marginBottom": "45px"}}, [__jacJsx("div", {"style": circleStyle}, [__jacJsx("div", {"style": {"display": "flex", "alignItems": "center", "justifyContent": "center"}}, [props.step.icon, connectorDisplay])]), __jacJsx("div", {}, [__jacJsx("h1", {"style": titleStyle}, [props.step.title]), __jacJsx("p", {"style": {"color": "grey", "marginBlock": "0px", "marginTop": "10px"}}, [props.step.description])])]);
   }
   let stepsList = steps.map(step => {
     return __jacJsx(Step, {"key": step.id, "step": step}, []);
@@ -298,13 +439,10 @@ function Onboarding() {
   if (fileName && fileName !== "") {
     uploadedFileDisplay = __jacJsx("div", {"style": {"marginTop": "20px", "fontSize": "14px", "color": "white", "fontWeight": "500"}}, ["Uploaded: ", fileName]);
   }
-  let alertDisplay = null;
-  if (alertMessage && alertMessage !== "") {
-    alertDisplay = __jacJsx("div", {"style": {"position": "fixed", "top": "20px", "right": "20px", "backgroundColor": "#dc2626", "color": "white", "padding": "12px 20px", "borderRadius": "6px", "zIndex": "9999", "boxShadow": "0 0 15px rgba(0,0,0,0.3)"}}, [alertMessage]);
-  }
   let manualSkipDisplay = null;
-  if (showManualEntry && currentStep === 1) {
+  if (allowSkip && currentStep === 1) {
     manualSkipDisplay = __jacJsx("div", {"style": {"fontSize": "15px", "cursor": "pointer", "color": "white", "textDecoration": "underline", "fontWeight": "500"}, "onClick": e => {
+      setAllowSkip(false);
       setCurrentStep(2);
     }}, ["Skip →"]);
   }
@@ -314,7 +452,7 @@ function Onboarding() {
       setResumeHover(true);
     }, "onMouseLeave": e => {
       setResumeHover(false);
-    }, "onDragOver": handleDragOver, "onDragLeave": handleDragLeave, "onDrop": handleDrop, "style": uploadBoxStyle}, [__jacJsx("div", {"style": {"width": "55px", "aspectRatio": "1", "borderRadius": "50%", "backgroundColor": "black", "display": "flex", "alignItems": "center", "justifyContent": "center", "marginBottom": "15px"}}, [__jacJsx(CloudUpload, {"style": {"fontSize": "0.75rem", "color": "#6e11b0"}}, [])]), __jacJsx("p", {"style": {"color": "grey", "marginBlock": "20px", "fontSize": ".9em"}}, ["Supported formats: PDF, DOC, DOCX (Max 5MB)"]), __jacJsx("input", {"type": "file", "accept": ".pdf,.doc,.docx", "onChange": handleFileSelect, "style": {"display": "none"}, "id": "resumeInput"}, []), __jacJsx("label", {"for": "resumeInput", "style": uploadLabelStyle, "onMouseEnter": e => {
+    }, "onDragOver": handleDragOver, "onDragLeave": handleDragLeave, "onDrop": handleDrop, "style": uploadBoxStyle}, [__jacJsx("div", {"style": {"width": "55px", "aspectRatio": "1", "borderRadius": "50%", "backgroundColor": "black", "display": "flex", "alignItems": "center", "justifyContent": "center", "marginBottom": "15px"}}, [__jacJsx(CloudUpload, {"style": {"fontSize": "0.75rem", "color": "#6e11b0"}}, [])]), __jacJsx("p", {"style": {"color": "grey", "marginBlock": "0px", "marginBlock": "20px", "fontSize": ".9em"}}, ["Supported formats: PDF, DOC, DOCX (Max 5MB)"]), __jacJsx("input", {"type": "file", "accept": ".pdf,.doc,.docx", "onChange": handleFileSelect, "style": {"display": "none"}, "id": "resumeInput"}, []), __jacJsx("label", {"for": "resumeInput", "style": uploadLabelStyle, "onMouseEnter": e => {
       e.currentTarget.style.filter = "brightness(0.95)";
     }, "onMouseLeave": e => {
       e.currentTarget.style.filter = "brightness(1)";
@@ -322,7 +460,77 @@ function Onboarding() {
   }
   let step2Content = null;
   if (currentStep === 2) {
-    step2Content = __jacJsx("div", {"style": {"height": "60vh"}}, ["hello"]);
+    if (step2Loading) {
+      step2Content = step2LoadingView;
+    } else {
+      step2Content = __jacJsx("div", {"style": {"height": "65vh", "overflowY": "auto", "paddingRight": "10px"}}, [__jacJsx("div", {"style": {"marginBottom": "25px"}}, [__jacJsx("h2", {"style": {"color": "white", "marginBottom": "8px"}}, ["Skills"]), __jacJsx("div", {"style": {"display": "flex", "flexDirection": "row", "alignItems": "center", "gap": "10px", "marginBottom": "12px"}}, [__jacJsx("input", {"type": "text", "value": newSkill, "onChange": e => {
+        setNewSkill(e.target.value);
+      }, "onKeyDown": e => {
+        if (e.key === "Enter") {
+          addSkill();
+        }
+      }, "placeholder": "Python, Project Management, etc.", "style": {"width": "260px", "backgroundColor": "#0e0e0e", "border": "1px solid #262626", "color": "white", "padding": "10px", "borderRadius": "10px", "fontSize": "0.9rem", "transition": "all 0.25s ease", "boxShadow": "0 0 0 0 rgba(0,0,0,0)"}, "onFocus": e => {
+        e.target.style.border = "1px solid #7f2ae6";
+        e.target.style.boxShadow = "0 0 6px #7f2ae6";
+      }, "onBlur": e => {
+        e.target.style.border = "1px solid #262626";
+        e.target.style.boxShadow = "none";
+      }}, []), __jacJsx("button", {"onClick": e => {
+        addSkill();
+      }, "style": {"padding": "10px 16px", "backgroundColor": "#7f2ae6", "color": "white", "border": "none", "borderRadius": "10px", "cursor": "pointer", "fontWeight": "600", "transition": "all 0.25s ease"}, "onMouseEnter": e => {
+        e.target.style.backgroundColor = "#9a48ff";
+      }, "onMouseLeave": e => {
+        e.target.style.backgroundColor = "#7f2ae6";
+      }}, ["Add"])]), skills.length === 0 && __jacJsx("p", {"style": {"color": "grey"}}, ["No skills added"]), skills.length > 0 && __jacJsx("div", {"style": {"display": "flex", "flexWrap": "wrap", "gap": "8px"}}, [skills.map((s, idx) => {
+        return __jacJsx("div", {"key": idx, "style": {"display": "flex", "alignItems": "center", "gap": "6px", "padding": "4px 10px", "backgroundColor": "#0d0d0d", "borderRadius": "9999px", "fontSize": "0.85rem", "color": "white"}}, [__jacJsx("span", {}, [s.name]), __jacJsx("span", {"style": {"color": "#dc2626", "cursor": "pointer", "fontWeight": "700"}, "onClick": e => {
+          removeSkill(s.name);
+        }}, ["×"])]);
+      })])]), __jacJsx("div", {"style": {"marginBottom": "25px"}}, [__jacJsx("h2", {"style": {"color": "white", "marginBottom": "8px"}}, ["Interests"]), __jacJsx("div", {"style": {"display": "flex", "flexDirection": "row", "alignItems": "center", "gap": "10px", "marginBottom": "12px"}}, [__jacJsx("input", {"type": "text", "value": newInterest, "onChange": e => {
+        setNewInterest(e.target.value);
+      }, "onKeyDown": e => {
+        if (e.key === "Enter") {
+          addInterest();
+        }
+      }, "placeholder": "Add new interest", "style": {"width": "260px", "backgroundColor": "#0e0e0e", "border": "1px solid #262626", "color": "white", "padding": "10px", "borderRadius": "10px", "fontSize": "0.9rem", "transition": "all 0.25s ease"}, "onFocus": e => {
+        e.target.style.border = "1px solid #7f2ae6";
+        e.target.style.boxShadow = "0 0 6px #7f2ae6";
+      }, "onBlur": e => {
+        e.target.style.border = "1px solid #262626";
+        e.target.style.boxShadow = "none";
+      }}, []), __jacJsx("button", {"onClick": e => {
+        addInterest();
+      }, "style": {"padding": "10px 16px", "backgroundColor": "#7f2ae6", "color": "white", "border": "none", "borderRadius": "10px", "cursor": "pointer", "fontWeight": "600", "transition": "all 0.25s ease"}, "onMouseEnter": e => {
+        e.target.style.backgroundColor = "#9a48ff";
+      }, "onMouseLeave": e => {
+        e.target.style.backgroundColor = "#7f2ae6";
+      }}, ["Add"])]), interests.length === 0 && __jacJsx("p", {"style": {"color": "grey"}}, ["No interests added"]), interests.length > 0 && __jacJsx("div", {"style": {"display": "flex", "flexWrap": "wrap", "gap": "8px"}}, [interests.map((i, idx) => {
+        return __jacJsx("div", {"key": idx, "style": {"display": "flex", "alignItems": "center", "gap": "6px", "padding": "4px 10px", "backgroundColor": "#0d0d0d", "borderRadius": "9999px", "fontSize": "0.85rem", "color": "white"}}, [__jacJsx("span", {}, [i.name]), __jacJsx("span", {"style": {"color": "#dc2626", "cursor": "pointer", "fontWeight": "700"}, "onClick": e => {
+          removeInterest(i.name);
+        }}, ["×"])]);
+      })])]), __jacJsx("div", {}, [__jacJsx("h2", {"style": {"color": "white", "marginBottom": "8px"}}, ["Certifications"]), __jacJsx("div", {"style": {"display": "flex", "flexDirection": "row", "alignItems": "center", "gap": "10px", "marginBottom": "12px"}}, [__jacJsx("input", {"type": "text", "value": newCert, "onChange": e => {
+        setNewCert(e.target.value);
+      }, "onKeyDown": e => {
+        if (e.key === "Enter") {
+          addCert();
+        }
+      }, "placeholder": "Add certification", "style": {"width": "260px", "backgroundColor": "#0e0e0e", "border": "1px solid #262626", "color": "white", "padding": "10px", "borderRadius": "10px", "fontSize": "0.9rem", "transition": "all 0.25s ease"}, "onFocus": e => {
+        e.target.style.border = "1px solid #7f2ae6";
+        e.target.style.boxShadow = "0 0 6px #7f2ae6";
+      }, "onBlur": e => {
+        e.target.style.border = "1px solid #262626";
+        e.target.style.boxShadow = "none";
+      }}, []), __jacJsx("button", {"onClick": e => {
+        addCert();
+      }, "style": {"padding": "10px 16px", "backgroundColor": "#7f2ae6", "color": "white", "border": "none", "borderRadius": "10px", "cursor": "pointer", "fontWeight": "600", "transition": "all 0.25s ease"}, "onMouseEnter": e => {
+        e.target.style.backgroundColor = "#9a48ff";
+      }, "onMouseLeave": e => {
+        e.target.style.backgroundColor = "#7f2ae6";
+      }}, ["Add"])]), certs.length === 0 && __jacJsx("p", {"style": {"color": "grey"}}, ["No certifications added"]), certs.length > 0 && __jacJsx("div", {"style": {"display": "flex", "flexWrap": "wrap", "gap": "8px"}}, [certs.map((c, idx) => {
+        return __jacJsx("div", {"key": idx, "style": {"display": "flex", "alignItems": "center", "gap": "6px", "padding": "4px 10px", "backgroundColor": "#0d0d0d", "borderRadius": "9999px", "fontSize": "0.85rem", "color": "white"}}, [__jacJsx("span", {}, [c.title]), __jacJsx("span", {"style": {"color": "#dc2626", "cursor": "pointer", "fontWeight": "700"}, "onClick": e => {
+          removeCert(c.title);
+        }}, ["×"])]);
+      })])])]);
+    }
   }
   let step3Content = null;
   if (currentStep === 3) {
@@ -341,17 +549,22 @@ function Onboarding() {
   let nextBtn = __jacJsx("button", {"type": "button", "onClick": e => {
     if (currentStep === 1) {
       handleStep1Next();
-    } else {
-      if (currentStep < 4) {
-        setCurrentStep(currentStep + 1);
-      }
+    } else if (currentStep === 2) {
+      saveStep2();
+    } else if (currentStep < 4) {
+      setCurrentStep(currentStep + 1);
     }
   }, "onMouseEnter": e => {
     setNavBtnHover(true);
   }, "onMouseLeave": e => {
     setNavBtnHover(false);
   }, "style": nextBtnBaseStyle, "disabled": currentStep === 1 && !canProceed || isLoading}, [nextBtnContent]);
-  return __jacJsx("div", {"style": wrapperStyle}, [alertDisplay, __jacJsx("div", {"style": {"width": "100%", "height": "100%", "display": "flex", "justifyContent": "center", "alignItems": "center"}}, [__jacJsx("div", {"style": leftPanelInnerStyle}, [stepsList])]), __jacJsx("div", {"style": {"width": "100%", "height": "95%", "marginBlock": "auto", "display": "flex", "justifyContent": "center", "alignItems": "center"}}, [__jacJsx("div", {"style": rightInnerStyle}, [__jacJsx("div", {"style": {"color": "grey", "textTransform": "uppercase"}}, ["Step ", currentStep, " of 4"]), __jacJsx("div", {"style": {"width": "80%", "height": "11px", "borderRadius": "20px", "backgroundColor": "#0b0b0b", "overflow": "hidden", "marginBlock": "20px"}}, [__jacJsx("div", {"style": {"height": "100%", "width": progress, "backgroundColor": "#6e11b0", "transition": "0.3s ease", "borderRadius": "20px"}}, [])]), step1Content, step2Content, step3Content, step4Content, __jacJsx("div", {"style": {"display": "flex", "flexDirection": "row", "gap": "25px", "alignItems": "center", "marginTop": "20px"}}, [backNav, nextBtn, manualSkipDisplay])])])]);
+  let step2LoadingView = __jacJsx("div", {"style": {"color": "white", "fontSize": "1rem", "marginTop": "20px"}}, ["Loading your profile..."]);
+  let alertBox = null;
+  if (alertVisible) {
+    alertBox = __jacJsx("div", {"style": {"position": "absolute", "top": "20px", "right": "20px", "padding": "12px 20px", "backgroundColor": "#dc2626", "color": "white", "borderRadius": "6px", "fontWeight": "600", "boxShadow": "0 0 15px rgba(0,0,0,0.4)", "transition": "0.3s ease"}}, [alertMessage]);
+  }
+  return __jacJsx("div", {"style": wrapperStyle}, [alertBox, __jacJsx("div", {"style": {"width": "100%", "height": "100%", "display": "flex", "justifyContent": "center", "alignItems": "center"}}, [__jacJsx("div", {"style": leftPanelInnerStyle}, [stepsList])]), __jacJsx("div", {"style": {"width": "100%", "height": "95%", "marginBlock": "auto", "display": "flex", "justifyContent": "center", "alignItems": "center"}}, [__jacJsx("div", {"style": rightInnerStyle}, [__jacJsx("div", {"style": {"color": "grey", "textTransform": "uppercase"}}, ["Step ", currentStep, " of 4"]), __jacJsx("div", {"style": {"width": "80%", "height": "11px", "borderRadius": "20px", "backgroundColor": "#0b0b0b", "overflow": "hidden", "marginBlock": "20px"}}, [__jacJsx("div", {"style": {"height": "100%", "width": progress, "backgroundColor": "#6e11b0", "transition": "0.3s ease", "borderRadius": "20px"}}, [])]), step1Content, step2Content, step3Content, step4Content, __jacJsx("div", {"style": {"display": "flex", "flexDirection": "row", "gap": "25px", "alignItems": "center", "marginTop": "20px"}}, [backNav, nextBtn, manualSkipDisplay])])])]);
 }
 function Dashboard() {
   return __jacJsx("div", {}, []);
