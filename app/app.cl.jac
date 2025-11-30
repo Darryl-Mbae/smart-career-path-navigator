@@ -1215,6 +1215,12 @@ def Onboarding() -> any {
     let [newCert, setNewCert] = useState("");
     let [step2Loading, setStep2Loading] = useState(True);
     let [savingProfile, setSavingProfile] = useState(False);
+    let [suggestedRoles, setSuggestedRoles] = useState([]);
+
+    # Step 3 States
+    let [currentRoleIndex, setCurrentRoleIndex] = useState(0);
+
+
 
     # Alert 
     def showAlert(msg: str) {
@@ -1313,14 +1319,28 @@ def Onboarding() -> any {
                 updated_certifications=certs
             );
 
-            # If the walker returns something truthy consider it success; otherwise show error.
             if result {
+
+                let rolesReport = await root spawn generate_role_suggestions();
+                let latestReport = rolesReport.reports[rolesReport.reports.length - 1];
+
+                if latestReport.status == "Success" {
+                    # Store the array of suggestions in state
+                    setSuggestedRoles(latestReport.body);
+
+                    console.log("Suggested roles saved in state:", latestReport.body);
+                } else {
+                    showAlert("Failed to generate role suggestions: " + (latestReport.message or "Unknown error"));
+                }
+
                 setAllowSkip(False);
                 setShowManualEntry(False);
                 setCurrentStep(3);
+
             } else {
                 showAlert("Failed to save profile. Please try again.");
             }
+
         } except Exception as err {
             console.log(err);
             showAlert("An error occurred while saving. Try again.");
@@ -1328,6 +1348,7 @@ def Onboarding() -> any {
             setSavingProfile(False);
         }
     }
+
 
     useEffect(lambda -> None {
         let percent = (currentStep / 4) * 100;
@@ -1773,8 +1794,8 @@ def Onboarding() -> any {
     }
 
    # Step 2 content
-let step2Content = None;
-if currentStep == 2 {
+    let step2Content = None;
+    if currentStep == 2 {
     if step2Loading {
         step2Content = step2LoadingView;
     } else {
@@ -2066,12 +2087,186 @@ if currentStep == 2 {
 
         </div>;
     }
-}
+    }
 
+    # ---------------- Step 3: Suggested Roles ----------------
     let step3Content = None;
     if currentStep == 3 {
-        step3Content = <div style={{ "height":"60vh" }}>hello</div>;
+
+        let totalRoles = suggestedRoles.length;
+        let currentRole = None;
+        if totalRoles > 0 {
+            currentRole = suggestedRoles[currentRoleIndex];
+        }
+
+        let canGoLeft = currentRoleIndex > 0;
+        let canGoRight = currentRoleIndex < totalRoles - 1;
+
+        let arrowActiveColor = "#b37aff";
+        let arrowInactiveColor = "#2a2a2a";
+
+        let leftArrowColor = arrowInactiveColor;
+        let rightArrowColor = arrowInactiveColor;
+
+        let leftArrowCursor = "default";
+        let rightArrowCursor = "default";
+
+        if canGoLeft {
+            leftArrowColor = arrowActiveColor;
+            leftArrowCursor = "pointer";
+        }
+
+        if canGoRight {
+            rightArrowColor = arrowActiveColor;
+            rightArrowCursor = "pointer";
+        }
+
+        step3Content = <div style={{
+            "height":"65vh",
+            "padding":"5px",
+            "position":"relative",
+            "display":"flex",
+            "flexDirection":"column"
+        }}>
+
+            <h2 style={{
+                "color":"white",
+                "marginBottom":"10px",
+                "fontSize":"1.3rem",
+                "fontWeight":"600"
+            }}>
+                Your AI-Suggested Career Roles
+            </h2>
+
+            <p style={{
+                "color":"grey",
+                "marginTop":"0px",
+                "marginBottom":"25px",
+                "fontSize":"0.9rem"
+            }}>
+                Slide through the suggested roles and select the one that fits you best.
+            </p>
+
+            {(totalRoles == 0) and
+                <p style={{ "color":"grey" }}>No suggestions found</p>
+            }
+
+            {(totalRoles > 0) and
+
+                <div style={{
+                    "display":"flex",
+                    "alignItems":"center",
+                    "justifyContent":"center",
+                    "position":"relative",
+                    "height":"100%"
+                }}>
+
+                    <div
+                        onClick={lambda e: any -> None {
+                            root.selectedRole = currentRole.title;
+                        }}
+                        style={{
+                            "width":"85%",
+                            "backgroundColor":"#0e0e0e",
+                            "border":"1px solid #262626",
+                            "padding":"22px",
+                            "borderRadius":"12px",
+                            "cursor":"pointer",
+                            "transition":"all 0.25s ease",
+                            "display":"flex",
+                            "flexDirection":"column",
+                            "gap":"10px",
+                            "boxShadow":"0 0 6px rgba(0,0,0,0.4)",
+                            "position":"relative"
+                        }}
+                    >
+
+                        <div
+                            onClick={lambda e: any -> None {
+                                e.stopPropagation();
+                                if canGoLeft {
+                                    setCurrentRoleIndex(currentRoleIndex - 1);
+                                }
+                            }}
+                            style={{
+                                "position":"absolute",
+                                "left":"-12px",
+                                "top":"50%",
+                                "transform":"translateY(-50%)",
+                                "fontFamily":"Inter, sans-serif",
+                                "color": leftArrowColor,
+                                "cursor": leftArrowCursor,
+                                "fontSize":"1.8rem",
+                                "padding":"8px",
+                                "borderRadius":"50%",
+                                "transition":"all 0.25s ease",
+                                "userSelect":"none"
+                            }}
+                        >
+                            {"‹"}
+                        </div>
+
+                        <h3 style={{
+                            "color":"white",
+                            "margin":"0px",
+                            "fontSize":"1.1rem",
+                            "fontWeight":"600"
+                        }}>
+                            {currentRole.title}
+                        </h3>
+
+                        <p style={{
+                            "color":"grey",
+                            "fontSize":"0.88rem",
+                            "lineHeight":"1.35",
+                            "margin":"0px"
+                        }}>
+                            {currentRole.description}
+                        </p>
+
+                        <div style={{
+                            "marginTop":"auto",
+                            "color":"#7f2ae6",
+                            "fontWeight":"600",
+                            "fontSize":"0.85rem"
+                        }}>
+                            Select →
+                        </div>
+
+                        <div
+                            onClick={lambda e: any -> None {
+                                e.stopPropagation();
+                                if canGoRight {
+                                    setCurrentRoleIndex(currentRoleIndex + 1);
+                                }
+                            }}
+                            style={{
+                                "position":"absolute",
+                                "right":"-12px",
+                                "top":"50%",
+                                "transform":"translateY(-50%)",
+                                "fontFamily":"Inter, sans-serif",
+                                "color": rightArrowColor,
+                                "cursor": rightArrowCursor,
+                                "fontSize":"1.8rem",
+                                "padding":"8px",
+                                "borderRadius":"50%",
+                                "transition":"all 0.25s ease",
+                                "userSelect":"none"
+                            }}
+                        >
+                            {"›"}
+                        </div>
+
+                    </div>
+
+                </div>
+            }
+
+        </div>;
     }
+
+
 
     let step4Content = None;
     if currentStep == 4 {

@@ -1187,6 +1187,14 @@ function Onboarding() {
     _useState72 = _slicedToArray(_useState71, 2),
     savingProfile = _useState72[0],
     setSavingProfile = _useState72[1];
+  var _useState73 = useState([]),
+    _useState74 = _slicedToArray(_useState73, 2),
+    suggestedRoles = _useState74[0],
+    setSuggestedRoles = _useState74[1];
+  var _useState75 = useState(0),
+    _useState76 = _slicedToArray(_useState75, 2),
+    currentRoleIndex = _useState76[0],
+    setCurrentRoleIndex = _useState76[1];
   function showAlert(msg) {
     setAlertMessage(msg);
     setAlertVisible(true);
@@ -1308,7 +1316,7 @@ function Onboarding() {
   }
   function _saveStep() {
     _saveStep = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
-      var result, _t2;
+      var result, rolesReport, latestReport, _t2;
       return _regenerator().w(function (_context4) {
         while (1) switch (_context4.p = _context4.n) {
           case 0:
@@ -1328,28 +1336,44 @@ function Onboarding() {
             });
           case 3:
             result = _context4.v;
-            if (result) {
-              setAllowSkip(false);
-              setShowManualEntry(false);
-              setCurrentStep(3);
-            } else {
-              showAlert("Failed to save profile. Please try again.");
+            if (!result) {
+              _context4.n = 5;
+              break;
             }
-            _context4.n = 5;
-            break;
+            _context4.n = 4;
+            return __jacSpawn("generate_role_suggestions", "", {});
           case 4:
-            _context4.p = 4;
+            rolesReport = _context4.v;
+            latestReport = rolesReport.reports[rolesReport.reports.length - 1];
+            if (latestReport.status === "Success") {
+              setSuggestedRoles(latestReport.body);
+              console.log("Suggested roles saved in state:", latestReport.body);
+            } else {
+              showAlert("Failed to generate role suggestions: " + latestReport.message || "Unknown error");
+            }
+            setAllowSkip(false);
+            setShowManualEntry(false);
+            setCurrentStep(3);
+            _context4.n = 6;
+            break;
+          case 5:
+            showAlert("Failed to save profile. Please try again.");
+          case 6:
+            _context4.n = 8;
+            break;
+          case 7:
+            _context4.p = 7;
             _t2 = _context4.v;
             console.log(_t2);
             showAlert("An error occurred while saving. Try again.");
-          case 5:
-            _context4.p = 5;
+          case 8:
+            _context4.p = 8;
             setSavingProfile(false);
-            return _context4.f(5);
-          case 6:
+            return _context4.f(8);
+          case 9:
             return _context4.a(2);
         }
-      }, _callee4, null, [[2, 4, 5, 6]]);
+      }, _callee4, null, [[2, 7, 8, 9]]);
     }));
     return _saveStep.apply(this, arguments);
   }
@@ -2119,11 +2143,143 @@ function Onboarding() {
   }
   var step3Content = null;
   if (currentStep === 3) {
+    var totalRoles = suggestedRoles.length;
+    var currentRole = null;
+    if (totalRoles > 0) {
+      currentRole = suggestedRoles[currentRoleIndex];
+    }
+    var canGoLeft = currentRoleIndex > 0;
+    var canGoRight = currentRoleIndex < totalRoles - 1;
+    var arrowActiveColor = "#b37aff";
+    var arrowInactiveColor = "#2a2a2a";
+    var leftArrowColor = arrowInactiveColor;
+    var rightArrowColor = arrowInactiveColor;
+    var leftArrowCursor = "default";
+    var rightArrowCursor = "default";
+    if (canGoLeft) {
+      leftArrowColor = arrowActiveColor;
+      leftArrowCursor = "pointer";
+    }
+    if (canGoRight) {
+      rightArrowColor = arrowActiveColor;
+      rightArrowCursor = "pointer";
+    }
     step3Content = __jacJsx("div", {
       "style": {
-        "height": "60vh"
+        "height": "65vh",
+        "padding": "5px",
+        "position": "relative",
+        "display": "flex",
+        "flexDirection": "column"
       }
-    }, ["hello"]);
+    }, [__jacJsx("h2", {
+      "style": {
+        "color": "white",
+        "marginBottom": "10px",
+        "fontSize": "1.3rem",
+        "fontWeight": "600"
+      }
+    }, ["Your AI-Suggested Career Roles"]), __jacJsx("p", {
+      "style": {
+        "color": "grey",
+        "marginTop": "0px",
+        "marginBottom": "25px",
+        "fontSize": "0.9rem"
+      }
+    }, ["Slide through the suggested roles and select the one that fits you best."]), totalRoles === 0 && __jacJsx("p", {
+      "style": {
+        "color": "grey"
+      }
+    }, ["No suggestions found"]), totalRoles > 0 && __jacJsx("div", {
+      "style": {
+        "display": "flex",
+        "alignItems": "center",
+        "justifyContent": "center",
+        "position": "relative",
+        "height": "100%"
+      }
+    }, [__jacJsx("div", {
+      "onClick": function onClick(e) {
+        obj.selectedRole = currentRole.title;
+      },
+      "style": {
+        "width": "85%",
+        "backgroundColor": "#0e0e0e",
+        "border": "1px solid #262626",
+        "padding": "22px",
+        "borderRadius": "12px",
+        "cursor": "pointer",
+        "transition": "all 0.25s ease",
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "10px",
+        "boxShadow": "0 0 6px rgba(0,0,0,0.4)",
+        "position": "relative"
+      }
+    }, [__jacJsx("div", {
+      "onClick": function onClick(e) {
+        e.stopPropagation();
+        if (canGoLeft) {
+          setCurrentRoleIndex(currentRoleIndex - 1);
+        }
+      },
+      "style": {
+        "position": "absolute",
+        "left": "-12px",
+        "top": "50%",
+        "transform": "translateY(-50%)",
+        "fontFamily": "Inter, sans-serif",
+        "color": leftArrowColor,
+        "cursor": leftArrowCursor,
+        "fontSize": "1.8rem",
+        "padding": "8px",
+        "borderRadius": "50%",
+        "transition": "all 0.25s ease",
+        "userSelect": "none"
+      }
+    }, ["\u2039"]), __jacJsx("h3", {
+      "style": {
+        "color": "white",
+        "margin": "0px",
+        "fontSize": "1.1rem",
+        "fontWeight": "600"
+      }
+    }, [currentRole.title]), __jacJsx("p", {
+      "style": {
+        "color": "grey",
+        "fontSize": "0.88rem",
+        "lineHeight": "1.35",
+        "margin": "0px"
+      }
+    }, [currentRole.description]), __jacJsx("div", {
+      "style": {
+        "marginTop": "auto",
+        "color": "#7f2ae6",
+        "fontWeight": "600",
+        "fontSize": "0.85rem"
+      }
+    }, ["Select →"]), __jacJsx("div", {
+      "onClick": function onClick(e) {
+        e.stopPropagation();
+        if (canGoRight) {
+          setCurrentRoleIndex(currentRoleIndex + 1);
+        }
+      },
+      "style": {
+        "position": "absolute",
+        "right": "-12px",
+        "top": "50%",
+        "transform": "translateY(-50%)",
+        "fontFamily": "Inter, sans-serif",
+        "color": rightArrowColor,
+        "cursor": rightArrowCursor,
+        "fontSize": "1.8rem",
+        "padding": "8px",
+        "borderRadius": "50%",
+        "transition": "all 0.25s ease",
+        "userSelect": "none"
+      }
+    }, ["\u203A"])])])]);
   }
   var step4Content = null;
   if (currentStep === 4) {
