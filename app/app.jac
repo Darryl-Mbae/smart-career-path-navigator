@@ -541,6 +541,123 @@ node End{
     }
 }
 
+# Suggest roles based on user profile
+walker generate_role_suggestions {
+    has user_profile: UserProfile = UserProfile([], [], []);
+
+    """
+    Analyze the user’s skills, interests, and certifications. Suggest top 3 realistic career roles that match their strengths.
+    Each role must include a short title and a concise description explaining why the user is a good fit.
+    Avoid generic suggestions and prioritize roles where the user's skill combination provides a clear advantage.
+    """
+
+    def suggest_roles_based_on_profile(user_profile: UserProfile) -> list[Role] by llm(method="Reason");
+
+    # Fetch Profile 
+    can fetch_user_profile with `root entry {
+        print("Fetching user profile for role suggestion...\n");
+
+        let fetched_profile = root spawn get_user_profile();
+        
+        # cease operation if user profile is not fetched
+        if fetched_profile == None or fetched_profile.user_profile == None {
+            print("ERROR: Failed to fetch user profile.\n");
+            report {
+                "status": "Fail",
+                "message": "Unable to load user profile.",
+                "body": []
+            };
+            disengage;
+        }
+
+        self.user_profile = fetched_profile.user_profile;
+
+        print("Fetched user profile:\n");
+        print(self.user_profile);
+        print("\n");
+    }
+
+    # Suggest Roles
+    can suggest_roles with `root entry {
+        print("Using LLM to suggest roles based on user profile...\n");
+
+        # Edge case: empty or weak profile
+        if len(self.user_profile.skills) == 0
+           and len(self.user_profile.interests) == 0
+           and len(self.user_profile.certifications) == 0 {
+
+            print("WARNING: User profile is empty. LLM suggestions may be inaccurate.\n");
+        }
+
+        let suggested_roles = self.suggest_roles_based_on_profile(self.user_profile);
+
+        # LLM returned nothing
+        if suggested_roles == None {
+            print("ERROR: LLM returned no roles.\n");
+            report {
+                "status": "Error",
+                "message": "LLM failed to generate any role suggestions.",
+                "body": []
+            };
+            disengage;
+        }
+
+        # LLM returned empty list
+        if len(suggested_roles) == 0 {
+            print("No roles returned by LLM.\n");
+            report {
+                "status": "Empty",
+                "message": "No roles could be suggested for the provided profile.",
+                "body": []
+            };
+            disengage;
+        }
+
+        print("Suggested Roles:\n");
+
+        let valid_roles = [];
+
+        # Validate each LLM-generated role object
+        for role in suggested_roles {
+            if role == None
+               or role.title == None
+               or role.description == None {
+
+                print("Skipping malformed role suggestion returned by LLM.\n");
+                continue;
+            }
+
+            print(f"- {role.title}: {role.description}\n");
+            valid_roles += [role];
+        }
+
+        # All roles were invalid
+        if len(valid_roles) == 0 {
+            print("ERROR: All LLM suggestions were malformed.\n");
+            report {
+                "status": "Fail",
+                "message": "LLM returned invalid role objects.",
+                "body": []
+            };
+            disengage;
+        }
+
+        # Final response
+        report {
+            "status": "Success",
+            "message": "Roles suggested successfully",
+            "body": [
+                {
+                    "title": role.title,
+                    "description": role.description
+                }
+                for role in valid_roles
+            ]
+        };
+    }
+}
+
+
 # Retrieve user profile
 walker get_user_profile {
     has user_profile: UserProfile = UserProfile([], [], []);
