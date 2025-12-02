@@ -1,10 +1,12 @@
 cl import from react { useState,useEffect }
 cl import from 'lucide-react' { Brain, CloudUpload, Goal, Route as Node, ChevronLeft }
+cl import from ..fileutils {fileToBase64}
 cl {
     import from "@jac-client/utils" {
     useNavigate,
+    }
 }
-}
+
 cl{    
     def Onboarding() -> any {
         let [currentStep, setCurrentStep] = useState(1);
@@ -15,12 +17,21 @@ cl{
 
         let [selectedInterests, setSelectedInterests] = useState([]);
         let [selectedRoles, setSelectedRoles] = useState([]);
+        let [suggestedRoles, setSuggestedRoles] = useState([]);
+
+        let [dragActive, setDragActive] = useState(false);
+        let [fileName, setFileName] = useState("");
+        let [file, setFile] = useState(null);
+        let [error, setError] = useState("");
+        let [canProceed, setCanProceed] = useState(false);
+
+        let [isLoading, setIsLoading] = useState(false);
+
+        
 
         let navigate = useNavigate();
-
         let devSkills = ["JavaScript", "Python", "React", "Node.js", "TypeScript", "HTML & CSS", "Django", "Flutter", "Git & GitHub", "SQL & Databases", "REST APIs", "GraphQL", "Docker", "Agile & Scrum"];
         let devRoles = ["Frontend Developer", "Backend Developer", "Fullstack Developer", "Mobile Developer", "DevOps Engineer", "UI/UX Designer", "Data Scientist", "Machine Learning Engineer"];
-
 
         useEffect(lambda -> None {
             let percent = (currentStep / 4) * 100;
@@ -66,6 +77,166 @@ cl{
             }
         ];
 
+        def handleFileSelect(e: any) -> None {
+            let pickedFile = e.target.files[0];
+            if pickedFile {
+                setFileName(pickedFile.name);
+                setFile(pickedFile);
+                setError("");
+                setCanProceed(True);
+            }
+        }
+
+        def handleDragOver(e: any) -> None {
+            e.preventDefault();
+            setDragActive(True);
+        }
+
+        def handleDragLeave(e: any) -> None {
+            e.preventDefault();
+            setDragActive(False);
+        }
+
+        def handleDrop(e: any) -> None {
+            e.preventDefault();
+            setDragActive(False);
+            if e.dataTransfer.files and e.dataTransfer.files.length > 0 {
+                let droppedFile = e.dataTransfer.files[0];
+                setFileName(droppedFile.name);
+                setFile(droppedFile);
+                e.dataTransfer.clearData();
+                setError("");
+                setCanProceed(True);
+            }
+        }
+
+        async def handleStep1Next() -> None {
+            if not canProceed  or not file {
+                return;
+            }
+
+            try {
+                root spawn create_resume_node();
+
+                let base64Data = await fileToBase64(file);
+
+                let result = await root spawn upload_resume(
+                    file=base64Data,
+                    name=file.name,
+                    mime=file.type
+                );
+
+                if not result {
+                    console.log("Failed");
+                    return;
+                }
+
+                root spawn save_resume();
+                root spawn update_resume_upload_status();
+
+                let user_skills = await root spawn analyze_cv();
+
+                if not user_skills or not user_skills.reports or user_skills.reports.length == 0 {
+                    console.log("Failed");
+                    return;
+                }
+
+                if user_skills.reports[0]["status"] != "Success" {
+                    console.log("Failed");                   
+                    return;
+                }
+
+                # parse the analyzer output to prefill step2 states if present
+                try {
+                    let body = user_skills.reports[0]["body"] if "body" in user_skills.reports[0] else {};
+                    let detected_skills = body["skills"] if "skills" in body else [];
+                    let detected_interests = body["interests"] if "interests" in body else [];
+                    let detected_certs = body["certifications"] if "certifications" in body else [];
+
+                    setSelectedInterests(detected_skills);
+                    # setCerts(detected_certs);
+                    
+                } except Exception as e {
+                    console.log(e);
+                }
+
+                
+                setCurrentStep(2);
+
+            } except Exception as err {
+                console.log(err);
+                
+            } finally {
+                setIsLoading(False);
+            }
+        }
+
+        async def handleStep2Next() -> None {
+            try {
+                let result = await root spawn update_user_profile(
+                    updated_skills=selectedInterests,
+                );
+
+                if result {
+
+                    let rolesReport = await root spawn generate_role_suggestions();
+                    let latestReport = rolesReport.reports[rolesReport.reports.length - 1];
+
+                    if latestReport.status == "Success" {
+                        # Store the array of suggestions in state
+                        setSuggestedRoles(latestReport.body);
+
+                    } else {
+                        console.log("Failed to generate role suggestions: " + (latestReport.message or "Unknown error"));
+                    }
+
+                    setCurrentStep(3);
+
+                } else {
+                    console.log("Failed to save profile. Please try again.");
+                }
+
+            } except Exception as err {
+                console.log(err);
+            } finally {
+                setIsLoading(False);
+            }
+        }
+
+        # async def handleStep3Next() -> None {
+        #     try {
+        #         let result = await root spawn update_user_profile(
+        #             updated_roles=selectedRoles,
+        #         );
+
+        #         if result {
+
+        #             let rolesReport = await root spawn generate_role_suggestions();
+        #             let latestReport = rolesReport.reports[rolesReport.reports.length - 1];
+
+        #             if latestReport.status == "Success" {
+        #                 # Store the array of suggestions in state
+        #                 setSuggestedRoles(latestReport.body);
+        #             } else {
+        #                 console.log("Failed to generate role suggestions: " + (latestReport.message or "Unknown error"));
+        #             }
+
+        #             setCurrentStep(3);
+
+        #         } else {
+        #             console.log("Failed to save profile. Please try again.");
+        #         }
+
+        #     } except Exception as err {
+        #         console.log(err);
+        #     } finally {
+        #         setIsLoading(False);
+        #     }
+        # }
+
+
+
+        # components
         def Step(props:any) -> any {
 
             let circleBase = "w-[40px] aspect-square rounded-full flex items-center justify-center relative z-10 transition-all duration-200 text-white";
@@ -151,28 +322,28 @@ cl{
                     </div>
                 )}
 
-                <div>
-                    <div className="text-gray-400 text-sm mb-2">Available Skills</div>
-                    <div className="flex flex-wrap gap-2 overflow-y-auto  md:max-h-[25vh]">
-                        {props.interests.map(
-                            lambda interest:any -> any { 
-                                let isSelected = props.selectedInterests.includes(interest);
-                                if (isSelected == false) {
-                                    return <div 
-                                        key={interest}
-                                        onClick={lambda e:any -> None {
-                                            let newSelected = props.selectedInterests.concat([interest]);
-                                            props.setSelectedInterests(newSelected);
-                                        }}
-                                        className="border border-gray-500 text-white px-4 py-2 rounded-full text-sm font-medium cursor-pointer transition-all hover:border-[#6e11b0] hover:bg-[#0b0b0b]">
-                                        {interest}
-                                    </div>;
-                                }
-                                return null;
-                            }
-                        )}
-                    </div>
-                </div>
+                # <div>
+                #     <div className="text-gray-400 text-sm mb-2">Available Skills</div>
+                #     <div className="flex flex-wrap gap-2 overflow-y-auto  md:max-h-[25vh]">
+                #         {props.interests.map(
+                #             lambda interest:any -> any { 
+                #                 let isSelected = props.selectedInterests.includes(interest);
+                #                 if (isSelected == false) {
+                #                     return <div 
+                #                         key={interest}
+                #                         onClick={lambda e:any -> None {
+                #                             let newSelected = props.selectedInterests.concat([interest]);
+                #                             props.setSelectedInterests(newSelected);
+                #                         }}
+                #                         className="border border-gray-500 text-white px-4 py-2 rounded-full text-sm font-medium cursor-pointer transition-all hover:border-[#6e11b0] hover:bg-[#0b0b0b]">
+                #                         {interest}
+                #                     </div>;
+                #                 }
+                #                 return null;
+                #             }
+                #         )}
+                #     </div>
+                # </div>
             </div>;
         }
 
@@ -235,28 +406,48 @@ cl{
 
                 <div>
                     <div className="text-gray-400 text-sm mb-2">Available Roles</div>
-                    <div className="flex flex-wrap gap-2 overflow-y-auto  md:max-h-[25vh]">
-                        {props.roles.map(
-                            lambda role:any -> any { 
-                                let isSelected = props.selectedRoles.includes(role);
+
+                    <div className="flex flex-wrap gap-2 overflow-y-auto md:max-h-[25vh]">
+                        {props.suggestedRoles.map(
+                            lambda role:any, index:any -> any {
+                                let isSelected = props.selectedRoles.includes(role.title);
+
                                 if (isSelected == false) {
-                                    return <div 
-                                        key={role}
+                                    return <div
+                                        key={index}
                                         onClick={lambda e:any -> None {
-                                            let newSelected = props.selectedRoles.concat([role]);
+                                            let newSelected = props.selectedRoles.concat([role.title]);
                                             props.setSelectedRoles(newSelected);
                                         }}
-                                        className="border border-gray-500 text-white px-4 py-2 rounded-full text-sm font-medium cursor-pointer transition-all hover:border-[#6e11b0] hover:bg-[#0b0b0b]">
-                                        {role}
+                                        className="border border-gray-500 text-white px-4 py-2 rounded-full text-sm font-medium cursor-pointer transition-all hover:border-[#6e11b0] hover:bg-[#0b0b0b]"
+                                    >
+                                        {role.title}
                                     </div>;
                                 }
+
                                 return null;
                             }
                         )}
                     </div>
                 </div>
+
             </div>;
         }
+
+        def LoadingDots() -> any {
+            return <div style={{
+                "display": "flex",
+                "justifyContent": "center",
+                "alignItems": "center",
+                "gap": "6px",
+                "height": "20px"
+            }}>
+                <span className="loading-dot"></span>
+                <span className="loading-dot"></span>
+                <span className="loading-dot"></span>
+            </div>;
+        }
+
 
 
         return<div className="w-full bg-black h-screen grid grid-cols-[100%} md:grid-cols-[45%_55%] relative text-white">
@@ -293,7 +484,11 @@ cl{
                         <div className="h-[60vh]">
                             <div className="mb-0 font-semibold text-white text-[1.15rem]">Upload your CV</div>
                             <p className="text-gray-500 my-0 mt-[10px]">Let us start by understanding your background</p>
-                            <div className="my-[30px] h-[40vh] w-full md:w-[80%] rounded-[15px] flex flex-col justify-center items-center border-2 border-dashed border-gray-500 bg-[#0b0b0b] md:bg-[#101010ff] hover:border-[#6e11b0] hover:bg-[#0b0b0b] transition-all duration-200">
+                            <div 
+                                onDragOver={handleDragOver}
+                                onDragLeave={handleDragLeave}
+                                onDrop={handleDrop}
+                                className="my-[30px] h-[40vh] w-full md:w-[80%] rounded-[15px] flex flex-col justify-center items-center border-2 border-dashed border-gray-500 bg-[#0b0b0b] md:bg-[#101010ff] hover:border-[#6e11b0] hover:bg-[#0b0b0b] transition-all duration-200">
                                 <div className="w-[55px] aspect-square rounded-full bg-black flex items-center justify-center mb-[15px]">
                                     <CloudUpload className="text-[0.75rem] text-[#6e11b0]" />
                                 </div>
@@ -301,9 +496,19 @@ cl{
                                     Supported formats: PDF, DOC, DOCX (Max 5MB)
                                 </p>
                                 <div></div>
-                                <div className="w-auto px-6 py-4 border-none rounded-lg bg-[#6e11b0] text-white font-semibold text-sm cursor-pointer transition-all duration-200 mt-[10px] shadow-[0_0_20px_rgba(110,17,176,0.2)]">
+                                <input
+                                    type="file"
+                                    accept=".pdf,.doc,.docx"
+                                    onChange={handleFileSelect}
+                                    className="hidden"
+                                    id="resumeInput"
+                                />
+                                <label 
+                                for="resumeInput"
+                                className="w-auto px-6 py-4 border-none rounded-lg bg-[#6e11b0] text-white font-semibold text-sm cursor-pointer transition-all duration-200 mt-[10px] shadow-[0_0_20px_rgba(110,17,176,0.2)]">
                                     Upload from Computer
-                                </div>
+                                </label>
+                                {fileName && <p className="mt-5 text-sm text-white font-medium">Uploaded: {fileName}</p>}
                             </div>
                         </div>
                     }
@@ -313,7 +518,7 @@ cl{
                     }
 
                     { currentStep == 3 && 
-                        <Roles roles={devRoles} selectedRoles={selectedRoles} setSelectedRoles={setSelectedRoles}/>
+                        <Roles suggestedRoles={suggestedRoles} selectedRoles={selectedRoles} setSelectedRoles={setSelectedRoles}/>
                     }
 
                     { currentStep == 4 && 
@@ -372,18 +577,28 @@ cl{
 
                         <button
                             type="button"
-                            onClick={lambda e: any -> None{
-                                if(currentStep < 4){
-                                setCurrentStep(currentStep + 1);
-                                }else{
+                            onClick={lambda e: any -> None {
+                                if (currentStep < 4) {
+                                    setIsLoading(True);
+                                    
+                                    if (currentStep == 1) {
+                                        handleStep1Next();
+                                    } elif (currentStep == 2) {
+                                        handleStep2Next();
+                                    } elif (currentStep == 3) {
+                                        # handleStep3Next();
+                                    }
+                                    
+                                } else {
                                     navigate("/dashboard");
                                 }
-
-                                }}
-                            className="w-[180px] bg-[#6e11b0] text-white border-none px-10 py-4 rounded-[5px] cursor-pointer text-base transition-transform duration-200 hover:translate-y-1"
-                        >
-                            { "Get Started" if currentStep == 4 else "Next" }
+                            }}
+                            disabled={isLoading}
+                            className="w-[180px] bg-[#6e11b0] text-white border-none px-10 py-4 rounded-[5px] cursor-pointer text-base transition-transform duration-200 hover:translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >   
+                            { LoadingDots() if isLoading else ( "Get Started" if currentStep == 4 else "Next")}
                         </button>
+
                     </div>
                 </div>
             </div>

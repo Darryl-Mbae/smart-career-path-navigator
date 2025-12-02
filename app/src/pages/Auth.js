@@ -1,7 +1,7 @@
 import {__jacJsx, __jacSpawn} from "@jac-client/utils";
 import { useState } from "react";
 import { ChevronLeft } from "lucide-react";
-import { useNavigate } from "@jac-client/utils";
+import { useNavigate, jacSignup, jacLogin } from "@jac-client/utils";
 function Auth() {
   let navigate = useNavigate();
   let [loginEmail, setLoginEmail] = useState("");
@@ -16,10 +16,41 @@ function Auth() {
   let signInClass = isSignIn ? "block md:flex" : "hidden md:flex";
   let signUpClass = isSignIn ? "hidden md:flex" : "block md:flex";
   async function handleLogin(e) {
+    e.preventDefault();
+    setError("");
+    if (!loginEmail || !loginPassword) {
+      setError("Please fill all fields");
+      return;
+    }
+    let success = await jacLogin(loginEmail, loginPassword);
+    if (success) {
+      let resume_status = await __jacSpawn("check_resume_upload_status", "", {});
+      if (resume_status.reports[0]["body"] === true) {
+        navigate("/dashboard");
+      } else {
+        navigate("/onboarding");
+      }
+    } else {
+      setError("Wrong email or password");
+    }
     navigate("/dashboard");
   }
   async function handleSignup(e) {
-    navigate("/onboarding");
+    e.preventDefault();
+    setError("");
+    if (!signupName || !signupEmail || !signupPassword) {
+      setError("Please fill in all fields");
+      return;
+    }
+    let result = await jacSignup(signupEmail, signupPassword);
+    if (result["success"]) {
+      let new_memory = await __jacSpawn("initialize_memory", "", {"full_name": signupName, "email": signupEmail});
+      console.log("New Memory initialized:");
+      console.log(new_memory);
+      navigate("/onboarding");
+    } else {
+      setError(result["error"] ? result["error"] : "Signup failed");
+    }
   }
   function Header() {
     return __jacJsx("div", {"className": "w-[90%] md:w-[calc(70%+1.25rem)] text-left mb-4"}, [__jacJsx("div", {"onClick": e => {
@@ -30,16 +61,18 @@ function Auth() {
     setLoginEmail(e.target.value);
   }, "className": "p-[1.25rem] rounded-[0.5rem] border-none bg-[#0b0b0b] text-white text-[16px] w-full mb-[16px]"}, []), __jacJsx("input", {}, []), __jacJsx("input", {"type": "password", "placeholder": "Password", "value": loginPassword, "onChange": e => {
     setLoginPassword(e.target.value);
-  }, "className": "p-[1.25rem] rounded-[0.5rem] border-none bg-[#0b0b0b] text-white text-[16px] w-full mb-[16px]"}, []), __jacJsx("input", {}, []), __jacJsx("button", {"type": "submit", "className": "w-full p-5 rounded-[8px] border-none bg-primary text-white font-semibold cursor-pointer"}, ["Sign In"])]), __jacJsx("p", {"className": "mt-[19px] text-[14px] text-[#bbbbbb] items-center"}, ["Don't have an account?", __jacJsx("span", {"onClick": e => {
+  }, "className": "p-[1.25rem] rounded-[0.5rem] border-none bg-[#0b0b0b] text-white text-[16px] w-full mb-[16px]"}, []), __jacJsx("input", {}, []), error && __jacJsx("p", {"className": "text-[#dc2626] mb-4 text-sm"}, [error]), __jacJsx("button", {"type": "submit", "className": "w-full p-5 rounded-[8px] border-none bg-primary text-white font-semibold cursor-pointer"}, ["Sign In"])]), __jacJsx("p", {"className": "mt-[19px] text-[14px] text-[#bbbbbb] items-center"}, ["Don't have an account?", __jacJsx("span", {"onClick": e => {
     setIsSignIn(false);
+    setError("");
   }, "className": "text-primary cursor-pointer ml-[5px] font-semibold"}, ["Sign Up"])])])]), __jacJsx("div", {"className": signUpClass + " w-full h-screen flex items-center justify-center"}, [__jacJsx("div", {"className": "w-full flex flex-col items-center p-6"}, [__jacJsx(Header, {}, []), __jacJsx("h2", {"className": "w-[90%] md:w-[calc(70%+1.25rem)] my-[20px] text-xl font-bold md:pl-[10px]"}, ["Create your account"]), __jacJsx("form", {"onSubmit": handleSignup, "className": "w-[90%] md:w-[70%] flex flex-col items-center"}, [__jacJsx("input", {"type": "text", "placeholder": "Full Name", "value": signupName, "onChange": e => {
     setSignupName(e.target.value);
   }, "className": "p-[1.25rem] rounded-[0.5rem] border-none bg-[#0b0b0b] text-white text-[16px] w-full mb-[16px]"}, []), __jacJsx("input", {"type": "email", "placeholder": "Email", "value": signupEmail, "onChange": e => {
     setSignupEmail(e.target.value);
   }, "className": "p-[1.25rem] rounded-[0.5rem] border-none bg-[#0b0b0b] text-white text-[16px] w-full mb-[16px]"}, []), __jacJsx("input", {"type": "password", "placeholder": "Password", "value": signupPassword, "onChange": e => {
     setSignupPassword(e.target.value);
-  }, "className": "p-[1.25rem] rounded-[0.5rem] border-none bg-[#0b0b0b] text-white text-[16px] w-full mb-[16px]"}, []), __jacJsx("input", {}, []), __jacJsx("button", {"type": "submit", "className": "w-full p-5 rounded-[8px] border-none bg-primary text-white font-semibold cursor-pointer"}, ["Sign Up"])]), __jacJsx("p", {"className": "mt-[19px] text-[14px] text-[#bbbbbb] items-center"}, ["Already have an account?", __jacJsx("span", {"onClick": e => {
+  }, "className": "p-[1.25rem] rounded-[0.5rem] border-none bg-[#0b0b0b] text-white text-[16px] w-full mb-[16px]"}, []), __jacJsx("input", {}, []), error && __jacJsx("p", {"className": "text-[#dc2626] mb-4 text-sm"}, [error]), __jacJsx("button", {"type": "submit", "className": "w-full p-5 rounded-[8px] border-none bg-primary text-white font-semibold cursor-pointer"}, ["Sign Up"])]), __jacJsx("p", {"className": "mt-[19px] text-[14px] text-[#bbbbbb] items-center"}, ["Already have an account?", __jacJsx("span", {"onClick": e => {
     setIsSignIn(true);
+    setError();
   }, "className": "text-primary cursor-pointer ml-[5px] font-semibold"}, ["Sign In"])])])]), __jacJsx("div", {"className": baseClasses + " " + positionClass}, [__jacJsx("div", {"className": "m-auto bg-primary w-[97%] h-[97%] z-[9999] rounded-[10px] flex justify-center items-center overflow-hidden"}, [])])]);
 }
 export { Auth };
