@@ -100,9 +100,7 @@ function _jacSpawn() {
               "Content-Type": "application/json",
               "Authorization": token ? "Bearer ".concat(token) : ""
             },
-            "body": JSON.stringify({
-              "fields": fields
-            })
+            "body": JSON.stringify(fields)
           });
         case 1:
           response = _context.v;
