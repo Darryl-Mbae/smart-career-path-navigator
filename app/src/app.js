@@ -566,7 +566,7 @@ function Onboarding() {
       rightArrowCursor = "pointer";
     }
     step3Content = __jacJsx("div", {"style": {"height": "65vh", "padding": "5px", "position": "relative", "display": "flex", "flexDirection": "column"}}, [__jacJsx("h2", {"style": {"color": "white", "marginBottom": "10px", "fontSize": "1.3rem", "fontWeight": "600"}}, ["Your AI-Suggested Career Roles"]), __jacJsx("p", {"style": {"color": "grey", "marginTop": "0px", "marginBottom": "25px", "fontSize": "0.9rem"}}, ["Slide through the suggested roles and select the one that fits you best."]), totalRoles === 0 && __jacJsx("p", {"style": {"color": "grey"}}, ["No suggestions found"]), totalRoles > 0 && __jacJsx("div", {"style": {"display": "flex", "alignItems": "center", "justifyContent": "center", "position": "relative", "height": "100%"}}, [__jacJsx("div", {"onClick": e => {
-      obj.selectedRole = currentRole.title;
+      root.selectedRole = currentRole.title;
     }, "style": {"width": "85%", "backgroundColor": "#0e0e0e", "border": "1px solid #262626", "padding": "22px", "borderRadius": "12px", "cursor": "pointer", "transition": "all 0.25s ease", "display": "flex", "flexDirection": "column", "gap": "10px", "boxShadow": "0 0 6px rgba(0,0,0,0.4)", "position": "relative"}}, [__jacJsx("div", {"onClick": e => {
       e.stopPropagation();
       if (canGoLeft) {
