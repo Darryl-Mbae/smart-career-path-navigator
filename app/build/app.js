@@ -2200,7 +2200,7 @@ function Onboarding() {
       }
     }, [__jacJsx("div", {
       "onClick": function onClick(e) {
-        obj.selectedRole = currentRole.title;
+        root.selectedRole = currentRole.title;
       },
       "style": {
         "width": "85%",
