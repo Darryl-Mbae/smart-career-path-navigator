@@ -201,8 +201,133 @@ edge skilled_in {}
 edge has_certification {}
 edge interested_in {}
 
+# ----------------- Auto Careerjet Search Based on CV Skills -----------------
 
-# Agents
+def careerjet_search_from_profile(user_profile) {
+
+    # 1. Build keywords from CV skills
+    skill_names = [s.name for s in user_profile.skills] or [];
+    keywords = join(" ", skill_names);
+
+    if keywords == "" {
+        keywords = "entry level";
+    }
+
+    # 2. Validate API key
+    api_key = getenv("CAREERJET_API_KEY") or "";
+    if api_key == "" {
+        raise "Missing Careerjet API Key. Set CAREERJET_API_KEY env var.";
+    }
+
+    # 3. Required params (injected later by walker)
+    user_ip     = user_profile.user_ip or "";
+    user_agent  = user_profile.user_agent or "";
+    referer     = user_profile.referer or "https://yourapp.com";
+    location    = "Kenya";  # Default (optional)
+
+    if user_ip == "" or user_agent == "":
+        raise "Missing required headers: user_ip or user_agent.";
+
+    # 4. Build API URL
+    base = "https://search.api.careerjet.net/v4/query";
+
+    query = urlencode("search") + "=" + urlencode(keywords)
+          + "&locale_code=en_KE"
+          + "&page=1&pagesize=20"
+          + "&location=" + urlencode(location)
+          + "&user_ip=" + urlencode(user_ip)
+          + "&user_agent=" + urlencode(user_agent);
+
+    url = base + "?" + query;
+
+    headers = {
+        "Referer": referer,
+        "Accept": "application/json"
+    };
+
+    # 5. HTTP Request
+    try {
+        resp = host.http.request("GET", url, headers, null, [api_key, ""]);
+    } catch(e) {
+        raise f"HTTP request error: {e}";
+    }
+
+    if resp.status >= 400 {
+        raise f"Careerjet API returned {resp.status}";
+    }
+
+    data = resp.json or json.parse(resp.text or "{}");
+    jobs = data.jobs or data.results or [];
+
+    # 6. Format results
+    out = [];
+    for j in jobs {
+        out.append({
+            "title": j.title or "",
+            "company": j.company_name or "",
+            "location": j.location or "",
+            "description": j.description or "",
+            "url": j.url or ""
+        });
+    }
+
+    return out;
+}
+
+root.careerjet_search_from_profile = careerjet_search_from_profile;
+
+# ----------------- END FUNCTION -----------------
+
+walker api_auto_careerjet_search {
+    static has methods: list = ["post"];
+    static has auth: bool = False;
+
+    can call with `root entry {
+
+        # Extract headers from the incoming HTTP request
+        let client_ip = self._context.origin.remote_addr or "";
+        let client_agent = self._context.origin.headers.get("User-Agent") or "";
+        let client_referer = self._context.origin.headers.get("Referer") or "https://yourapp.com";
+
+        if client_ip == "" or client_agent == "" {
+            report {"status": "Fail", "message": "Missing IP or User-Agent", "body": []};
+            disengage;
+        }
+
+        # Load the user's CV skills
+        let profile_node = root spawn get_user_profile();
+
+        if profile_node == None or profile_node.user_profile == None {
+            report {"status": "Fail", "message": "User profile not found", "body": []};
+            disengage;
+        }
+
+        let user_profile = profile_node.user_profile;
+
+        # Inject required headers into profile before search
+        user_profile.user_ip = client_ip;
+        user_profile.user_agent = client_agent;
+        user_profile.referer = client_referer;
+
+        # Call the main Careerjet search function
+        try {
+            let jobs = root.careerjet_search_from_profile(user_profile);
+            report {
+                "status": "Success",
+                "message": "Careerjet jobs found",
+                "body": jobs
+            };
+        } catch(e) {
+            report {
+                "status": "Fail",
+                "message": f"Careerjet error: {e}",
+                "body": []
+            };
+        }
+    }
+}
+
+
 
 # Initialize Memory for a new user
 walker initialize_memory {
@@ -1046,10 +1171,5 @@ walker delete_user_profile {
             report {"status": "Failed", "message": "Certification not deleted!", "body": {here.name}};
         }
     }
-}
-
-
-with entry {
-    load_dotenv();
 }
 
