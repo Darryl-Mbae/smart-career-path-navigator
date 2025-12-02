@@ -66,19 +66,6 @@ function Website() {
       _useState6 = _slicedToArray(_useState5, 2),
       btn2Hover = _useState6[0],
       setBtn2Hover = _useState6[1];
-    var preconnect1 = document.createElement("link");
-    preconnect1.rel = "preconnect";
-    preconnect1.href = "https://fonts.googleapis.com";
-    document.head.appendChild(preconnect1);
-    var preconnect2 = document.createElement("link");
-    preconnect2.rel = "preconnect";
-    preconnect2.href = "https://fonts.gstatic.com";
-    preconnect2.crossOrigin = "anonymous";
-    document.head.appendChild(preconnect2);
-    var fontLink = document.createElement("link");
-    fontLink.href = "https://fonts.googleapis.com/css2?family=Zalando+Sans+SemiExpanded:ital,wght@0,200..900;1,200..900&display=swap";
-    fontLink.rel = "stylesheet";
-    document.head.appendChild(fontLink);
     return __jacJsx("div", {
       "className": "h-[75vh] w-[80%] mx-auto flex flex-col text-white mt-[5vh] grid grid-cols-[100%] md:grid-cols-[60%_40%]"
     }, [__jacJsx("div", {
@@ -86,10 +73,7 @@ function Website() {
     }, [__jacJsx("div", {
       "className": "px-5 py-2 rounded-2xl bg-primary w-max mb-2 "
     }, ["Find Your Future"]), __jacJsx("h1", {
-      "style": {
-        "fontFamily": "\"Zalando Sans\", sans-serif"
-      },
-      "className": "text-5xl md:text-6xl leading-none font-bold my-2"
+      "className": "font-dispaly text-5xl md:text-6xl leading-none font-bold my-2"
     }, ["AI-Powered Career Mapping for the Modern Workforce "]), __jacJsx("p", {
       "className": "w-[95%]"
     }, ["Your skills tell a story. We analyze them, match them to emerging roles, and create a personalized growth roadmap — turning uncertainty into clarity and ambition into direction."]), __jacJsx("div", {
