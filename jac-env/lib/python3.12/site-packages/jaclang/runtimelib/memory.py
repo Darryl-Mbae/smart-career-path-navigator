@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Generator, Iterable
 from dataclasses import dataclass, field
 from pickle import dumps
 from shelve import Shelf, open
-from typing import Any, Callable, Generator, Generic, Iterable, TypeVar, cast
+from typing import Any, Generic, TypeVar, cast
 from uuid import UUID
 
-from .archetype import Anchor, NodeAnchor, Root, TANCH
+from .archetype import TANCH, Anchor, NodeAnchor, Root
 
 ID = TypeVar("ID")
 
@@ -17,7 +18,7 @@ ID = TypeVar("ID")
 class Memory(Generic[ID, TANCH]):
     """Generic Memory Handler."""
 
-    __mem__: dict[ID, TANCH] = field(default_factory=dict)
+    __mem__: dict[ID | UUID, TANCH] = field(default_factory=dict)
     __gc__: set[TANCH] = field(default_factory=set)
 
     def close(self) -> None:
@@ -29,15 +30,13 @@ class Memory(Generic[ID, TANCH]):
         """Check if id if already cached."""
         return id in self.__mem__
 
-    def query(
-        self, filter: Callable[[TANCH], bool] | None = None
-    ) -> Generator[TANCH, None, None]:
+    def query(self, filter: Callable[[TANCH], bool] | None = None) -> Generator[TANCH]:
         """Find anchors from memory with filter."""
         return (
             anchor for anchor in self.__mem__.values() if not filter or filter(anchor)
         )
 
-    def all_root(self) -> Generator[Root, None, None]:
+    def all_root(self) -> Generator[Root]:
         """Get all the roots."""
         for anchor in self.query(lambda anchor: isinstance(anchor.archetype, Root)):
             yield cast(Root, anchor.archetype)
@@ -46,7 +45,7 @@ class Memory(Generic[ID, TANCH]):
         self,
         ids: ID | Iterable[ID],
         filter: Callable[[TANCH], TANCH] | None = None,
-    ) -> Generator[TANCH, None, None]:
+    ) -> Generator[TANCH]:
         """Find anchors from memory by ids with filter."""
         if not isinstance(ids, Iterable):
             ids = [ids]
@@ -69,9 +68,9 @@ class Memory(Generic[ID, TANCH]):
         """Find one by id."""
         return self.__mem__.get(id)
 
-    def set(self, id: ID, data: TANCH) -> None:
+    def set(self, data: TANCH) -> None:
         """Save anchor to memory."""
-        self.__mem__[id] = data
+        self.__mem__[data.id] = data
 
     def remove(self, ids: ID | Iterable[ID]) -> None:
         """Remove anchor/s from memory."""
@@ -84,6 +83,22 @@ class Memory(Generic[ID, TANCH]):
 
     def commit(self, anchor: TANCH | None = None) -> None:
         """Commit all data from memory to datasource."""
+
+    def get_gc(self) -> list:
+        """Commit all data from memory to datasource."""
+        return list(self.__gc__)
+
+    def remove_from_gc(self, anchor: TANCH) -> None:
+        """Commit all data from memory to datasource."""
+        self.__gc__.remove(anchor)
+
+    def get_mem(self) -> dict:
+        """Commit all data from memory to datasource."""
+        return self.__mem__
+
+    def remove_from_mem(self, anchor: ID | UUID) -> None:
+        """Commit all data from memory to datasource."""
+        self.__mem__.pop(anchor)
 
 
 @dataclass
@@ -132,7 +147,7 @@ class ShelfStorage(Memory[UUID, Anchor]):
 
     def sync_mem_to_db(self, keys: Iterable[UUID]) -> None:
         """Manually sync memory to db."""
-        from jaclang.runtimelib.machine import JacMachineInterface as Jac
+        from jaclang.runtimelib.runtime import JacRuntimeInterface as Jac
 
         if isinstance(self.__shelf__, Shelf):
             for key in keys:
@@ -168,9 +183,7 @@ class ShelfStorage(Memory[UUID, Anchor]):
                     ):
                         self.__shelf__[_id] = d
 
-    def query(
-        self, filter: Callable[[Anchor], bool] | None = None
-    ) -> Generator[Any, None, None]:
+    def query(self, filter: Callable[[Anchor], bool] | None = None) -> Generator[Any]:
         """Find anchors from memory with filter."""
         if isinstance(self.__shelf__, Shelf):
             for anchor in self.__shelf__.values():
@@ -185,7 +198,7 @@ class ShelfStorage(Memory[UUID, Anchor]):
         self,
         ids: UUID | Iterable[UUID],
         filter: Callable[[Anchor], Anchor] | None = None,
-    ) -> Generator[Anchor, None, None]:
+    ) -> Generator[Anchor]:
         """Find anchors from datasource by ids with filter."""
         if not isinstance(ids, Iterable):
             ids = [ids]

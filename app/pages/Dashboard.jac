@@ -18,7 +18,8 @@ cl {
             {id: 3, type: "success", title: "Task completed", description:'You completed the "Update website content" task.', time: "3 days ago", read: true},
             {id: 4, type: "warning", title: "Account suspended", description: "Your account has been suspended due to a billing issue.", time: "1 week ago", read: true}
         ]);
-        
+
+        let [selectedNotification, setSelectedNotification] = useState(null);        
         let unreadCount = notifications.filter(lambda n:any -> bool { return n.read == false; }).length;
 
         let baseLinkClasses = "flex items-center gap-3 px-4 py-3 rounded-lg transition-all cursor-pointer ";
@@ -236,7 +237,7 @@ cl {
                     <div className="h-[27vh] w-full bg-[black] rounded-md"></div>
                 </div>
                 <div>
-                   <h3 className="mt-4 text-base font-normal text-gray-300 mb-6">Trends</h3>
+                   <h3 className="mt-4 text-base font-normal text-gray-300 mb-6">Recommendations</h3>
                     <div className="h-[27vh] w-full bg-[black] rounded-md"></div>
                 </div>
             </div>;
@@ -490,90 +491,163 @@ cl {
 
                 {activeLink == "notifications" && (
                     <div>
-                        <div className="flex items-center justify-between mb-6">
-                            <div>
-                                <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Notifications</h1>
-                                <p className="text-gray-400">You have {unreadCount} new notifications.</p>
-                            </div>
-                            {unreadCount > 0 && (
+                        { 
+                            (<div>
                                 <button 
-                                    onClick={lambda e:any -> None {
-                                        let updatedNotifications = notifications.map(lambda n:any -> any {
-                                            return {id: n.id, type: n.type, title: n.title, description: n.description, time: n.time, read: true};
-                                        });
-                                        setNotifications(updatedNotifications);
-                                    }}
-                                    className="px-6 py-3 bg-[#101010ff] text-white rounded-lg hover:bg-[#1a1a1a] transition-all border border-gray-700 cursor-pointer font-semibold">
-                                    Mark all as read
+                                    onClick={lambda e:any -> None { setSelectedNotification(null); }}
+                                    className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-6 bg-transparent border-none cursor-pointer">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                    </svg>
+                                    <span>Back to notifications</span>
                                 </button>
-                            )}
-                        </div>
 
-                        <div className="bg-[#101010ff] border border-gray-800 rounded-lg overflow-hidden">
-                            {notifications.map(lambda notification:any -> any {
-                                let iconBg = "bg-orange-500" if notification.type == "message" else (
-                                    "bg-blue-500" if notification.type == "event" else (
-                                        "bg-green-500" if notification.type == "success" else "bg-yellow-500"
-                                    )
-                                );
-                                
-                                let isUnread = notification.read == false;
-                                let bgClass = "bg-[#0b0b0b]" if isUnread else "bg-transparent";
-                                
-                                return <div 
-                                    key={notification.id}
-                                    className={bgClass + " border-b border-gray-800 last:border-b-0 p-6 hover:bg-[#0b0b0b] transition-all cursor-pointer"}
-                                    onClick={lambda e:any -> None {
-                                        if (isUnread) {
-                                            let updatedNotifications = notifications.map(lambda n:any -> any {
-                                                if (n.id == notification.id) {
-                                                    return {id: n.id, type: n.type, title: n.title, description: n.description, time: n.time, read: true};
-                                                }
-                                                return n;
-                                            });
-                                            setNotifications(updatedNotifications);
-                                        }
-                                    }}>
-                                    <div className="flex items-start gap-4">
-                                        <div className={"w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 " + iconBg}>
-                                            {notification.type == "message" && (
-                                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div className="rounded-lg p-8">
+                                    <div className="flex items-start gap-4 mb-6 pb-6 border-b border-gray-800">
+                                        <div className={"w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0 " + (
+                                            "bg-orange-500" if selectedNotification.type == "message" else (
+                                                "bg-blue-500" if selectedNotification.type == "event" else (
+                                                    "bg-green-500" if selectedNotification.type == "success" else "bg-yellow-500"
+                                                )
+                                            )
+                                        )}>
+                                            {selectedNotification.type == "message" && (
+                                                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                                                 </svg>
                                             )}
-                                            {notification.type == "event" && (
-                                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            {selectedNotification.type == "event" && (
+                                                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                                 </svg>
                                             )}
-                                            {notification.type == "success" && (
-                                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            {selectedNotification.type == "success" && (
+                                                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                                 </svg>
                                             )}
-                                            {notification.type == "warning" && (
-                                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            {selectedNotification.type == "warning" && (
+                                                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                                 </svg>
                                             )}
                                         </div>
                                         
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-start justify-between gap-4 mb-1">
-                                                <h3 className="text-white font-semibold flex items-center gap-2">
-                                                    {notification.title}
-                                                    {isUnread && (
-                                                        <span className="w-2 h-2 bg-primary rounded-full"></span>
-                                                    )}
-                                                </h3>
-                                                <span className="text-gray-400 text-sm flex-shrink-0">{notification.time}</span>
+                                        <div className="flex-1">
+                                            <h2 className="text-white text-2xl font-bold mb-2">{selectedNotification.title}</h2>
+                                            <div className="flex items-center gap-4 text-sm text-gray-400">
+                                                <span>{selectedNotification.time}</span>
+                                                <span className="w-1 h-1 bg-gray-600 rounded-full"></span>
+                                                <span className="capitalize">{selectedNotification.type}</span>
                                             </div>
-                                            <p className="text-gray-400 text-sm">{notification.description}</p>
                                         </div>
                                     </div>
-                                </div>;
-                            })}
-                        </div>
+
+                                    <div className="text-gray-300 leading-relaxed">
+                                        <p>{selectedNotification.description}</p>
+                                    </div>
+
+                                    <div className="mt-8 flex gap-3">
+                                        <button 
+                                            onClick={lambda e:any -> None {
+                                                let updatedNotifications = notifications.filter(lambda n:any -> bool { return n.id != selectedNotification.id; });
+                                                setNotifications(updatedNotifications);
+                                                setSelectedNotification(null);
+                                            }}
+                                            className="px-6 py-3 bg-transparent text-red-400 border border-red-400 rounded-lg hover:bg-red-400 hover:text-white transition-all cursor-pointer font-semibold">
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>)
+                        if selectedNotification else 
+                            (<div>
+                                <div className="flex items-center justify-between mb-6">
+                                    <div>
+                                        <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Notifications</h1>
+                                        <p className="text-gray-400">You have {unreadCount} new notifications.</p>
+                                    </div>
+                                    {unreadCount > 0 && (
+                                        <button 
+                                            onClick={lambda e:any -> None {
+                                                let updatedNotifications = notifications.map(lambda n:any -> any {
+                                                    return {id: n.id, type: n.type, title: n.title, description: n.description, time: n.time, read: true};
+                                                });
+                                                setNotifications(updatedNotifications);
+                                            }}
+                                            className="px-6 py-3 bg-[#101010ff] text-white rounded-lg hover:bg-[#1a1a1a] transition-all border border-gray-700 cursor-pointer font-semibold">
+                                            Mark all as read
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div className="rounded-lg">
+                                    {notifications.map(lambda notification:any -> any {
+                                        let iconBg = "bg-orange-500" if notification.type == "message" else (
+                                            "bg-blue-500" if notification.type == "event" else (
+                                                "bg-green-500" if notification.type == "success" else "bg-yellow-500"
+                                            )
+                                        );
+                                        
+                                        let isUnread = notification.read == false;
+                                        
+                                        return <div 
+                                            key={notification.id}
+                                            className="border-b border-gray-800 last:border-b-0 p-6 hover:bg-[#0b0b0b] transition-all cursor-pointer"
+                                            onClick={lambda e:any -> None {
+                                                setSelectedNotification(notification);
+                                                if (isUnread) {
+                                                    let updatedNotifications = notifications.map(lambda n:any -> any {
+                                                        if (n.id == notification.id) {
+                                                            return {id: n.id, type: n.type, title: n.title, description: n.description, time: n.time, read: true};
+                                                        }
+                                                        return n;
+                                                    });
+                                                    setNotifications(updatedNotifications);
+                                                }
+                                            }}>
+                                            <div className="flex items-start gap-4">
+                                                <div className={"w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 " + iconBg}>
+                                                    {notification.type == "message" && (
+                                                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                                        </svg>
+                                                    )}
+                                                    {notification.type == "event" && (
+                                                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                        </svg>
+                                                    )}
+                                                    {notification.type == "success" && (
+                                                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                    )}
+                                                    {notification.type == "warning" && (
+                                                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                        </svg>
+                                                    )}
+                                                </div>
+                                                
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-start justify-between gap-4 mb-1">
+                                                        <h3 className="text-white font-semibold flex items-center gap-2">
+                                                            {notification.title}
+                                                            {isUnread && (
+                                                                <span className="w-2 h-2 bg-primary rounded-full"></span>
+                                                            )}
+                                                        </h3>
+                                                        <span className="text-gray-400 text-sm flex-shrink-0">{notification.time}</span>
+                                                    </div>
+                                                    <p className="text-gray-400 text-sm line-clamp-2">{notification.description}</p>
+                                                </div>
+                                            </div>
+                                        </div>;
+                                    })}
+                                </div>
+                            </div>)
+                         }
                     </div>
                 )}
 

@@ -26,7 +26,7 @@ path = r"C:\Users\Alice\Documents"
 print(path)  # output : C:\Users\Alice\Documents
 print(type(path))  # output : <class 'str'>
 
-hello_world_bytes = b"\x48\x65\x6C\x6C\x6F\x20\x57\x6F\x72\x6C\x64"
+hello_world_bytes = b"\x48\x65\x6c\x6c\x6f\x20\x57\x6f\x72\x6c\x64"
 print(hello_world_bytes)  # output : b'Hello World'
 print(type(hello_world_bytes))  # output : <class 'bytes'>
 
@@ -223,8 +223,10 @@ print("This is \t tabbed.")
 print("Line 1\x0cLine 2")
 words = ["Hello", "World!", "I", "am", "a", "Jactastic!"]
 print(
-    f'''{"""
-""".join(words)}'''
+    f"""{
+        '''
+'''.join(words)
+    }"""
 )
 for i in "ban":
     for j in range(1, 3):
