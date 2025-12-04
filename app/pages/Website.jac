@@ -63,9 +63,7 @@ cl {
                 return<div className="h-[75vh] w-[80%] mx-auto flex flex-col text-white mt-[5vh] grid grid-cols-[100%] md:grid-cols-[60%_40%]">
                     <div className="flex flex-col">
                         <div className="px-5 py-2 rounded-2xl bg-primary w-max mb-2 ">Find Your Future</div>
-                        <h1 style={{
-                            "fontFamily":'"Zalando Sans", sans-serif'
-                        }} className="text-5xl md:text-6xl leading-none font-bold my-2">AI-Powered Career Mapping for the Modern Workforce </h1>
+                        <h1 className="font-dispaly text-5xl md:text-6xl leading-none font-bold my-2">AI-Powered Career Mapping for the Modern Workforce </h1>
                         <p className="w-[95%]">Your skills tell a story. We analyze them, match them to emerging roles, and create a personalized growth roadmap — turning uncertainty into clarity and ambition into direction.</p>
                         <div className="w-[90%] mt-[2rem] flex flex-col md:flex-row gap-3 md:items-center">
                             <button type="button" className="w-auto bg-primary text-white border-none cursor-pointer text-base px-10 py-4 rounded-md transition-transform duration-200 ease-in-out hover:translate-y-1">

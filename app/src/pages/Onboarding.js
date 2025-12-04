@@ -1,6 +1,7 @@
 import {__jacJsx, __jacSpawn} from "@jac-client/utils";
 import { useState, useEffect } from "react";
 import { Brain, CloudUpload, Goal, Route as Node, ChevronLeft } from "lucide-react";
+import { fileToBase64 } from "../fileutils.js";
 import { useNavigate } from "@jac-client/utils";
 function Onboarding() {
   let [currentStep, setCurrentStep] = useState(1);
@@ -10,6 +11,13 @@ function Onboarding() {
   let [resumeHover, setResumeHover] = useState(false);
   let [selectedInterests, setSelectedInterests] = useState([]);
   let [selectedRoles, setSelectedRoles] = useState([]);
+  let [suggestedRoles, setSuggestedRoles] = useState([]);
+  let [dragActive, setDragActive] = useState(false);
+  let [fileName, setFileName] = useState("");
+  let [file, setFile] = useState(null);
+  let [error, setError] = useState("");
+  let [canProceed, setCanProceed] = useState(false);
+  let [isLoading, setIsLoading] = useState(false);
   let navigate = useNavigate();
   let devSkills = ["JavaScript", "Python", "React", "Node.js", "TypeScript", "HTML & CSS", "Django", "Flutter", "Git & GitHub", "SQL & Databases", "REST APIs", "GraphQL", "Docker", "Agile & Scrum"];
   let devRoles = ["Frontend Developer", "Backend Developer", "Fullstack Developer", "Mobile Developer", "DevOps Engineer", "UI/UX Designer", "Data Scientist", "Machine Learning Engineer"];
@@ -18,6 +26,95 @@ function Onboarding() {
     setProgress(percent + "%");
   }, [currentStep]);
   let steps = [{id: 1, title: "Upload Your CV", description: "Let our AI analyze your experience and extract your current skills.", icon: __jacJsx(CloudUpload, {"style": {"fontSize": "0.75rem"}}, []), completed: false}, {id: 2, title: "Review & Update Skills", description: "Confirm AI-detected skills and add any we might have missed.", icon: __jacJsx(Brain, {"style": {"fontSize": "0.75rem"}}, []), completed: false}, {id: 3, title: "Set Career Goals", description: "Choose your target roles, industries, and career aspirations.", icon: __jacJsx(Goal, {"style": {"fontSize": "0.75rem"}}, []), completed: false}, {id: 4, title: "Get Your Roadmap", description: "Explore your personalized learning path and skill gap analysis.", icon: __jacJsx(Node, {"style": {"fontSize": "0.75rem"}}, []), completed: false}];
+  function handleFileSelect(e) {
+    let pickedFile = e.target.files[0];
+    if (pickedFile) {
+      setFileName(pickedFile.name);
+      setFile(pickedFile);
+      setError("");
+      setCanProceed(true);
+    }
+  }
+  function handleDragOver(e) {
+    e.preventDefault();
+    setDragActive(true);
+  }
+  function handleDragLeave(e) {
+    e.preventDefault();
+    setDragActive(false);
+  }
+  function handleDrop(e) {
+    e.preventDefault();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      let droppedFile = e.dataTransfer.files[0];
+      setFileName(droppedFile.name);
+      setFile(droppedFile);
+      e.dataTransfer.clearData();
+      setError("");
+      setCanProceed(true);
+    }
+  }
+  async function handleStep1Next() {
+    if (!canProceed || !file) {
+      return;
+    }
+    try {
+      await __jacSpawn("create_resume_node", "", {});
+      let base64Data = await fileToBase64(file);
+      let result = await __jacSpawn("upload_resume", "", {"file": base64Data, "name": file.name, "mime": file.type});
+      if (!result) {
+        console.log("Failed");
+        return;
+      }
+      await __jacSpawn("save_resume", "", {});
+      await __jacSpawn("update_resume_upload_status", "", {});
+      let user_skills = await __jacSpawn("analyze_cv", "", {});
+      if (!user_skills || !user_skills.reports || user_skills.reports.length === 0) {
+        console.log("Failed");
+        return;
+      }
+      if (user_skills.reports[0]["status"] !== "Success") {
+        console.log("Failed");
+        return;
+      }
+      try {
+        let body = "body" in user_skills.reports[0] ? user_skills.reports[0]["body"] : {};
+        let detected_skills = "skills" in body ? body["skills"] : [];
+        let detected_interests = "interests" in body ? body["interests"] : [];
+        let detected_certs = "certifications" in body ? body["certifications"] : [];
+        setSelectedInterests(detected_skills);
+      } catch (e) {
+        console.log(e);
+      }
+      setCurrentStep(2);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+  async function handleStep2Next() {
+    try {
+      let result = await __jacSpawn("update_user_profile", "", {"updated_skills": selectedInterests});
+      if (result) {
+        let rolesReport = await __jacSpawn("generate_role_suggestions", "", {});
+        let latestReport = rolesReport.reports[rolesReport.reports.length - 1];
+        if (latestReport.status === "Success") {
+          setSuggestedRoles(latestReport.body);
+        } else {
+          console.log("Failed to generate role suggestions: " + latestReport.message || "Unknown error");
+        }
+        setCurrentStep(3);
+      } else {
+        console.log("Failed to save profile. Please try again.");
+      }
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }
   function Step(props) {
     let circleBase = "w-[40px] aspect-square rounded-full flex items-center justify-center relative z-10 transition-all duration-200 text-white";
     let circleShadow = props.step.id === currentStep ? "shadow-[0_0_20px_rgba(110,17,176,0.5)]" : "";
@@ -47,15 +144,6 @@ function Onboarding() {
           return i !== skill;
         }));
       }, "className": "w-4 h-4 hover:scale-110 transition-transform", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M6 18L18 6M6 6l12 12"}, [])])]);
-    })])]), __jacJsx("div", {}, [__jacJsx("div", {"className": "text-gray-400 text-sm mb-2"}, ["Available Skills"]), __jacJsx("div", {"className": "flex flex-wrap gap-2 overflow-y-auto  md:max-h-[25vh]"}, [props.interests.map(interest => {
-      let isSelected = props.selectedInterests.includes(interest);
-      if (isSelected === false) {
-        return __jacJsx("div", {"key": interest, "onClick": e => {
-          let newSelected = props.selectedInterests.concat([interest]);
-          props.setSelectedInterests(newSelected);
-        }, "className": "border border-gray-500 text-white px-4 py-2 rounded-full text-sm font-medium cursor-pointer transition-all hover:border-[#6e11b0] hover:bg-[#0b0b0b]"}, [interest]);
-      }
-      return null;
     })])])]);
   }
   function Roles(props) {
@@ -77,27 +165,35 @@ function Onboarding() {
           return i !== role;
         }));
       }, "className": "w-4 h-4 hover:scale-110 transition-transform", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M6 18L18 6M6 6l12 12"}, [])])]);
-    })])]), __jacJsx("div", {}, [__jacJsx("div", {"className": "text-gray-400 text-sm mb-2"}, ["Available Roles"]), __jacJsx("div", {"className": "flex flex-wrap gap-2 overflow-y-auto  md:max-h-[25vh]"}, [props.roles.map(role => {
-      let isSelected = props.selectedRoles.includes(role);
+    })])]), __jacJsx("div", {}, [__jacJsx("div", {"className": "text-gray-400 text-sm mb-2"}, ["Available Roles"]), __jacJsx("div", {"className": "flex flex-wrap gap-2 overflow-y-auto md:max-h-[25vh]"}, [props.suggestedRoles.map((role, index) => {
+      let isSelected = props.selectedRoles.includes(role.title);
       if (isSelected === false) {
-        return __jacJsx("div", {"key": role, "onClick": e => {
-          let newSelected = props.selectedRoles.concat([role]);
+        return __jacJsx("div", {"key": index, "onClick": e => {
+          let newSelected = props.selectedRoles.concat([role.title]);
           props.setSelectedRoles(newSelected);
-        }, "className": "border border-gray-500 text-white px-4 py-2 rounded-full text-sm font-medium cursor-pointer transition-all hover:border-[#6e11b0] hover:bg-[#0b0b0b]"}, [role]);
+        }, "className": "border border-gray-500 text-white px-4 py-2 rounded-full text-sm font-medium cursor-pointer transition-all hover:border-[#6e11b0] hover:bg-[#0b0b0b]"}, [role.title]);
       }
       return null;
     })])])]);
   }
+  function LoadingDots() {
+    return __jacJsx("div", {"style": {"display": "flex", "justifyContent": "center", "alignItems": "center", "gap": "6px", "height": "20px"}}, [__jacJsx("span", {"className": "loading-dot"}, []), __jacJsx("span", {"className": "loading-dot"}, []), __jacJsx("span", {"className": "loading-dot"}, [])]);
+  }
   return __jacJsx("div", {"className": "w-full bg-black h-screen grid grid-cols-[100%} md:grid-cols-[45%_55%] relative text-white"}, [__jacJsx("div", {"className": "hidden w-full h-full md:flex justify-center items-center"}, [__jacJsx("div", {"className": "m-auto bg-[#0b0b0b] w-[95%] h-[90%] z-[9999] rounded-[10px] flex flex-col justify-center items-center overflow-hidden"}, [steps.map(step => {
     return __jacJsx(Step, {"key": step.id, "step": step, "isActive": currentStep === step.id}, []);
-  }), "   "])]), __jacJsx("div", {"className": "w-full h-[95%] my-auto flex justify-center items-center"}, [__jacJsx("div", {"className": "w-[90%] h-[90%] flex flex-col justify-center"}, [__jacJsx("div", {"className": "text-gray-500 uppercase"}, ["Step ", currentStep, " of 4"]), __jacJsx("div", {"className": "w-full md:w-[80%] h-[11px] rounded-[20px] bg-[#0b0b0b] overflow-hidden my-5"}, [__jacJsx("div", {"style": {"height": "100%", "width": progress, "backgroundColor": "#6e11b0", "transition": "0.3s ease", "borderRadius": "20px"}}, [])]), currentStep === 1 && __jacJsx("div", {"className": "h-[60vh]"}, [__jacJsx("div", {"className": "mb-0 font-semibold text-white text-[1.15rem]"}, ["Upload your CV"]), __jacJsx("p", {"className": "text-gray-500 my-0 mt-[10px]"}, ["Let us start by understanding your background"]), __jacJsx("div", {"className": "my-[30px] h-[40vh] w-full md:w-[80%] rounded-[15px] flex flex-col justify-center items-center border-2 border-dashed border-gray-500 bg-[#0b0b0b] md:bg-[#101010ff] hover:border-[#6e11b0] hover:bg-[#0b0b0b] transition-all duration-200"}, [__jacJsx("div", {"className": "w-[55px] aspect-square rounded-full bg-black flex items-center justify-center mb-[15px]"}, [__jacJsx(CloudUpload, {"className": "text-[0.75rem] text-[#6e11b0]"}, [])]), __jacJsx("p", {"className": "text-gray-500 my-0 my-5 text-[.9em]"}, ["Supported formats: PDF, DOC, DOCX (Max 5MB)"]), __jacJsx("div", {}, []), __jacJsx("div", {"className": "w-auto px-6 py-4 border-none rounded-lg bg-[#6e11b0] text-white font-semibold text-sm cursor-pointer transition-all duration-200 mt-[10px] shadow-[0_0_20px_rgba(110,17,176,0.2)]"}, ["Upload from Computer"])])]), currentStep === 2 && __jacJsx(Skills, {"interests": devSkills, "selectedInterests": selectedInterests, "setSelectedInterests": setSelectedInterests}, []), currentStep === 3 && __jacJsx(Roles, {"roles": devRoles, "selectedRoles": selectedRoles, "setSelectedRoles": setSelectedRoles}, []), currentStep === 4 && __jacJsx("div", {"className": "h-[60vh] flex flex-col justify-center items-center text-center"}, [__jacJsx("div", {"className": "mb-0 font-semibold text-white text-[2rem] mb-4"}, ["You're All Set! 🎉"]), __jacJsx("p", {"className": "text-gray-400 text-lg max-w-[500px] mb-8"}, ["Your personalized career roadmap is ready. We've analyzed your skills, mapped them to your target roles, and created a custom learning path just for you."]), __jacJsx("div", {"className": "flex flex-col gap-4 mb-8"}, [__jacJsx("div", {"className": "flex items-center gap-3 text-gray-300"}, [__jacJsx("div", {"className": "w-6 h-6 rounded-full bg-[#6e11b0] flex items-center justify-center"}, [__jacJsx("svg", {"className": "w-4 h-4 text-white", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M5 13l4 4L19 7"}, [])])]), __jacJsx("span", {}, ["Skills analyzed and mapped"])]), __jacJsx("div", {"className": "flex items-center gap-3 text-gray-300"}, [__jacJsx("div", {"className": "w-6 h-6 rounded-full bg-[#6e11b0] flex items-center justify-center"}, [__jacJsx("svg", {"className": "w-4 h-4 text-white", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M5 13l4 4L19 7"}, [])])]), __jacJsx("span", {}, ["Career goals identified"])]), __jacJsx("div", {"className": "flex items-center gap-3 text-gray-300"}, [__jacJsx("div", {"className": "w-6 h-6 rounded-full bg-[#6e11b0] flex items-center justify-center"}, [__jacJsx("svg", {"className": "w-4 h-4 text-white", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M5 13l4 4L19 7"}, [])])]), __jacJsx("span", {}, ["Personalized roadmap generated"])])]), __jacJsx("p", {"className": "text-gray-500 text-sm mt-6"}, ["Ready to start your career transformation?"])]), __jacJsx("div", {"className": "flex flex-row gap-[25px] items-center"}, [currentStep > 1 && __jacJsx("div", {"onClick": e => {
+  }), "   "])]), __jacJsx("div", {"className": "w-full h-[95%] my-auto flex justify-center items-center"}, [__jacJsx("div", {"className": "w-[90%] h-[90%] flex flex-col justify-center"}, [__jacJsx("div", {"className": "text-gray-500 uppercase"}, ["Step ", currentStep, " of 4"]), __jacJsx("div", {"className": "w-full md:w-[80%] h-[11px] rounded-[20px] bg-[#0b0b0b] overflow-hidden my-5"}, [__jacJsx("div", {"style": {"height": "100%", "width": progress, "backgroundColor": "#6e11b0", "transition": "0.3s ease", "borderRadius": "20px"}}, [])]), currentStep === 1 && __jacJsx("div", {"className": "h-[60vh]"}, [__jacJsx("div", {"className": "mb-0 font-semibold text-white text-[1.15rem]"}, ["Upload your CV"]), __jacJsx("p", {"className": "text-gray-500 my-0 mt-[10px]"}, ["Let us start by understanding your background"]), __jacJsx("div", {"onDragOver": handleDragOver, "onDragLeave": handleDragLeave, "onDrop": handleDrop, "className": "my-[30px] h-[40vh] w-full md:w-[80%] rounded-[15px] flex flex-col justify-center items-center border-2 border-dashed border-gray-500 bg-[#0b0b0b] md:bg-[#101010ff] hover:border-[#6e11b0] hover:bg-[#0b0b0b] transition-all duration-200"}, [__jacJsx("div", {"className": "w-[55px] aspect-square rounded-full bg-black flex items-center justify-center mb-[15px]"}, [__jacJsx(CloudUpload, {"className": "text-[0.75rem] text-[#6e11b0]"}, [])]), __jacJsx("p", {"className": "text-gray-500 my-0 my-5 text-[.9em]"}, ["Supported formats: PDF, DOC, DOCX (Max 5MB)"]), __jacJsx("div", {}, []), __jacJsx("input", {"type": "file", "accept": ".pdf,.doc,.docx", "onChange": handleFileSelect, "className": "hidden", "id": "resumeInput"}, []), __jacJsx("label", {"for": "resumeInput", "className": "w-auto px-6 py-4 border-none rounded-lg bg-[#6e11b0] text-white font-semibold text-sm cursor-pointer transition-all duration-200 mt-[10px] shadow-[0_0_20px_rgba(110,17,176,0.2)]"}, ["Upload from Computer"]), fileName && __jacJsx("p", {"className": "mt-5 text-sm text-white font-medium"}, ["Uploaded: ", fileName])])]), currentStep === 2 && __jacJsx(Skills, {"interests": devSkills, "selectedInterests": selectedInterests, "setSelectedInterests": setSelectedInterests}, []), currentStep === 3 && __jacJsx(Roles, {"suggestedRoles": suggestedRoles, "selectedRoles": selectedRoles, "setSelectedRoles": setSelectedRoles}, []), currentStep === 4 && __jacJsx("div", {"className": "h-[60vh] flex flex-col justify-center items-center text-center"}, [__jacJsx("div", {"className": "mb-0 font-semibold text-white text-[2rem] mb-4"}, ["You're All Set! 🎉"]), __jacJsx("p", {"className": "text-gray-400 text-lg max-w-[500px] mb-8"}, ["Your personalized career roadmap is ready. We've analyzed your skills, mapped them to your target roles, and created a custom learning path just for you."]), __jacJsx("div", {"className": "flex flex-col gap-4 mb-8"}, [__jacJsx("div", {"className": "flex items-center gap-3 text-gray-300"}, [__jacJsx("div", {"className": "w-6 h-6 rounded-full bg-[#6e11b0] flex items-center justify-center"}, [__jacJsx("svg", {"className": "w-4 h-4 text-white", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M5 13l4 4L19 7"}, [])])]), __jacJsx("span", {}, ["Skills analyzed and mapped"])]), __jacJsx("div", {"className": "flex items-center gap-3 text-gray-300"}, [__jacJsx("div", {"className": "w-6 h-6 rounded-full bg-[#6e11b0] flex items-center justify-center"}, [__jacJsx("svg", {"className": "w-4 h-4 text-white", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M5 13l4 4L19 7"}, [])])]), __jacJsx("span", {}, ["Career goals identified"])]), __jacJsx("div", {"className": "flex items-center gap-3 text-gray-300"}, [__jacJsx("div", {"className": "w-6 h-6 rounded-full bg-[#6e11b0] flex items-center justify-center"}, [__jacJsx("svg", {"className": "w-4 h-4 text-white", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M5 13l4 4L19 7"}, [])])]), __jacJsx("span", {}, ["Personalized roadmap generated"])])]), __jacJsx("p", {"className": "text-gray-500 text-sm mt-6"}, ["Ready to start your career transformation?"])]), __jacJsx("div", {"className": "flex flex-row gap-[25px] items-center"}, [currentStep > 1 && __jacJsx("div", {"onClick": e => {
     setCurrentStep(currentStep - 1);
   }, "className": "flex flex-row items-center cursor-pointer"}, [" ", __jacJsx(ChevronLeft, {}, []), "Back"]), __jacJsx("button", {"type": "button", "onClick": e => {
     if (currentStep < 4) {
-      setCurrentStep(currentStep + 1);
+      setIsLoading(true);
+      if (currentStep === 1) {
+        handleStep1Next();
+      } else if (currentStep === 2) {
+        handleStep2Next();
+      } else if (currentStep === 3) {}
     } else {
       navigate("/dashboard");
     }
-  }, "className": "w-[180px] bg-[#6e11b0] text-white border-none px-10 py-4 rounded-[5px] cursor-pointer text-base transition-transform duration-200 hover:translate-y-1"}, [currentStep === 4 ? "Get Started" : "Next"])])])])]);
+  }, "disabled": isLoading, "className": "w-[180px] bg-[#6e11b0] text-white border-none px-10 py-4 rounded-[5px] cursor-pointer text-base transition-transform duration-200 hover:translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"}, ["   ", isLoading ? LoadingDots() : currentStep === 4 ? "Get Started" : "Next"])])])])]);
 }
 export { Onboarding };

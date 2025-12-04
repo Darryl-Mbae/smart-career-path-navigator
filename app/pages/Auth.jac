@@ -2,6 +2,8 @@ cl import from react { useState }
 cl import from 'lucide-react' { ChevronLeft }
 cl import from "@jac-client/utils" {
     useNavigate,
+    jacSignup,
+    jacLogin,
 }  
 
 cl{
@@ -26,10 +28,49 @@ cl{
         let signUpClass = "hidden md:flex" if isSignIn else "block md:flex";
 
         async def handleLogin(e: any) -> None {
+            e.preventDefault();
+            setError("");
+
+            if not loginEmail or not loginPassword {
+                setError("Please fill all fields");
+                return;
+            }
+
+            success = await jacLogin(loginEmail, loginPassword);
+            if success {
+                resume_status = await root spawn check_resume_upload_status();
+
+                if resume_status.reports[0]["body"] == True {
+
+                    navigate("/dashboard");
+                } else {
+                    navigate("/onboarding");
+                }
+            } else {
+                setError("Wrong email or password");
+            }
+
             navigate("/dashboard");
         }
         async def handleSignup(e: any) -> None {
-            navigate("/onboarding");
+            e.preventDefault();
+            setError("");
+
+            if not signupName or not signupEmail or not signupPassword {
+                setError("Please fill in all fields");
+                return;
+            }
+
+            result = await jacSignup(signupEmail, signupPassword);
+
+            if result["success"] {
+                new_memory = root spawn initialize_memory(full_name=signupName, email=signupEmail);
+                console.log("New Memory initialized:");
+                console.log(new_memory);
+                navigate("/onboarding");
+            } else {
+                setError(result["error"] if result["error"] else "Signup failed");
+            }
         }
 
         def Header() -> any {
@@ -67,6 +108,7 @@ cl{
                             className="p-[1.25rem] rounded-[0.5rem] border-none bg-[#0b0b0b] text-white text-[16px] w-full mb-[16px]"
                         />
                         <input/>
+                        {error && <p className="text-[#dc2626] mb-4 text-sm">{error}</p>}
                         <button
                             type="submit"
                             className="w-full p-5 rounded-[8px] border-none bg-primary text-white font-semibold cursor-pointer"
@@ -74,7 +116,7 @@ cl{
                     </form>
                     <p className="mt-[19px] text-[14px] text-[#bbbbbb] items-center">
                         Don't have an account?
-                        <span onClick={lambda e: any -> None { setIsSignIn(False); }} className="text-primary cursor-pointer ml-[5px] font-semibold">Sign Up</span>
+                        <span onClick={lambda e: any -> None { setIsSignIn(False);setError(""); }} className="text-primary cursor-pointer ml-[5px] font-semibold">Sign Up</span>
                     </p>
                 </div>
             </div>
@@ -106,6 +148,8 @@ cl{
                             className="p-[1.25rem] rounded-[0.5rem] border-none bg-[#0b0b0b] text-white text-[16px] w-full mb-[16px]"
                         />
                         <input/>
+                        {error && <p className="text-[#dc2626] mb-4 text-sm">{error}</p>}
+
                         <button
                             type="submit"
                             className="w-full p-5 rounded-[8px] border-none bg-primary text-white font-semibold cursor-pointer"
@@ -113,7 +157,7 @@ cl{
                     </form>
                     <p className="mt-[19px] text-[14px] text-[#bbbbbb] items-center">
                         Already have an account?
-                        <span onClick={lambda e: any -> None { setIsSignIn(True); }} className="text-primary cursor-pointer ml-[5px] font-semibold">Sign In</span>
+                        <span onClick={lambda e: any -> None { setIsSignIn(True);setError(); }} className="text-primary cursor-pointer ml-[5px] font-semibold">Sign In</span>
                     </p>
                 </div>
             </div>
