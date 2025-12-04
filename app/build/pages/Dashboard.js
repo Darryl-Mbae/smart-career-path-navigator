@@ -61,6 +61,10 @@ function Dashboard() {
     _useState10 = _slicedToArray(_useState1, 2),
     notifications = _useState10[0],
     setNotifications = _useState10[1];
+  var _useState11 = useState(null),
+    _useState12 = _slicedToArray(_useState11, 2),
+    selectedNotification = _useState12[0],
+    setSelectedNotification = _useState12[1];
   var unreadCount = notifications.filter(function (n) {
     return n.read === false;
   }).length;
@@ -281,7 +285,7 @@ function Dashboard() {
       "className": "h-[27vh] w-full bg-[black] rounded-md"
     }, [])]), __jacJsx("div", {}, [__jacJsx("h3", {
       "className": "mt-4 text-base font-normal text-gray-300 mb-6"
-    }, ["Trends"]), __jacJsx("div", {
+    }, ["Recommendations"]), __jacJsx("div", {
       "className": "h-[27vh] w-full bg-[black] rounded-md"
     }, [])])]);
   }
@@ -347,10 +351,10 @@ function Dashboard() {
     }, ["U"])]);
   }
   function SelectionManager(props) {
-    var _useState11 = useState(""),
-      _useState12 = _slicedToArray(_useState11, 2),
-      inputValue = _useState12[0],
-      setInputValue = _useState12[1];
+    var _useState13 = useState(""),
+      _useState14 = _slicedToArray(_useState13, 2),
+      inputValue = _useState14[0],
+      setInputValue = _useState14[1];
     return __jacJsx("div", {}, [__jacJsx("div", {
       "className": "flex items-center justify-between mb-6"
     }, [__jacJsx("div", {}, []), __jacJsx("button", {
@@ -542,7 +546,91 @@ function Dashboard() {
       }
     }, [])])]), __jacJsx("div", {}, [__jacJsx("h3", {
       "className": "mt-4 text-base font-normal text-gray-300 mb-6"
-    }, ["Quizes"])])]), activeLink === "notifications" && __jacJsx("div", {}, [__jacJsx("div", {
+    }, ["Quizes"])])]), activeLink === "notifications" && __jacJsx("div", {}, [selectedNotification ? __jacJsx("div", {}, [__jacJsx("button", {
+      "onClick": function onClick(e) {
+        setSelectedNotification(null);
+      },
+      "className": "flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-6 bg-transparent border-none cursor-pointer"
+    }, [__jacJsx("svg", {
+      "className": "w-5 h-5",
+      "fill": "none",
+      "stroke": "currentColor",
+      "viewBox": "0 0 24 24"
+    }, [__jacJsx("path", {
+      "strokeLinecap": "round",
+      "strokeLinejoin": "round",
+      "strokeWidth": 2,
+      "d": "M15 19l-7-7 7-7"
+    }, [])]), __jacJsx("span", {}, ["Back to notifications"])]), __jacJsx("div", {
+      "className": "rounded-lg p-8"
+    }, [__jacJsx("div", {
+      "className": "flex items-start gap-4 mb-6 pb-6 border-b border-gray-800"
+    }, [__jacJsx("div", {
+      "className": "w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0 " + selectedNotification.type === "message" ? "bg-orange-500" : selectedNotification.type === "event" ? "bg-blue-500" : selectedNotification.type === "success" ? "bg-green-500" : "bg-yellow-500"
+    }, [selectedNotification.type === "message" && __jacJsx("svg", {
+      "className": "w-8 h-8 text-white",
+      "fill": "none",
+      "stroke": "currentColor",
+      "viewBox": "0 0 24 24"
+    }, [__jacJsx("path", {
+      "strokeLinecap": "round",
+      "strokeLinejoin": "round",
+      "strokeWidth": 2,
+      "d": "M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+    }, [])]), selectedNotification.type === "event" && __jacJsx("svg", {
+      "className": "w-8 h-8 text-white",
+      "fill": "none",
+      "stroke": "currentColor",
+      "viewBox": "0 0 24 24"
+    }, [__jacJsx("path", {
+      "strokeLinecap": "round",
+      "strokeLinejoin": "round",
+      "strokeWidth": 2,
+      "d": "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+    }, [])]), selectedNotification.type === "success" && __jacJsx("svg", {
+      "className": "w-8 h-8 text-white",
+      "fill": "none",
+      "stroke": "currentColor",
+      "viewBox": "0 0 24 24"
+    }, [__jacJsx("path", {
+      "strokeLinecap": "round",
+      "strokeLinejoin": "round",
+      "strokeWidth": 2,
+      "d": "M5 13l4 4L19 7"
+    }, [])]), selectedNotification.type === "warning" && __jacJsx("svg", {
+      "className": "w-8 h-8 text-white",
+      "fill": "none",
+      "stroke": "currentColor",
+      "viewBox": "0 0 24 24"
+    }, [__jacJsx("path", {
+      "strokeLinecap": "round",
+      "strokeLinejoin": "round",
+      "strokeWidth": 2,
+      "d": "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+    }, [])])]), __jacJsx("div", {
+      "className": "flex-1"
+    }, [__jacJsx("h2", {
+      "className": "text-white text-2xl font-bold mb-2"
+    }, [selectedNotification.title]), __jacJsx("div", {
+      "className": "flex items-center gap-4 text-sm text-gray-400"
+    }, [__jacJsx("span", {}, [selectedNotification.time]), __jacJsx("span", {
+      "className": "w-1 h-1 bg-gray-600 rounded-full"
+    }, []), __jacJsx("span", {
+      "className": "capitalize"
+    }, [selectedNotification.type])])])]), __jacJsx("div", {
+      "className": "text-gray-300 leading-relaxed"
+    }, [__jacJsx("p", {}, [selectedNotification.description])]), __jacJsx("div", {
+      "className": "mt-8 flex gap-3"
+    }, [__jacJsx("button", {
+      "onClick": function onClick(e) {
+        var updatedNotifications = notifications.filter(function (n) {
+          return n.id !== selectedNotification.id;
+        });
+        setNotifications(updatedNotifications);
+        setSelectedNotification(null);
+      },
+      "className": "px-6 py-3 bg-transparent text-red-400 border border-red-400 rounded-lg hover:bg-red-400 hover:text-white transition-all cursor-pointer font-semibold"
+    }, ["Delete"])])])]) : __jacJsx("div", {}, [__jacJsx("div", {
       "className": "flex items-center justify-between mb-6"
     }, [__jacJsx("div", {}, [__jacJsx("h1", {
       "className": "text-2xl md:text-3xl font-bold text-white mb-2"
@@ -564,15 +652,15 @@ function Dashboard() {
       },
       "className": "px-6 py-3 bg-[#101010ff] text-white rounded-lg hover:bg-[#1a1a1a] transition-all border border-gray-700 cursor-pointer font-semibold"
     }, ["Mark all as read"])]), __jacJsx("div", {
-      "className": "bg-[#101010ff] border border-gray-800 rounded-lg overflow-hidden"
+      "className": "rounded-lg"
     }, [notifications.map(function (notification) {
       var iconBg = notification.type === "message" ? "bg-orange-500" : notification.type === "event" ? "bg-blue-500" : notification.type === "success" ? "bg-green-500" : "bg-yellow-500";
       var isUnread = notification.read === false;
-      var bgClass = isUnread ? "bg-[#0b0b0b]" : "bg-transparent";
       return __jacJsx("div", {
         "key": notification.id,
-        "className": bgClass + " border-b border-gray-800 last:border-b-0 p-6 hover:bg-[#0b0b0b] transition-all cursor-pointer",
+        "className": "border-b border-gray-800 last:border-b-0 p-6 hover:bg-[#0b0b0b] transition-all cursor-pointer",
         "onClick": function onClick(e) {
+          setSelectedNotification(notification);
           if (isUnread) {
             var updatedNotifications = notifications.map(function (n) {
               if (n.id === notification.id) {
@@ -645,9 +733,9 @@ function Dashboard() {
       }, [])]), __jacJsx("span", {
         "className": "text-gray-400 text-sm flex-shrink-0"
       }, [notification.time])]), __jacJsx("p", {
-        "className": "text-gray-400 text-sm"
+        "className": "text-gray-400 text-sm line-clamp-2"
       }, [notification.description])])])]);
-    })])]), activeLink === "skills" && __jacJsx(SelectionManager, {
+    })])])]), activeLink === "skills" && __jacJsx(SelectionManager, {
       "title": "Select Your Skills",
       "description": "Choose or add your skills",
       "placeholder": "Search or type a skill and press Enter",
