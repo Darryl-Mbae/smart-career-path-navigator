@@ -52,6 +52,7 @@ def read_document_text(file_path: str) -> str{
 }
 
 # Tools
+# Job recommender tools
 def is_valid_url(url: str) -> bool {
     let invalid_hosts = [
         'facebook.com',
@@ -123,7 +124,6 @@ def search_job_requirements(job_title: str) -> str {
     return json.dumps(out);
 }
 
-
 def fetch_careerjet_descriptions(job_title: str) -> str {
 
     let hostname = 'search.api.careerjet.net';
@@ -175,6 +175,112 @@ def fetch_careerjet_descriptions(job_title: str) -> str {
         });
     }
 }
+
+#Learning path tools
+def is_valid_url(url: str) -> bool {
+    let invalid_hosts = [
+        "facebook.com",
+        "twitter.com",
+        "linkedin.com",
+        "youtube.com",
+        "pinterest.com",
+        "instagram.com",
+    ];
+
+    for host in invalid_hosts {
+        if host in url {
+            return False;
+        }
+    }
+
+    if ("utm_" in url) or ("redirect" in url) {
+        return False;
+    }
+
+    return True;
+}
+
+
+def search_urls(search_phrase: str, limit: int = 10) -> list {
+    let url = "https://google.serper.dev/search";
+    let headers = {
+        "X-API-KEY": SERPER_API_KEY,
+        "Content-Type": "application/json",
+    };
+
+    # Replace job-title prompt with general-purpose Web search phrase
+    let payload = {
+        "q": f"{search_phrase} learning resources required skills certifications 2025"
+    };
+
+    let resp = requests.post(url, json=payload, headers=headers);
+
+    if resp.status_code != 200 {
+        raise Exception(f"Serper error {resp.status_code}: {resp.text}");
+    }
+
+    let data = resp.json();
+    let urls = [];
+
+    if "organic" in data {
+        for item in data["organic"] {
+            let link = item.get("link");
+            if link and is_valid_url(link) {
+                urls.append(link);
+            }
+        }
+    }
+
+    # Remove duplicates while keeping order
+    let deduped = [];
+    for u in urls {
+        if u not in deduped {
+            deduped.append(u);
+        }
+    }
+
+    return deduped[:limit];
+}
+
+
+def extract_markdown(url: str, max_chars: int = 5000) -> dict {
+    let doc = firecrawl.scrape(url, formats=["markdown"]);
+
+    let md = getattr(doc, "markdown", "");
+    if not isinstance(md, str) {
+        md = "";
+    }
+
+    if len(md) > max_chars {
+        md = md[:max_chars] + "\n\n...[TRIMMED]...";
+    }
+
+    return {
+        "url": url,
+        "markdown": md,
+    };
+}
+
+
+def search_learning_resources(search_phrase: str) -> str {
+    let urls = search_urls(search_phrase);
+    let out = [];
+
+    for url in urls {
+        try {
+            let md = extract_markdown(url);
+            out.append(md);
+        } except Exception as e {
+            out.append({
+                "url": url,
+                "markdown": f"ERROR: {e}",
+            });
+        }
+    }
+
+    return json.dumps(out);
+}
+
 
 
 # Backend Models
@@ -1259,10 +1365,13 @@ walker collect_role_requirements {
 
     can check_existing_target_role with `root entry {
        if [-->(`?Role)](?title==self.role_title) {
-            print("Role requirements already exist in graph. Aborting fetch.\n");
+            print("Role requirements already exist in graph. Fetching from Memory.\n");
+
+            fetched_role_requirements = root spawn get_all_role_requirements(role_title=self.role_title);
+            self.role_requirements = fetched_role_requirements.role_requirements;
             report {
                 "status": "Info",
-                "message": "Role requirements already exist in graph",
+                "message": "Role requirements already exist in graph. Fetched from memory.",
                 "body": {}
             };
             disengage;
@@ -1357,12 +1466,17 @@ walker collect_role_requirements {
         );
       
 
-        #print("Finding requirements gaps...\n");
-        #skill_gaps = root spawn find_skill_and_certification_gaps(
-        #    role_title=self.role_title,
-        #    user_profile=None,
-        #    role_requirements=None
-        #);
+        print("Finding requirements gaps...\n");
+        skill_gaps = root spawn find_skill_and_certification_gaps(
+            role_title=self.role_title,
+            user_profile=None,
+            role_requirements=None
+        );
+
+        print("Generating RoadMaps...\n");
+        road_map =  root spawn recommend_learning_paths(
+            role_title=self.role_title,
+        );
 
                 
     }
@@ -1723,6 +1837,11 @@ walker add_completed_certification_to_user_profile {
     }
 }
 
+# learning path node
+node LearningPath {
+    has role_title: str = "";
+    has learning_path: str = "";
+}
 
 # recommend learning paths to fill skill gaps
 walker recommend_learning_paths {
@@ -1732,9 +1851,25 @@ walker recommend_learning_paths {
     has role_title: str = "";
 
 
-    def suggest_learning_paths(gaps: RoleProfile, user_profile: UserProfile, target_role_requirements: RoleProfile) -> str
-    by llm(method="ReAct", tools=([]));
+    def suggest_learning_paths(gaps: RoleProfile, user_profile: UserProfile, target_role_requirements: RoleProfile) -> LearningPath
+    by llm(method="ReAct", tools=([search_learning_resources]));
 
+    can check_existing_learning_path  with `root entry {
+        if [-->(`?LearningPath)](?role_title==self.role_title) {
+            print("Learning path already exists in graph. Fetching from Memory.\n");
+
+            let existing_path = [-->(`?LearningPath)](?role_title==self.role_title);
+            report {
+                "status": "Info",
+                "message": "Learning path already exists in graph. Fetched from memory.",
+                "body": {
+                    "role_title": existing_path.role_title,
+                    "learning_path": existing_path.learning_path
+                }
+            };
+            disengage;
+        }
+    }
     can fetch_gaps with `root entry {
         print("Fetching skill and certification gaps for learning path recommendation...\n");
 
@@ -1759,6 +1894,84 @@ walker recommend_learning_paths {
 
     }
 
+    can fetch_role_requirements with `root entry {
+        print("Fetching target role requirements for learning path recommendation...\n");
+
+        let fetched_requirements = root spawn get_all_role_requirements(
+            role_title=self.role_title,
+            required_skills=[],
+            required_certifications=[]
+        );
+
+        # cease operation if role requirements are not fetched
+        if fetched_requirements == None or fetched_requirements.role_requirements == None {
+            print("ERROR: Failed to fetch role requirements.\n");
+            report {
+                "status": "Fail",
+                "message": "Unable to load role requirements.",
+                "body": {}
+            };
+            disengage;
+        }
+
+        self.target_role_requirements = fetched_requirements.role_requirements;
+
+    }
+
+    can fetch_user_profile with `root entry {
+        print("Fetching user profile for learning path recommendation...\n");
+
+        let fetched_profile = root spawn get_user_profile();
+        
+        # cease operation if user profile is not fetched
+        if fetched_profile == None or fetched_profile.user_profile == None {
+            print("ERROR: Failed to fetch user profile.\n");
+            report {
+                "status": "Fail",
+                "message": "Unable to load user profile.",
+                "body": {}
+            };
+            disengage;
+        }
+
+        self.user_profile = fetched_profile.user_profile;
+    }
+
+    can recommend_path with `root entry {
+        print("Recommending learning path using LLM...\n");
+
+        try {
+            let learning_path = self.suggest_learning_paths(
+                gaps=self.gaps,
+                user_profile=self.user_profile,
+                target_role_requirements=self.target_role_requirements
+            );
+
+            # save learning path to graph
+            here ++> learning_path;
+
+            report {
+                "status": "Success",
+                "message": "Learning path recommended and saved to graph successfully",
+                "body": {
+                    "role_title": learning_path.role_title,
+                    "learning_path": learning_path.learning_path
+                }
+            };
+        } except Exception as e {
+            print("ERROR: LLM call failed:", e, "\n");
+
+            report {
+                "status": "Fail",
+                "message": "Failed to recommend learning path: " + str(e),
+                "body": {}
+            };
+
+            disengage;
+
+        }
+
+    }
 }
 
 with entry {
