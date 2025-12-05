@@ -1257,11 +1257,24 @@ walker collect_role_requirements {
     by llm(method="ReAct",
     tools=([search_job_requirements, fetch_careerjet_descriptions]));
 
+    can check_existing_target_role with `root entry {
+       if [-->(`?Role)](?title==self.role_title) {
+            print("Role requirements already exist in graph. Aborting fetch.\n");
+            report {
+                "status": "Info",
+                "message": "Role requirements already exist in graph",
+                "body": {}
+            };
+            disengage;
+        }
+    }
+
     can collect_certs_and_skills with `root entry {
         print("Collecting role requirements using LLM...\n");
 
         print("Role Title:", self.role_title);
         print("Role Description:", self.role_description, "\n");
+
 
         if self.role_title == None or self.role_title == "" {
             print("ERROR: Missing role title.\n");
@@ -1359,7 +1372,7 @@ walker collect_role_requirements {
 
 # find skill gaps for a given role
 walker find_skill_and_certification_gaps {
-    # collect skills and certs from user graph
+    
     has role_title: str = "";
     has user_profile: UserProfile = UserProfile([], [], []);
     has role_requirements: RoleProfile = RoleProfile([], []);
@@ -1372,6 +1385,7 @@ walker find_skill_and_certification_gaps {
     def find_gaps_between_profiles(user_profile: UserProfile, role_requirements: RoleProfile) -> RoleProfile
     by llm(method="Reason");
 
+    # collect skills and certs from user graph
     can fetch_user_profile with `root entry {
         print("Fetching user profile for gap analysis...\n");
 
@@ -1710,10 +1724,41 @@ walker add_completed_certification_to_user_profile {
 }
 
 
-
 # recommend learning paths to fill skill gaps
 walker recommend_learning_paths {
-    
+    has gaps: RoleProfile = RoleProfile([], []);
+    has user_profile: UserProfile = UserProfile([], [], []);
+    has target_role_requirements: RoleProfile = RoleProfile([], []);
+    has role_title: str = "";
+
+
+    def suggest_learning_paths(gaps: RoleProfile, user_profile: UserProfile, target_role_requirements: RoleProfile) -> str
+    by llm(method="ReAct", tools=([]));
+
+    can fetch_gaps with `root entry {
+        print("Fetching skill and certification gaps for learning path recommendation...\n");
+
+        let fetched_gaps = root spawn find_skill_and_certification_gaps(
+            role_title=self.role_title,
+            user_profile=None,
+            role_requirements=None
+        );
+
+        # cease operation if gaps are not fetched
+        if fetched_gaps == None or fetched_gaps.gaps == None {
+            print("ERROR: Failed to fetch skill and certification gaps.\n");
+            report {
+                "status": "Fail",
+                "message": "Unable to load skill and certification gaps.",
+                "body": {}
+            };
+            disengage;
+        }
+
+        self.gaps = fetched_gaps.gaps;
+
+    }
+
 }
 
 with entry {
