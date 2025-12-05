@@ -1195,6 +1195,10 @@ function Onboarding() {
     _useState76 = _slicedToArray(_useState75, 2),
     currentRoleIndex = _useState76[0],
     setCurrentRoleIndex = _useState76[1];
+  var _useState77 = useState(null),
+    _useState78 = _slicedToArray(_useState77, 2),
+    selectedRole = _useState78[0],
+    setSelectedRole = _useState78[1];
   function showAlert(msg) {
     setAlertMessage(msg);
     setAlertVisible(true);
@@ -1311,39 +1315,74 @@ function Onboarding() {
       return c.title !== name;
     }));
   }
+  function handleStep3Role() {
+    return _handleStep3Role.apply(this, arguments);
+  }
+  function _handleStep3Role() {
+    _handleStep3Role = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
+      var result;
+      return _regenerator().w(function (_context4) {
+        while (1) switch (_context4.n) {
+          case 0:
+            if (!(selectedRole !== null)) {
+              _context4.n = 2;
+              break;
+            }
+            console.log("Selected Role:", selectedRole);
+            _context4.n = 1;
+            return __jacSpawn("collect_role_requirements", "", {
+              "role_title": selectedRole.title,
+              "role_description": selectedRole.description
+            });
+          case 1:
+            result = _context4.v;
+            console.log("Role requirements collected:");
+            console.log(result.reports);
+            setCurrentStep(4);
+            _context4.n = 3;
+            break;
+          case 2:
+            showAlert("Please select a role before continuing.");
+          case 3:
+            return _context4.a(2);
+        }
+      }, _callee4);
+    }));
+    return _handleStep3Role.apply(this, arguments);
+  }
   function saveStep2() {
     return _saveStep.apply(this, arguments);
   }
   function _saveStep() {
-    _saveStep = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee4() {
+    _saveStep = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee5() {
       var result, rolesReport, latestReport, _t2;
-      return _regenerator().w(function (_context4) {
-        while (1) switch (_context4.p = _context4.n) {
+      return _regenerator().w(function (_context5) {
+        while (1) switch (_context5.p = _context5.n) {
           case 0:
             if (!savingProfile) {
-              _context4.n = 1;
+              _context5.n = 1;
               break;
             }
-            return _context4.a(2);
+            return _context5.a(2);
           case 1:
             setSavingProfile(true);
-            _context4.p = 2;
-            _context4.n = 3;
+            _context5.p = 2;
+            _context5.n = 3;
             return __jacSpawn("update_user_profile", "", {
               "updated_skills": skills,
               "updated_interests": interests,
               "updated_certifications": certs
             });
           case 3:
-            result = _context4.v;
+            result = _context5.v;
             if (!result) {
-              _context4.n = 5;
+              _context5.n = 5;
               break;
             }
-            _context4.n = 4;
+            _context5.n = 4;
             return __jacSpawn("generate_role_suggestions", "", {});
           case 4:
-            rolesReport = _context4.v;
+            rolesReport = _context5.v;
             latestReport = rolesReport.reports[rolesReport.reports.length - 1];
             if (latestReport.status === "Success") {
               setSuggestedRoles(latestReport.body);
@@ -1354,26 +1393,26 @@ function Onboarding() {
             setAllowSkip(false);
             setShowManualEntry(false);
             setCurrentStep(3);
-            _context4.n = 6;
+            _context5.n = 6;
             break;
           case 5:
             showAlert("Failed to save profile. Please try again.");
           case 6:
-            _context4.n = 8;
+            _context5.n = 8;
             break;
           case 7:
-            _context4.p = 7;
-            _t2 = _context4.v;
+            _context5.p = 7;
+            _t2 = _context5.v;
             console.log(_t2);
             showAlert("An error occurred while saving. Try again.");
           case 8:
-            _context4.p = 8;
+            _context5.p = 8;
             setSavingProfile(false);
-            return _context4.f(8);
+            return _context5.f(8);
           case 9:
-            return _context4.a(2);
+            return _context5.a(2);
         }
-      }, _callee4, null, [[2, 7, 8, 9]]);
+      }, _callee5, null, [[2, 7, 8, 9]]);
     }));
     return _saveStep.apply(this, arguments);
   }
@@ -1455,75 +1494,75 @@ function Onboarding() {
     return _handleStep1Next.apply(this, arguments);
   }
   function _handleStep1Next() {
-    _handleStep1Next = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee5() {
+    _handleStep1Next = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee6() {
       var base64Data, result, user_skills, body, detected_skills, detected_interests, detected_certs, _t3;
-      return _regenerator().w(function (_context5) {
-        while (1) switch (_context5.p = _context5.n) {
+      return _regenerator().w(function (_context6) {
+        while (1) switch (_context6.p = _context6.n) {
           case 0:
             if (!(!canProceed || isLoading || !file)) {
-              _context5.n = 1;
+              _context6.n = 1;
               break;
             }
-            return _context5.a(2);
+            return _context6.a(2);
           case 1:
             setIsLoading(true);
             setError("");
             setShowManualEntry(false);
-            _context5.p = 2;
-            _context5.n = 3;
+            _context6.p = 2;
+            _context6.n = 3;
             return __jacSpawn("create_resume_node", "", {});
           case 3:
-            _context5.n = 4;
+            _context6.n = 4;
             return fileToBase64(file);
           case 4:
-            base64Data = _context5.v;
-            _context5.n = 5;
+            base64Data = _context6.v;
+            _context6.n = 5;
             return __jacSpawn("upload_resume", "", {
               "file": base64Data,
               "name": file.name,
               "mime": file.type
             });
           case 5:
-            result = _context5.v;
+            result = _context6.v;
             if (result) {
-              _context5.n = 6;
+              _context6.n = 6;
               break;
             }
             showAlert("Resume upload failed");
             setShowManualEntry(true);
             setIsLoading(false);
             setAllowSkip(true);
-            return _context5.a(2);
+            return _context6.a(2);
           case 6:
-            _context5.n = 7;
+            _context6.n = 7;
             return __jacSpawn("save_resume", "", {});
           case 7:
-            _context5.n = 8;
+            _context6.n = 8;
             return __jacSpawn("update_resume_upload_status", "", {});
           case 8:
-            _context5.n = 9;
+            _context6.n = 9;
             return __jacSpawn("analyze_cv", "", {});
           case 9:
-            user_skills = _context5.v;
+            user_skills = _context6.v;
             if (!(!user_skills || !user_skills.reports || user_skills.reports.length === 0)) {
-              _context5.n = 10;
+              _context6.n = 10;
               break;
             }
             showAlert("Something went wrong. Please upload another document or enter details manually.");
             setAllowSkip(true);
             setShowManualEntry(true);
             setIsLoading(false);
-            return _context5.a(2);
+            return _context6.a(2);
           case 10:
             if (!(user_skills.reports[0]["status"] !== "Success")) {
-              _context5.n = 11;
+              _context6.n = 11;
               break;
             }
             showAlert("Something went wrong. Please upload another document or enter details manually.");
             setAllowSkip(true);
             setShowManualEntry(true);
             setIsLoading(false);
-            return _context5.a(2);
+            return _context6.a(2);
           case 11:
             try {
               body = "body" in user_skills.reports[0] ? user_skills.reports[0]["body"] : {};
@@ -1538,23 +1577,23 @@ function Onboarding() {
             }
             setAllowSkip(false);
             setCurrentStep(2);
-            _context5.n = 13;
+            _context6.n = 13;
             break;
           case 12:
-            _context5.p = 12;
-            _t3 = _context5.v;
+            _context6.p = 12;
+            _t3 = _context6.v;
             console.log(_t3);
             showAlert("Something went wrong. Try again later");
             setAllowSkip(true);
             setShowManualEntry(true);
           case 13:
-            _context5.p = 13;
+            _context6.p = 13;
             setIsLoading(false);
-            return _context5.f(13);
+            return _context6.f(13);
           case 14:
-            return _context5.a(2);
+            return _context6.a(2);
         }
-      }, _callee5, null, [[2, 12, 13, 14]]);
+      }, _callee6, null, [[2, 12, 13, 14]]);
     }));
     return _handleStep1Next.apply(this, arguments);
   }
@@ -2156,6 +2195,10 @@ function Onboarding() {
     var rightArrowColor = arrowInactiveColor;
     var leftArrowCursor = "default";
     var rightArrowCursor = "default";
+    var cardBgColor = "#0e0e0e";
+    if (selectedRole !== null && selectedRole.title === currentRole.title) {
+      cardBgColor = "#1f0f2b";
+    }
     if (canGoLeft) {
       leftArrowColor = arrowActiveColor;
       leftArrowCursor = "pointer";
@@ -2200,11 +2243,14 @@ function Onboarding() {
       }
     }, [__jacJsx("div", {
       "onClick": function onClick(e) {
-        root.selectedRole = currentRole.title;
+        setSelectedRole({
+          "title": currentRole.title,
+          "description": currentRole.description
+        });
       },
       "style": {
         "width": "85%",
-        "backgroundColor": "#0e0e0e",
+        "backgroundColor": cardBgColor,
         "border": "1px solid #262626",
         "padding": "22px",
         "borderRadius": "12px",
@@ -2310,6 +2356,8 @@ function Onboarding() {
         handleStep1Next();
       } else if (currentStep === 2) {
         saveStep2();
+      } else if (currentStep === 3) {
+        handleStep3Role();
       } else if (currentStep < 4) {
         setCurrentStep(currentStep + 1);
       }
@@ -2403,27 +2451,27 @@ function Onboarding() {
   }, [backNav, nextBtn, manualSkipDisplay])])])]);
 }
 function Dashboard() {
-  var _useState77 = useState(false),
-    _useState78 = _slicedToArray(_useState77, 2),
-    sidebarOpen = _useState78[0],
-    setSidebarOpen = _useState78[1];
   var _useState79 = useState(false),
     _useState80 = _slicedToArray(_useState79, 2),
-    profileOpen = _useState80[0],
-    setProfileOpen = _useState80[1];
-  var _useState81 = useState("dashboard"),
+    sidebarOpen = _useState80[0],
+    setSidebarOpen = _useState80[1];
+  var _useState81 = useState(false),
     _useState82 = _slicedToArray(_useState81, 2),
-    activeLink = _useState82[0],
-    setActiveLink = _useState82[1];
-  var _useState83 = useState([]),
+    profileOpen = _useState82[0],
+    setProfileOpen = _useState82[1];
+  var _useState83 = useState("dashboard"),
     _useState84 = _slicedToArray(_useState83, 2),
-    selectedSkills = _useState84[0],
-    setSelectedSkills = _useState84[1];
+    activeLink = _useState84[0],
+    setActiveLink = _useState84[1];
   var _useState85 = useState([]),
     _useState86 = _slicedToArray(_useState85, 2),
-    selectedRoles = _useState86[0],
-    setSelectedRoles = _useState86[1];
-  var _useState87 = useState([{
+    selectedSkills = _useState86[0],
+    setSelectedSkills = _useState86[1];
+  var _useState87 = useState([]),
+    _useState88 = _slicedToArray(_useState87, 2),
+    selectedRoles = _useState88[0],
+    setSelectedRoles = _useState88[1];
+  var _useState89 = useState([{
       id: 1,
       "key": "message",
       title: "New message from Jane",
@@ -2452,9 +2500,9 @@ function Dashboard() {
       time: "1 week ago",
       read: true
     }]),
-    _useState88 = _slicedToArray(_useState87, 2),
-    notifications = _useState88[0],
-    setNotifications = _useState88[1];
+    _useState90 = _slicedToArray(_useState89, 2),
+    notifications = _useState90[0],
+    setNotifications = _useState90[1];
   var unreadCount = notifications.filter(function (n) {
     return n.read === false;
   }).length;
@@ -2717,10 +2765,10 @@ function Dashboard() {
     }, ["U"])]);
   }
   function SelectionManager(props) {
-    var _useState89 = useState(""),
-      _useState90 = _slicedToArray(_useState89, 2),
-      inputValue = _useState90[0],
-      setInputValue = _useState90[1];
+    var _useState91 = useState(""),
+      _useState92 = _slicedToArray(_useState91, 2),
+      inputValue = _useState92[0],
+      setInputValue = _useState92[1];
     return __jacJsx("div", {}, [__jacJsx("div", {
       "className": "flex items-center justify-between mb-6"
     }, [__jacJsx("div", {}, []), __jacJsx("button", {

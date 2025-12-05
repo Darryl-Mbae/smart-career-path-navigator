@@ -186,6 +186,7 @@ function Onboarding() {
   let [savingProfile, setSavingProfile] = useState(false);
   let [suggestedRoles, setSuggestedRoles] = useState([]);
   let [currentRoleIndex, setCurrentRoleIndex] = useState(0);
+  let [selectedRole, setSelectedRole] = useState(null);
   function showAlert(msg) {
     setAlertMessage(msg);
     setAlertVisible(true);
@@ -269,6 +270,17 @@ function Onboarding() {
     setCerts(certs.filter(c => {
       return c.title !== name;
     }));
+  }
+  async function handleStep3Role() {
+    if (selectedRole !== null) {
+      console.log("Selected Role:", selectedRole);
+      let result = await __jacSpawn("collect_role_requirements", "", {"role_title": selectedRole.title, "role_description": selectedRole.description});
+      console.log("Role requirements collected:");
+      console.log(result.reports);
+      setCurrentStep(4);
+    } else {
+      showAlert("Please select a role before continuing.");
+    }
   }
   async function saveStep2() {
     if (savingProfile) {
@@ -557,6 +569,10 @@ function Onboarding() {
     let rightArrowColor = arrowInactiveColor;
     let leftArrowCursor = "default";
     let rightArrowCursor = "default";
+    let cardBgColor = "#0e0e0e";
+    if (selectedRole !== null && selectedRole.title === currentRole.title) {
+      cardBgColor = "#1f0f2b";
+    }
     if (canGoLeft) {
       leftArrowColor = arrowActiveColor;
       leftArrowCursor = "pointer";
@@ -566,8 +582,8 @@ function Onboarding() {
       rightArrowCursor = "pointer";
     }
     step3Content = __jacJsx("div", {"style": {"height": "65vh", "padding": "5px", "position": "relative", "display": "flex", "flexDirection": "column"}}, [__jacJsx("h2", {"style": {"color": "white", "marginBottom": "10px", "fontSize": "1.3rem", "fontWeight": "600"}}, ["Your AI-Suggested Career Roles"]), __jacJsx("p", {"style": {"color": "grey", "marginTop": "0px", "marginBottom": "25px", "fontSize": "0.9rem"}}, ["Slide through the suggested roles and select the one that fits you best."]), totalRoles === 0 && __jacJsx("p", {"style": {"color": "grey"}}, ["No suggestions found"]), totalRoles > 0 && __jacJsx("div", {"style": {"display": "flex", "alignItems": "center", "justifyContent": "center", "position": "relative", "height": "100%"}}, [__jacJsx("div", {"onClick": e => {
-      root.selectedRole = currentRole.title;
-    }, "style": {"width": "85%", "backgroundColor": "#0e0e0e", "border": "1px solid #262626", "padding": "22px", "borderRadius": "12px", "cursor": "pointer", "transition": "all 0.25s ease", "display": "flex", "flexDirection": "column", "gap": "10px", "boxShadow": "0 0 6px rgba(0,0,0,0.4)", "position": "relative"}}, [__jacJsx("div", {"onClick": e => {
+      setSelectedRole({"title": currentRole.title, "description": currentRole.description});
+    }, "style": {"width": "85%", "backgroundColor": cardBgColor, "border": "1px solid #262626", "padding": "22px", "borderRadius": "12px", "cursor": "pointer", "transition": "all 0.25s ease", "display": "flex", "flexDirection": "column", "gap": "10px", "boxShadow": "0 0 6px rgba(0,0,0,0.4)", "position": "relative"}}, [__jacJsx("div", {"onClick": e => {
       e.stopPropagation();
       if (canGoLeft) {
         setCurrentRoleIndex(currentRoleIndex - 1);
@@ -594,6 +610,8 @@ function Onboarding() {
       handleStep1Next();
     } else if (currentStep === 2) {
       saveStep2();
+    } else if (currentStep === 3) {
+      handleStep3Role();
     } else if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
     }

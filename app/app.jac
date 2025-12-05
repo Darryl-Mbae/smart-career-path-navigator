@@ -5,8 +5,11 @@ import re;
 import os;
 import PyPDF2;
 import docx;
+import requests;
+import json;
+import from firecrawl { FirecrawlApp }
 
-glob llm = Model(model_name="gemini/gemini-2.0-flash", verbose=True);
+glob llm = Model(model_name="gemini/gemini-2.5-flash", verbose=False);
 
 # Helpers 
 def read_document_text(file_path: str) -> str{
@@ -48,7 +51,133 @@ def read_document_text(file_path: str) -> str{
 
 }
 
-# Backend Nodes
+# Tools
+def is_valid_url(url: str) -> bool {
+    let invalid_hosts = [
+        'facebook.com',
+        'twitter.com',
+        'linkedin.com',
+        'youtube.com',
+        'pinterest.com',
+        'instagram.com'
+    ];
+    if <>any((host in url) for host in invalid_hosts) {
+        return False;
+    }
+    if (('utm_' in url) or ('redirect' in url)) {
+        return False;
+    }
+    return True;
+}
+def search_job_urls(job_title: str, limit: int = 10) -> list {
+    let url = 'https://google.serper.dev/search';
+    let headers = {'X-API-KEY': SERPER_API_KEY, 'Content-Type': 'application/json'};
+    let payload = {'q': f"{job_title}mandatory required in  demand  skills and certifications 2025"};
+    let resp = requests.post(url, json=payload, headers=headers);
+    if (resp.status_code != 200) {
+        raise Exception(f"Serper error {resp.status_code}: {resp.text}") ;
+    }
+    let data = resp.json();
+    let urls = [];
+    if ('organic' in data) {
+        for item in data['organic'] {
+            let link = item.get('link');
+            if (link and is_valid_url(link)) {
+                urls.append(link);
+            }
+        }
+    }
+    return <>list(<>dict.fromkeys(urls))[:limit];
+}
+def extract_markdown(url: str, max_chars: int = 5000) -> any {
+    let doc = firecrawl.scrape(url, formats=['markdown']);
+    let md = getattr(doc, 'markdown', '') or '';
+    if (isinstance(md, str) and (len(md) > max_chars)) {
+        let md = md[:max_chars] + '\n\n...[TRIMMED]...';
+    }
+    return {'url': url, 'markdown': md};
+}
+
+def search_job_requirements(job_title: str) -> str {
+
+    let urls = search_job_urls(job_title);
+    let out = [];
+
+    for url in urls {
+        try {
+            let md = extract_markdown(url);
+
+            out.append({
+                "url": url,
+                "markdown": md
+            });
+
+        } except Exception as e {
+            out.append({
+                "url": url,
+                "markdown": f"ERROR: {e}"
+            });
+        }
+    }
+
+    return json.dumps(out);
+}
+
+
+def fetch_careerjet_descriptions(job_title: str) -> str {
+
+    let hostname = 'search.api.careerjet.net';
+    let path = '/v4/query';
+    let api_key = 'cc5638024c6473dc2afe1dc8633ed5b1';
+
+    let params = {
+        'locale_code': 'en_US',
+        'keywords': job_title,
+        'location': '',
+        'user_ip': '154.159.237.212',
+        'user_agent': 'Mozilla/5.0',
+        'fragment_size': 1000,
+        'page_size': 50,
+        'page': 1,
+        'sort': 'date'
+    };
+
+    let headers = {
+        'content-type': 'application/json',
+        'Referer': 'https://www.agriscan.jhubafrica.com/find-jobs/'
+    };
+
+    try {
+        let resp = requests.get(
+            url=f'https://{hostname}{path}',
+            params=params,
+            auth=(api_key, ''),
+            headers=headers,
+            timeout=10
+        );
+
+        let data = resp.json();
+
+        let descriptions = [
+            job.get('description', '')
+            for job in data.get('jobs', [])
+            if ('description' in job)
+        ];
+
+        # Return as JSON string (required for LLM tools)
+        return json.dumps({
+            "descriptions": descriptions
+        });
+
+    } except Exception as e {
+        return json.dumps({
+            "error": str(e)
+        });
+    }
+}
+
+
+# Backend Models
 node Memory {
     has email: str = "";
     has full_name: str = "";
@@ -89,11 +218,22 @@ node Interest {
     has description: str = "";
 }
 
+node RequirementsGap {
+    has role_title: str = "";
+    has progress: int = 0;
+}
+
 # User profile object
 obj UserProfile {
     has skills: list[Skill];
     has certifications: list[Certification];
     has interests: list[Interest];
+}
+
+# Role requires skills and certifications
+obj RoleProfile {
+    has skills: list[Skill];
+    has certifications: list[Certification];
 }
 
 # Used by get_user_profile agent to aggregate user's skills. interests and certifications and report back to FE
@@ -134,6 +274,10 @@ node End{
 edge skilled_in {}
 edge has_certification {}
 edge interested_in {}
+edge requires_skill {}
+edge requires_certification {}
+edge has_skill_gap {}
+edge has_certification_gap {}
 
 
 # Agents
@@ -982,8 +1126,470 @@ walker delete_user_profile {
     }
 }
 
+# create role requirements graph
+walker create_role_requirements_graph {
+    has role_title: str = "";
+    has role_description: str = "";
+    has required_skills: list = [];
+    has required_certifications: list = [];
+
+    can create_role with `root entry {
+        print("Creating Role Requirements Graph...\n");
+
+        let role_node = here ++> Role(
+            title=self.role_title,
+            description=self.role_description
+        );
+
+        if not self.required_skills or len(self.required_skills) == 0 {
+            print("No required skills provided.\n");
+            report {
+                "status": "warning",
+                "message": "No required skills provided",
+                "body": {}
+            };
+        }
+        else {
+            print("Saving required skills...\n");
+            for skill in self.required_skills {
+                role_node +>:requires_skill:+> skill;
+            }
+            report {
+                "status": "success",
+                "message": "Required skills saved",
+                "body": {}
+            };
+        }
+
+        if not self.required_certifications or len(self.required_certifications) == 0 {
+            print("No required certifications provided.\n");
+            report {
+                "status": "warning",
+                "message": "No required certifications provided",
+                "body": {}
+            };
+        }
+        else {
+            print("Saving required certifications...\n");
+            for cert in self.required_certifications {
+                role_node +>:requires_certification:+> cert;
+            }
+            report {
+                "status": "success",
+                "message": "Required certifications saved",
+                "body": {}
+            };
+        }
+
+        print("Role requirements graph created successfully.\n");
+
+        report {
+            "status": "success",
+            "message": "Role requirements graph created successfully",
+            "body": {}
+        };
+    }
+
+}
+
+
+# retrieve roles from graph 
+walker get_all_role_requirements {
+    has role_title: str = "";
+    has required_skills: list = [];
+    has required_certifications: list = [];
+    has role_requirements: RoleProfile = RoleProfile([], []);
+
+    can visit_role with `root entry {
+        print("Fetching all role requirements from graph...\n");
+
+        visit [-->(`?Role)](?title==self.role_title) else {
+            report {
+                "status": "Fail",
+                "message": "No Role nodes found",
+                "body": {}
+            };
+            disengage;
+        }
+    }
+
+    can fetch_role_requirements with Role entry {
+        self.required_skills = [-->(`?Skill)];
+        self.required_certifications = [-->(`?Certification)];
+        self.role_requirements = RoleProfile(
+            skills=self.required_skills,
+            certifications=self.required_certifications
+        );
+        report {
+            "status": "Success",
+            "message": "Role requirements retrieved successfully from graph",
+            "body": {
+                "role_title": here.title,
+                "role_description": here.description,
+                "skills": [
+                    {"name": s.name, "description": s.description}
+                    for s in self.required_skills
+                ],
+                "certifications": [
+                    {"title": c.title, "provider": c.provider, "url": c.url}
+                    for c in self.required_certifications
+                ]
+            }
+        };
+    }
+}
+
+# Fetch live skills and certs fron the web for a given role
+walker collect_role_requirements {
+    has role_title: str = "";
+    has role_description: str = "";
+    has role_requirements: RoleProfile = RoleProfile([], []);
+
+    # LLM function: extract skills + certs from title + description
+    """
+    You are now a career advisor
+    Use you knowledge, reasoning and the tools `search_job_requirements` and 'fetch_careerjet_descriptions' to search the web for skills and
+    certifications required for the given job title. Analyze the tools results
+    and extract only skills and certifications that are relevant and most in demand (i.e those that appear frequently)
+    """
+
+    def get_role_requirements(role_title: str, role_description: str) -> RoleProfile
+    by llm(method="ReAct",
+    tools=([search_job_requirements, fetch_careerjet_descriptions]));
+
+    can collect_certs_and_skills with `root entry {
+        print("Collecting role requirements using LLM...\n");
+
+        print("Role Title:", self.role_title);
+        print("Role Description:", self.role_description, "\n");
+
+        if self.role_title == None or self.role_title == "" {
+            print("ERROR: Missing role title.\n");
+
+            report {
+                "status": "Fail",
+                "message": "Missing required parameter: role_title",
+                "body": {}
+            };
+
+            disengage;
+        }
+
+        if self.role_description == None {
+            self.role_description = "";
+        }
+
+        print("Invoking LLM to get role requirements...\n");
+
+
+        try {
+            self.role_requirements = self.get_role_requirements(self.role_title, self.role_description);
+        } except Exception as e {
+            print("ERROR: LLM call failed:", e, "\n");
+
+            report {
+                "status": "Fail",
+                "message": "Failed to fetch role requirements: " + str(e),
+                "body": {}
+            };
+
+            disengage;
+        }
+
+        let required_skills = self.role_requirements.skills;
+        let required_certifications = self.role_requirements.certifications;
+
+        print("LLM returned role requirements.\n");
+
+        if required_skills == None or not isinstance(required_skills, list) {
+            required_skills = [];
+        }
+
+        if required_certifications == None or not isinstance(required_certifications, list) {
+            required_certifications = [];
+        }
+
+        required_skills = [
+            s for s in required_skills
+            if isinstance(s, Skill)
+        ];
+
+        required_certifications = [
+            c for c in required_certifications
+            if isinstance(c, Certification)
+        ];
+
+        report {
+            "status": "Success",
+            "message": "Role requirements fetched from the web successfully",
+            "body": {
+                "skills": [
+                    {"name": s.name, "description": s.description}
+                    for s in required_skills
+                ],
+                "certifications": [
+                    {"title": c.title, "provider": c.provider, "url": c.url}
+                    for c in required_certifications
+                ]
+            }
+        };
+
+        print("Spawning graph creation for role requirements...\n");
+
+        saved_role_requirements = root spawn create_role_requirements_graph(
+            role_title=self.role_title,
+            role_description=self.role_description,
+            required_skills=self.role_requirements.skills,
+            required_certifications=self.role_requirements.certifications
+        );
+      
+
+        #print("Finding requirements gaps...\n");
+        #skill_gaps = root spawn find_skill_and_certification_gaps(
+        #    role_title=self.role_title,
+        #    user_profile=None,
+        #    role_requirements=None
+        #);
+
+                
+    }
+
+}
+
+
+# find skill gaps for a given role
+walker find_skill_and_certification_gaps {
+    # collect skills and certs from user graph
+    has role_title: str = "";
+    has user_profile: UserProfile = UserProfile([], [], []);
+    has role_requirements: RoleProfile = RoleProfile([], []);
+    has gaps: RoleProfile = RoleProfile([], []);
+
+
+    """
+    Find the skills and certification gaps by comparing the user profile and role requirements.
+    """
+    def find_gaps_between_profiles(user_profile: UserProfile, role_requirements: RoleProfile) -> RoleProfile
+    by llm(method="Reason");
+
+    can fetch_user_profile with `root entry {
+        print("Fetching user profile for gap analysis...\n");
+
+        let fetched_profile = root spawn get_user_profile();
+        
+        # cease operation if user profile is not fetched
+        if fetched_profile == None or fetched_profile.user_profile == None {
+            print("ERROR: Failed to fetch user profile.\n");
+            report {
+                "status": "Fail",
+                "message": "Unable to load user profile.",
+                "body": {}
+            };
+            disengage;
+        }
+
+        self.user_profile = fetched_profile.user_profile;
+    }
+
+
+    # collect skills and certs from role requirements graph
+    can fetch_role_requirements with `root entry {
+        print("Fetching role requirements for gap analysis...\n");
+
+        let fetched_requirements = root spawn get_all_role_requirements(
+            role_title=self.role_title,
+            required_skills=[],
+            required_certifications=[]
+        );
+        
+
+        # cease operation if role requirements are not fetched
+        if fetched_requirements == None or fetched_requirements.role_requirements == None {
+            print("ERROR: Failed to fetch role requirements.\n");
+            report {
+                "status": "Fail",
+                "message": "Unable to load role requirements.",
+                "body": {}
+            };
+            disengage;
+        }
+
+
+        self.role_requirements = fetched_requirements.role_requirements;
+
+    }
+    
+    # compare and find gaps
+    can find_gaps with `root entry {
+        print("Finding skill and certification gaps using LLM...\n");
+        try {
+            self.gaps = self.find_gaps_between_profiles(
+                user_profile=self.user_profile,
+                role_requirements=self.role_requirements
+            );
+            report {
+                "status": "Success",
+                "message": "Skill and certification gaps found successfully",
+                "body": {
+                    "skills": [
+                        {"name": s.name, "description": s.description}
+                        for s in self.gaps.skills
+                    ],
+                    "certifications": [
+                        {"title": c.title, "provider": c.provider, "url": c.url}
+                        for c in self.gaps.certifications
+                    ]
+                }
+            };
+        } except Exception as e {
+            print("ERROR: LLM call failed:", e, "\n");
+
+            report {
+                "status": "Fail",
+                "message": "Failed to find skill and certification gaps: " + str(e),
+                "body": {}
+            };
+
+            disengage;
+
+        }
+
+    }
+    can save_identified_gaps_to_graph with `root entry {
+        print("Saving identified gaps to skill gap graph...\n");
+
+        let saved_gaps = root spawn create_skill_gap_graph(
+            gaps=self.gaps,
+            role_title=self.role_title
+        );
+
+        if saved_gaps.gaps {
+            report {
+                "status": "Success",
+                "message": "Skills and certifications gaps graph saved to memory.", 
+                "body": {}
+            };
+        }
+    }
+
+}
+# create skill gap graph
+walker create_skill_gap_graph {
+    has gaps: RoleProfile = RoleProfile([], []);
+    has role_title: str = "";
+
+    can create_requirements_gap_node with `root entry {
+        print("Creating RG node..\n");
+
+        let requirements_node = RequirementsGap(role_title=self.role_title);
+        here ++> requirements_node;
+
+        print("Visiting requirements gap...\n");
+        visit [-->(`?RequirementsGap)];
+    }
+
+    can create_role_requirements_gap_graph with RequirementsGap entry {
+        print("Creating Skill Gap Graph...\n");
+
+        if not self.gaps {
+            report {
+                "status": "warning",
+                "message": "No gaps provided",
+                "body": {}
+            };
+            disengage;
+        }
+
+        if not self.gaps.skills or len(self.gaps.skills) == 0 {
+            report {
+                "status": "warning",
+                "message": "No skill gaps",
+                "body": {}
+            };
+        }
+        else {
+            for skill in self.gaps.skills {
+                here +>:has_skill_gap:+> skill;
+            }
+
+            report {
+                "status": "success",
+                "message": "Skill gaps added to graph",
+                "body": {}
+            };
+        }
+
+        if not self.gaps.certifications or len(self.gaps.certifications) == 0 {
+            report {
+                "status": "warning",
+                "message": "No certification gaps",
+                "body": {}
+            };
+        }
+        else {
+            for cert in self.gaps.certifications {
+                here +>:has_certification_gap:+> cert;
+            }
+
+            report {
+                "status": "success",
+                "message": "Certification gaps added to graph",
+                "body": {}
+            };
+        }
+    }
+
+}
+
+# update Skill gap graph. Takes in a list of completed skill names and cert names and specific role title
+walker update_skill_gap_graph {
+    has completed_skills: list = [];
+    has completed_certifications: list = [];
+    has role_title: str= "";
+
+    can visit_requirements_gap with `root entry {
+        print("Visiting Requirements Gap node to update skill gaps...\n");
+        visit [-->(`?RequirementsGap)](?role_title=self.role_title) else {
+            report {
+                "status": "Fail",
+                "message": "No Requirements Gap node found",
+                "body": {}
+            };
+            disengage;
+        }
+    }
+
+    can visit_skills with RequirementsGap entry {
+        for skill in completed_skills {
+            visit [-->(`?Skill)](?name==skill) else {
+                continue;
+            }; 
+        }
+    }
+
+    can visit_certifications with RequirementsGap entry {
+        for cert in completed_certifications {
+            visit [-->(`?Certification)](?title==cert) else {
+                continue;
+            }; 
+        }
+    }
+
+    can update_skills with Skill entry {
+
+    }
+
+}
+
+# recommend learning paths to fill skill gaps
+walker recommend_learning_paths {
+    
+}
 
 with entry {
     load_dotenv();
+    let SERPER_API_KEY = os.getenv('SERPER_API_KEY');
+    let FIRECRAWL_API_KEY = os.getenv('FIRECRAWL_API_KEY');
+    let firecrawl = FirecrawlApp(api_key=FIRECRAWL_API_KEY);
 }
 
