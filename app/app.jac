@@ -271,15 +271,81 @@ def search_learning_resources(search_phrase: str) -> str {
             let md = extract_markdown(url);
             out.append(md);
         } except Exception as e {
-            out.append({
-                "url": url,
-                "markdown": f"ERROR: {e}",
-            });
         }
     }
 
     return json.dumps(out);
 }
+
+# URL validity
+def is_learning_url(url: str) -> bool {
+    let banned_hosts = [
+        "facebook.com",
+        "twitter.com",
+        "instagram.com",
+        "reddit.com",
+        "pinterest.com",
+        "tiktok.com",
+        "linkedin.com",   # remove for learning?
+        "youtube.com"     # remove if you don’t want video resources
+    ];
+
+    for host in banned_hosts {
+        if host in url {
+            return False;
+        }
+    }
+
+    if ("utm_" in url) or ("redirect" in url) {
+        return False;
+    }
+
+    return True;
+}
+
+#Search Reliable Learning URLs ONLY
+def search_learning_links(search_phrase: str, limit: int = 10) -> list {
+    let url = "https://google.serper.dev/search";
+    let headers = {
+        "X-API-KEY": SERPER_API_KEY,
+        "Content-Type": "application/json"
+    };
+
+    # Focus search specifically on learning resources
+    let payload = {
+        "q": f"{search_phrase} best tutorials official documentation step-by-step course learning guide 2025"
+    };
+
+    let resp = requests.post(url, json=payload, headers=headers);
+
+    if resp.status_code != 200 {
+        raise Exception(f"Serper error {resp.status_code}: {resp.text}");
+    }
+
+    let results = resp.json();
+    let collected = [];
+
+    if "organic" in results {
+        for hit in results["organic"] {
+            let link = hit.get("link");
+
+            if link and is_learning_url(link) {
+                collected.append(link);
+            }
+        }
+    }
+
+    # Cleanup: remove duplicates
+    let deduped = [];
+    for u in collected {
+        if u not in deduped {
+            deduped.append(u);
+        }
+    }
+
+    return deduped[:limit];
+}
+
 
 
 
@@ -329,17 +395,10 @@ node RequirementsGap {
     has progress: int = 0;
 }
 
-# User profile object
-obj UserProfile {
-    has skills: list[Skill];
-    has certifications: list[Certification];
-    has interests: list[Interest];
-}
-
-# Role requires skills and certifications
-obj RoleProfile {
-    has skills: list[Skill];
-    has certifications: list[Certification];
+# learning path node
+node LearningPath {
+    has role_title: str = "";
+    has learning_path: str = "";
 }
 
 # Used by get_user_profile agent to aggregate user's skills. interests and certifications and report back to FE
@@ -373,6 +432,21 @@ node End{
         };
     }
 }
+
+# User profile object
+obj UserProfile {
+    has skills: list[Skill];
+    has certifications: list[Certification];
+    has interests: list[Interest];
+}
+
+# Role requires skills and certifications
+obj RoleProfile {
+    has skills: list[Skill];
+    has certifications: list[Certification];
+}
+
+
 
 
 
@@ -1837,11 +1911,7 @@ walker add_completed_certification_to_user_profile {
     }
 }
 
-# learning path node
-node LearningPath {
-    has role_title: str = "";
-    has learning_path: str = "";
-}
+
 
 # recommend learning paths to fill skill gaps
 walker recommend_learning_paths {
@@ -1851,8 +1921,152 @@ walker recommend_learning_paths {
     has role_title: str = "";
 
 
+    """
+    You are an expert career coach, instructional designer, and learning architect.
+    Your task is to generate a complete, personalized, resource-driven learning path to help the user close their skill and certification gaps.
+    You must use the provided tool search_learning_resources to discover highly relevant, accurate, up-to-date learning materials.
+    Do not guess URLs—use the tool search_learning_links to find relevant URLs.
+    Include only 2 most relevant and reliable links. Dont clutter the output with links. 2 are enough.
+
+    Your output must strictly follow these requirements:
+    
+
+    1. Understand Inputs
+
+    Use and interpret the following inputs at a high level:
+
+    gaps: Missing skills and certifications
+
+    user_profile: Skills, experience level, background, and preferences
+
+    target_role_requirements: Full skill & certification list for the target job role
+
+    Use them to build a learning path tailored to the user’s gaps and their existing strengths.
+
+    2. Use the Tools
+
+    When you need external resources to recommend:
+
+    learning materials
+
+    tutorials
+
+    roadmaps
+
+    guides
+
+    courses
+
+    certifications
+
+    documentation
+
+    you must use search_learning_resources(search_phrase) with properly crafted phrases, e.g.:
+
+    "learn Kubernetes for beginners"
+
+    "how to gain proficiency in cloud security"
+
+    "best Python data engineering tutorials"
+
+    "AWS certification study guide 2025"
+
+    Use the results to populate URLs and resource summaries.
+    you must use search_learning_links(search_phrase) with properly crafted phrases e.g.:
+    "best online resources for learning python"
+
+    3. Deliver a Comprehensive Learning Path
+
+    The learning path must be exhaustive, structured, and ordered, containing:
+
+    A. Timeline Overview
+
+    Provide:
+
+    Total estimated duration
+
+    Weekly hour commitment
+
+    Beginner / intermediate / advanced segments
+
+    B. Stage-by-Stage Breakdown
+
+    For every required skill or certification gap:
+
+    Skill Definition
+
+    Why It Matters for the Role
+
+    Prerequisites (based on user’s profile)
+
+    Learning Objectives
+
+    Step-by-step Learning Plan
+
+    Recommended URLs (must come from tool (search_learning_links) output)
+
+    Hands-on Projects / Assignments
+
+    Milestones & Progress Checks
+
+    Estimated Time to Master (in weeks)
+
+    C. Integrated Roadmap
+
+    Show a combined timeline like:
+
+    Week 1–2: Python Data Fundamentals
+
+    Week 3–5: Machine Learning Foundations
+
+    Week 6–9: Deep Learning + Practical Projects
+
+    Week 10: Portfolio + Capstone Project
+
+    D. Certification Guidance
+
+    For each required certification:
+
+    What it covers
+
+    Best preparation strategy
+
+    Recommended URLs from the tool (search_learning_links)  
+
+    Study plan and weekly breakdown
+
+    Practice exams and expected difficulty
+
+    4. Quality Requirements
+
+    Your answer must be:
+
+    Accurate, up-to-date, resource-grounded
+
+    Comprehensive and deeply detailed
+
+    Role-specific (Never generic)
+
+    Actionable—every step must be implementable
+
+    User-tailored—based on background and skill level
+
+    Explicitly reference URLs from the tool results
+    Final Constraints
+
+    Never fabricate URLs.
+
+    If no URLs are found just skip the part. Dont mention that the tool did not find URLS
+
+    Always rely on the tool for external sites.
+
+    Provide enough clarity for a learner to follow with zero ambiguity.
+
+    Be extremely detailed and comprehensive.
+    """
+
     def suggest_learning_paths(gaps: RoleProfile, user_profile: UserProfile, target_role_requirements: RoleProfile) -> LearningPath
-    by llm(method="ReAct", tools=([search_learning_resources]));
+    by llm(method="ReAct", tools=([search_learning_resources, search_learning_links]));
 
     can check_existing_learning_path  with `root entry {
         if [-->(`?LearningPath)](?role_title==self.role_title) {
@@ -1950,12 +2164,29 @@ walker recommend_learning_paths {
             # save learning path to graph
             here ++> learning_path;
 
+            # create subdir if it doesn't exist
+            if not os.path.exists("learning_paths"){
+                os.makedirs("learning_paths");
+            }
+            # sanitize role title to use as filename
+            let safe_title = learning_path.role_title.replace(" ", "_").replace("/", "-");
+            let file_path = "learning_paths/" + safe_title + ".md";
+
+            # convert escaped newlines to real newlines
+            let md_content = learning_path.learning_path.encode('utf-8').decode('unicode_escape');
+
+            # write to file
+            with open(file_path, "w", encoding="utf-8") as f {
+                f.write(md_content);
+            }
+            print("Learning path saved to:", file_path, "\n");
+
             report {
                 "status": "Success",
                 "message": "Learning path recommended and saved to graph successfully",
                 "body": {
                     "role_title": learning_path.role_title,
-                    "learning_path": learning_path.learning_path
+                    "learning_path": learning_path.learning_path.encode('utf-8').decode('unicode_escape')
                 }
             };
         } except Exception as e {
