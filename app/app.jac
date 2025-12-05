@@ -1539,17 +1539,26 @@ walker create_skill_gap_graph {
         }
     }
 
+    # testing if update skill graph works
+    can update_rgaps with RequirementsGap entry {
+        root spawn update_skill_gap_graph(
+            completed_skills=[s.name for s in self.gaps.skills],
+            completed_certifications=[c.title for c in self.gaps.certifications],
+            role_title=self.role_title
+        );
+    }
+
 }
 
 # update Skill gap graph. Takes in a list of completed skill names and cert names and specific role title
 walker update_skill_gap_graph {
     has completed_skills: list = [];
     has completed_certifications: list = [];
-    has role_title: str= "";
+    has role_title: str = "";
 
     can visit_requirements_gap with `root entry {
         print("Visiting Requirements Gap node to update skill gaps...\n");
-        visit [-->(`?RequirementsGap)](?role_title=self.role_title) else {
+        visit [-->(`?RequirementsGap)](?role_title==self.role_title) else {
             report {
                 "status": "Fail",
                 "message": "No Requirements Gap node found",
@@ -1560,7 +1569,7 @@ walker update_skill_gap_graph {
     }
 
     can visit_skills with RequirementsGap entry {
-        for skill in completed_skills {
+        for skill in self.completed_skills {
             visit [-->(`?Skill)](?name==skill) else {
                 continue;
             }; 
@@ -1568,7 +1577,7 @@ walker update_skill_gap_graph {
     }
 
     can visit_certifications with RequirementsGap entry {
-        for cert in completed_certifications {
+        for cert in self.completed_certifications {
             visit [-->(`?Certification)](?title==cert) else {
                 continue;
             }; 
@@ -1576,10 +1585,131 @@ walker update_skill_gap_graph {
     }
 
     can update_skills with Skill entry {
+        #call a walker to update main skill graph
+        root spawn add_completed_skill_to_user_profile(
+            completed_skill=here
+        );
+        let completed_skill = here.name;
+        del here;
+        report {
+            "status": "Success",
+            "message": "Completed skill removed from skill gap graph",
+            "body": {completed_skill}
+        };
+
+    }
+
+    can update_certifications with Certification entry {
+        #call a walker to update main skill graph
+        root spawn add_completed_certification_to_user_profile(
+            completed_certification=here
+        );
+        let completed_certification = here.title;
+        del here;
+        report {
+            "status": "Success",
+            "message": "Completed certification removed from skill gap graph",
+            "body": {completed_certification}
+        };
 
     }
 
 }
+
+#adds completed skills to users main skill graph
+walker add_completed_skill_to_user_profile {
+    has completed_skill: Skill = Skill("", "");
+
+    can visit_memory with `root entry {
+        print("Visiting User Memory to add completed skill...\n");
+
+        visit [-->(`?Memory)] else {
+            report {
+                "status": "Fail",
+                "message": "User memory was never initialized",
+                "body": {}
+            };
+            disengage;
+        }
+    }
+
+    can add_skill with Memory entry {
+        # EMPTY CHECK
+        if not self.completed_skill.name or self.completed_skill.name == "" {
+            report {
+                "status": "Fail",
+                "message": "Completed skill entry is empty. Skipping.",
+                "body": {}
+            };
+            disengage;
+        }
+
+        if not [-->(`?Skill)](?name==self.completed_skill.name) {
+            here +>:skilled_in:+> self.completed_skill;
+
+            report {
+                "status": "Success",
+                "message": "Completed skill added to user profile",
+                "body": {self.completed_skill.name}
+            };
+        }
+        else {
+            report {
+                "status": "Fail",
+                "message": "Skill already exists in user profile",
+                "body": {self.completed_skill.name}
+            };
+        }
+    }
+}
+# Add completed certifications to user's main skill graph
+walker add_completed_certification_to_user_profile {
+    has completed_certification: Certification = Certification("", "", "");
+
+    can visit_memory with `root entry {
+        print("Visiting User Memory to add completed certification...\n");
+
+        visit [-->(`?Memory)] else {
+            report {
+                "status": "fail",
+                "message": "User memory was never initialized",
+                "body": {}
+            };
+            disengage;
+        }
+    }
+
+    can add_certification with Memory entry {
+        # EMPTY CHECK
+        if not self.completed_certification.title or self.completed_certification.title == "" {
+            report {
+                "status": "Fail",
+                "message": "Completed certification entry is empty. Skipping.",
+                "body": {}
+            };
+            disengage;
+        }
+
+        if not [-->(`?Certification)](?title==self.completed_certification.title) {
+            here +>:has_certification:+> self.completed_certification;
+
+            report {
+                "status": "Success",
+                "message": "Completed certification added to user profile",
+                "body": {self.completed_certification.title}
+            };
+        }
+        else {
+            report {
+                "status": "Fail",
+                "message": "Certification already exists in user profile",
+                "body": {self.completed_certification.title}
+            };
+        }
+    }
+}
+
+
 
 # recommend learning paths to fill skill gaps
 walker recommend_learning_paths {
