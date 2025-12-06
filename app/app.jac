@@ -62,7 +62,7 @@ def is_valid_url(url: str) -> bool {
         'pinterest.com',
         'instagram.com'
     ];
-    if <>any((host in url) for host in invalid_hosts) {
+    if any((host in url) for host in invalid_hosts) {
         return False;
     }
     if (('utm_' in url) or ('redirect' in url)) {
@@ -88,7 +88,7 @@ def search_job_urls(job_title: str, limit: int = 10) -> list {
             }
         }
     }
-    return <>list(<>dict.fromkeys(urls))[:limit];
+    return list(dict.fromkeys(urls))[:limit];
 }
 def extract_markdown(url: str, max_chars: int = 5000) -> any {
     let doc = firecrawl.scrape(url, formats=['markdown']);
@@ -1428,14 +1428,15 @@ walker collect_role_requirements {
     # LLM function: extract skills + certs from title + description
     """
     You are now a career advisor
-    Use you knowledge, reasoning and the tools `search_job_requirements` and 'fetch_careerjet_descriptions' to search the web for skills and
-    certifications required for the given job title. Analyze the tools results
+    Use you knowledge, reasoning and the tool `search_job_requirements`  to search the web for skills and
+    certifications required for the given job title. Analyze the tool results
     and extract only skills and certifications that are relevant and most in demand (i.e those that appear frequently)
+    If a a job title seems to not exist just fill it a most relevant similar role.
     """
 
     def get_role_requirements(role_title: str, role_description: str) -> RoleProfile
     by llm(method="ReAct",
-    tools=([search_job_requirements, fetch_careerjet_descriptions]));
+    tools=([search_job_requirements]));
 
     can check_existing_target_role with `root entry {
        if [-->(`?Role)](?title==self.role_title) {
@@ -1494,6 +1495,18 @@ walker collect_role_requirements {
 
         let required_skills = self.role_requirements.skills;
         let required_certifications = self.role_requirements.certifications;
+
+        if (len(required_skills) == 0) and (len(required_certifications) == 0) {
+        report {
+            "status": "NoRequirements",
+            "message": "This role does not specify any skill or certification requirements.",
+            "body": {
+                "skills": [],
+                "certifications": []
+            }
+        };
+        disengage;
+    }
 
         print("LLM returned role requirements.\n");
 
@@ -1644,7 +1657,7 @@ walker find_skill_and_certification_gaps {
                 }
             };
         } except Exception as e {
-            print("ERROR: LLM call failed:", e, "\n");
+            print("ERROR: LLM call failed:", str(e), "\n");
 
             report {
                 "status": "Fail",
@@ -1654,6 +1667,17 @@ walker find_skill_and_certification_gaps {
 
             disengage;
 
+        }
+        if (len(self.gaps.skills) == 0) and (len(self.gaps.certifications) == 0) {
+            report {
+                "status": "Qualified",
+                "message": "You already meet all the skills and certifications required for this role.",
+                "body": {
+                    "skills": [],
+                    "certifications": []
+                }
+            };
+            disengage;
         }
 
     }
@@ -1742,13 +1766,13 @@ walker create_skill_gap_graph {
     }
 
     # testing if update skill graph works
-    can update_rgaps with RequirementsGap entry {
-        root spawn update_skill_gap_graph(
-            completed_skills=[s.name for s in self.gaps.skills],
-            completed_certifications=[c.title for c in self.gaps.certifications],
-            role_title=self.role_title
-        );
-    }
+    #can update_rgaps with RequirementsGap entry {
+    #    root spawn update_skill_gap_graph(
+    #        completed_skills=[s.name for s in self.gaps.skills],
+    #        completed_certifications=[c.title for c in self.gaps.certifications],
+    #        role_title=self.role_title
+    #    );
+    #}
 
 }
 
@@ -2211,4 +2235,3 @@ with entry {
     let FIRECRAWL_API_KEY = os.getenv('FIRECRAWL_API_KEY');
     let firecrawl = FirecrawlApp(api_key=FIRECRAWL_API_KEY);
 }
-
