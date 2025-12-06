@@ -1551,20 +1551,6 @@ walker collect_role_requirements {
             required_skills=self.role_requirements.skills,
             required_certifications=self.role_requirements.certifications
         );
-      
-
-        print("Finding requirements gaps...\n");
-        skill_gaps = root spawn find_skill_and_certification_gaps(
-            role_title=self.role_title,
-            user_profile=None,
-            role_requirements=None
-        );
-
-        print("Generating RoadMaps...\n");
-        road_map =  root spawn recommend_learning_paths(
-            role_title=self.role_title,
-        );
-
                 
     }
 
@@ -1764,16 +1750,7 @@ walker create_skill_gap_graph {
             };
         }
     }
-
-    # testing if update skill graph works
-    #can update_rgaps with RequirementsGap entry {
-    #    root spawn update_skill_gap_graph(
-    #        completed_skills=[s.name for s in self.gaps.skills],
-    #        completed_certifications=[c.title for c in self.gaps.certifications],
-    #        role_title=self.role_title
-    #    );
-    #}
-
+   
 }
 
 # update Skill gap graph. Takes in a list of completed skill names and cert names and specific role title
