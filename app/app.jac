@@ -71,8 +71,11 @@ import re;
 import os;
 import PyPDF2;
 import docx;
+import requests;
+import json;
+import from firecrawl { FirecrawlApp }
 
-glob llm = Model(model_name="gemini/gemini-2.0-flash", verbose=True);
+glob llm = Model(model_name="gemini/gemini-2.5-flash", verbose=False);
 
 # Helpers 
 def read_document_text(file_path: str) -> str{
@@ -114,7 +117,305 @@ def read_document_text(file_path: str) -> str{
 
 }
 
-# Backend Nodes
+# Tools
+# Job recommender tools
+def is_valid_url(url: str) -> bool {
+    let invalid_hosts = [
+        'facebook.com',
+        'twitter.com',
+        'linkedin.com',
+        'youtube.com',
+        'pinterest.com',
+        'instagram.com'
+    ];
+    if any((host in url) for host in invalid_hosts) {
+        return False;
+    }
+    if (('utm_' in url) or ('redirect' in url)) {
+        return False;
+    }
+    return True;
+}
+def search_job_urls(job_title: str, limit: int = 10) -> list {
+    let url = 'https://google.serper.dev/search';
+    let headers = {'X-API-KEY': SERPER_API_KEY, 'Content-Type': 'application/json'};
+    let payload = {'q': f"{job_title}mandatory required in  demand  skills and certifications 2025"};
+    let resp = requests.post(url, json=payload, headers=headers);
+    if (resp.status_code != 200) {
+        raise Exception(f"Serper error {resp.status_code}: {resp.text}") ;
+    }
+    let data = resp.json();
+    let urls = [];
+    if ('organic' in data) {
+        for item in data['organic'] {
+            let link = item.get('link');
+            if (link and is_valid_url(link)) {
+                urls.append(link);
+            }
+        }
+    }
+    return list(dict.fromkeys(urls))[:limit];
+}
+def extract_markdown(url: str, max_chars: int = 5000) -> any {
+    let doc = firecrawl.scrape(url, formats=['markdown']);
+    let md = getattr(doc, 'markdown', '') or '';
+    if (isinstance(md, str) and (len(md) > max_chars)) {
+        let md = md[:max_chars] + '\n\n...[TRIMMED]...';
+    }
+    return {'url': url, 'markdown': md};
+}
+
+def search_job_requirements(job_title: str) -> str {
+
+    let urls = search_job_urls(job_title);
+    let out = [];
+
+    for url in urls {
+        try {
+            let md = extract_markdown(url);
+
+            out.append({
+                "url": url,
+                "markdown": md
+            });
+
+        } except Exception as e {
+            out.append({
+                "url": url,
+                "markdown": f"ERROR: {e}"
+            });
+        }
+    }
+
+    return json.dumps(out);
+}
+
+def fetch_careerjet_descriptions(job_title: str) -> str {
+
+    let hostname = 'search.api.careerjet.net';
+    let path = '/v4/query';
+    let api_key = 'cc5638024c6473dc2afe1dc8633ed5b1';
+
+    let params = {
+        'locale_code': 'en_US',
+        'keywords': job_title,
+        'location': '',
+        'user_ip': '154.159.237.212',
+        'user_agent': 'Mozilla/5.0',
+        'fragment_size': 1000,
+        'page_size': 50,
+        'page': 1,
+        'sort': 'date'
+    };
+
+    let headers = {
+        'content-type': 'application/json',
+        'Referer': 'https://www.agriscan.jhubafrica.com/find-jobs/'
+    };
+
+    try {
+        let resp = requests.get(
+            url=f'https://{hostname}{path}',
+            params=params,
+            auth=(api_key, ''),
+            headers=headers,
+            timeout=10
+        );
+
+        let data = resp.json();
+
+        let descriptions = [
+            job.get('description', '')
+            for job in data.get('jobs', [])
+            if ('description' in job)
+        ];
+
+        # Return as JSON string (required for LLM tools)
+        return json.dumps({
+            "descriptions": descriptions
+        });
+
+    } except Exception as e {
+        return json.dumps({
+            "error": str(e)
+        });
+    }
+}
+
+#Learning path tools
+def is_valid_url(url: str) -> bool {
+    let invalid_hosts = [
+        "facebook.com",
+        "twitter.com",
+        "linkedin.com",
+        "youtube.com",
+        "pinterest.com",
+        "instagram.com",
+    ];
+
+    for host in invalid_hosts {
+        if host in url {
+            return False;
+        }
+    }
+
+    if ("utm_" in url) or ("redirect" in url) {
+        return False;
+    }
+
+    return True;
+}
+
+
+def search_urls(search_phrase: str, limit: int = 10) -> list {
+    let url = "https://google.serper.dev/search";
+    let headers = {
+        "X-API-KEY": SERPER_API_KEY,
+        "Content-Type": "application/json",
+    };
+
+    # Replace job-title prompt with general-purpose Web search phrase
+    let payload = {
+        "q": f"{search_phrase} learning resources required skills certifications 2025"
+    };
+
+    let resp = requests.post(url, json=payload, headers=headers);
+
+    if resp.status_code != 200 {
+        raise Exception(f"Serper error {resp.status_code}: {resp.text}");
+    }
+
+    let data = resp.json();
+    let urls = [];
+
+    if "organic" in data {
+        for item in data["organic"] {
+            let link = item.get("link");
+            if link and is_valid_url(link) {
+                urls.append(link);
+            }
+        }
+    }
+
+    # Remove duplicates while keeping order
+    let deduped = [];
+    for u in urls {
+        if u not in deduped {
+            deduped.append(u);
+        }
+    }
+
+    return deduped[:limit];
+}
+
+
+def extract_markdown(url: str, max_chars: int = 5000) -> dict {
+    let doc = firecrawl.scrape(url, formats=["markdown"]);
+
+    let md = getattr(doc, "markdown", "");
+    if not isinstance(md, str) {
+        md = "";
+    }
+
+    if len(md) > max_chars {
+        md = md[:max_chars] + "\n\n...[TRIMMED]...";
+    }
+
+    return {
+        "url": url,
+        "markdown": md,
+    };
+}
+
+
+def search_learning_resources(search_phrase: str) -> str {
+    let urls = search_urls(search_phrase);
+    let out = [];
+
+    for url in urls {
+        try {
+            let md = extract_markdown(url);
+            out.append(md);
+        } except Exception as e {
+        }
+    }
+
+    return json.dumps(out);
+}
+
+# URL validity
+def is_learning_url(url: str) -> bool {
+    let banned_hosts = [
+        "facebook.com",
+        "twitter.com",
+        "instagram.com",
+        "reddit.com",
+        "pinterest.com",
+        "tiktok.com",
+        "linkedin.com",   # remove for learning?
+        "youtube.com"     # remove if you don’t want video resources
+    ];
+
+    for host in banned_hosts {
+        if host in url {
+            return False;
+        }
+    }
+
+    if ("utm_" in url) or ("redirect" in url) {
+        return False;
+    }
+
+    return True;
+}
+
+#Search Reliable Learning URLs ONLY
+def search_learning_links(search_phrase: str, limit: int = 10) -> list {
+    let url = "https://google.serper.dev/search";
+    let headers = {
+        "X-API-KEY": SERPER_API_KEY,
+        "Content-Type": "application/json"
+    };
+
+    # Focus search specifically on learning resources
+    let payload = {
+        "q": f"{search_phrase} best tutorials official documentation step-by-step course learning guide 2025"
+    };
+
+    let resp = requests.post(url, json=payload, headers=headers);
+
+    if resp.status_code != 200 {
+        raise Exception(f"Serper error {resp.status_code}: {resp.text}");
+    }
+
+    let results = resp.json();
+    let collected = [];
+
+    if "organic" in results {
+        for hit in results["organic"] {
+            let link = hit.get("link");
+
+            if link and is_learning_url(link) {
+                collected.append(link);
+            }
+        }
+    }
+
+    # Cleanup: remove duplicates
+    let deduped = [];
+    for u in collected {
+        if u not in deduped {
+            deduped.append(u);
+        }
+    }
+
+    return deduped[:limit];
+}
+
+
+
+
+# Backend Models
 node Memory {
     has email: str = "";
     has full_name: str = "";
@@ -155,11 +456,16 @@ node Interest {
     has description: str = "";
 }
 
-# User profile object
-obj UserProfile {
-    has skills: list[Skill];
-    has certifications: list[Certification];
-    has interests: list[Interest];
+node RequirementsGap {
+    has role_title: str = "";
+    has initial_gap: int = 0;
+    has progress: int = 0;
+}
+
+# learning path node
+node LearningPath {
+    has role_title: str = "";
+    has learning_path: str = "";
 }
 
 # Used by get_user_profile agent to aggregate user's skills. interests and certifications and report back to FE
@@ -194,16 +500,34 @@ node End{
     }
 }
 
+# User profile object
+obj UserProfile {
+    has skills: list[Skill];
+    has certifications: list[Certification];
+    has interests: list[Interest];
+}
+
+# Role requires skills and certifications
+obj RoleProfile {
+    has skills: list[Skill];
+    has certifications: list[Certification];
+}
+
+
+
 
 
 # Relationships
 edge skilled_in {}
 edge has_certification {}
 edge interested_in {}
+edge requires_skill {}
+edge requires_certification {}
+edge has_skill_gap {}
+edge has_certification_gap {}
 
 
 # Agents
-
 # Initialize Memory for a new user
 walker initialize_memory {
     has email: str = "";
@@ -550,7 +874,7 @@ walker get_user_details {
 }
 
 
-# create and store user profile
+# create and store user profile (Internal API: used by analyze_cv agent)
 walker create_user_graph {
     has user_profile: UserProfile = UserProfile([], [], []);
 
@@ -613,7 +937,7 @@ walker generate_role_suggestions {
     has user_profile: UserProfile = UserProfile([], [], []);
 
     """
-    Analyze the user’s skills, interests, and certifications. Suggest top 3 realistic career roles that match their strengths.
+    Analyze the user’s skills, interests, and certifications. Suggest top 5 realistic career roles that match their strengths.
     Each role must include a short title and a concise description explaining why the user is a good fit.
     Avoid generic suggestions and prioritize roles where the user's skill combination provides a clear advantage.
     """
@@ -725,7 +1049,7 @@ walker generate_role_suggestions {
 }
 
 
-# Retrieve user profile
+# Retrieve user profile i.e skills, interests and certification
 walker get_user_profile {
     has user_profile: UserProfile = UserProfile([], [], []);
 
@@ -796,7 +1120,7 @@ walker get_user_profile {
 
 }
 
-# Update user profile
+# Update user profile i.e add/remove skills, interests and certs
 walker update_user_profile {
 
     has updated_skills: list[dict] = [];
@@ -834,6 +1158,12 @@ walker update_user_profile {
             if not [-->(`?Skill)](?name==name) {
                 let new_skill = Skill(name=name, description=desc);
                 here +>:skilled_in:+> new_skill;
+
+                # delete newly added skill from skill gap graph if it exists
+                root spawn update_skill_gap_graph(
+                    completed_skills=[name]
+                );
+
                 report {
                     "status": "Success",
                     "message": "Skill added successfully",
@@ -949,6 +1279,11 @@ walker update_user_profile {
             if not [-->(`?Certification)](?title==title) {
                 let new_cert = Certification(title=title, provider=provider, url=url);
                 here +>:has_certification:+> new_cert;
+                
+                # Delete newly acquired certification from certification gap graph
+                root spawn update_skill_gap_graph(
+                    completed_certifications=[title]
+                );
 
                 report {
                     "status": "Success",
@@ -1048,8 +1383,964 @@ walker delete_user_profile {
     }
 }
 
+# Target role Agents
+# create role requirements graph (Skills and certs required for a particular role)
+walker create_role_requirements_graph {
+    has role_title: str = "";
+    has role_description: str = "";
+    has required_skills: list = [];
+    has required_certifications: list = [];
+
+    can create_role with `root entry {
+        print("Creating Role Requirements Graph...\n");
+
+        let role_node = here ++> Role(
+            title=self.role_title,
+            description=self.role_description
+        );
+
+        if not self.required_skills or len(self.required_skills) == 0 {
+            print("No required skills provided.\n");
+            report {
+                "status": "warning",
+                "message": "No required skills provided",
+                "body": {}
+            };
+        }
+        else {
+            print("Saving required skills...\n");
+            for skill in self.required_skills {
+                role_node +>:requires_skill:+> skill;
+            }
+            report {
+                "status": "success",
+                "message": "Required skills saved",
+                "body": {}
+            };
+        }
+
+        if not self.required_certifications or len(self.required_certifications) == 0 {
+            print("No required certifications provided.\n");
+            report {
+                "status": "warning",
+                "message": "No required certifications provided",
+                "body": {}
+            };
+        }
+        else {
+            print("Saving required certifications...\n");
+            for cert in self.required_certifications {
+                role_node +>:requires_certification:+> cert;
+            }
+            report {
+                "status": "success",
+                "message": "Required certifications saved",
+                "body": {}
+            };
+        }
+
+        print("Role requirements graph created successfully.\n");
+
+        report {
+            "status": "success",
+            "message": "Role requirements graph created successfully",
+            "body": {}
+        };
+    }
+
+}
+
+
+# retrieve roles from graph (Traverse target role graph and retrieve required certs and skills)
+walker get_all_role_requirements {
+    has role_title: str = "";
+    has required_skills: list = [];
+    has required_certifications: list = [];
+    has role_requirements: RoleProfile = RoleProfile([], []);
+
+    can visit_role with `root entry {
+        print("Fetching all role requirements from graph...\n");
+
+        visit [-->(`?Role)](?title==self.role_title) else {
+            report {
+                "status": "Fail",
+                "message": "No such role found",
+                "body": {}
+            };
+            disengage;
+        }
+    }
+
+    can fetch_role_requirements with Role entry {
+        self.required_skills = [-->(`?Skill)];
+        self.required_certifications = [-->(`?Certification)];
+        self.role_requirements = RoleProfile(
+            skills=self.required_skills,
+            certifications=self.required_certifications
+        );
+        report {
+            "status": "Success",
+            "message": "Role requirements retrieved successfully from graph",
+            "body": {
+                "role_title": here.title,
+                "role_description": here.description,
+                "skills": [
+                    {"name": s.name, "description": s.description}
+                    for s in self.required_skills
+                ],
+                "certifications": [
+                    {"title": c.title, "provider": c.provider, "url": c.url}
+                    for c in self.required_certifications
+                ]
+            }
+        };
+    }
+}
+
+# Fetch live skills and certs from the web for a given target role
+walker collect_role_requirements {
+    has role_title: str = "";
+    has role_description: str = "";
+    has role_requirements: RoleProfile = RoleProfile([], []);
+
+    # LLM function: extract skills + certs from title + description
+    """
+    You are now a career advisor
+    Use you knowledge, reasoning and the tool `search_job_requirements`  to search the web for skills and
+    certifications required for the given job title. Analyze the tool results
+    and extract only skills and certifications that are relevant and most in demand (i.e those that appear frequently)
+    If a a job title seems to not exist just fill it a most relevant similar role.
+    """
+
+    def get_role_requirements(role_title: str, role_description: str) -> RoleProfile
+    by llm(method="ReAct",
+    tools=([search_job_requirements]));
+
+    can check_existing_target_role with `root entry {
+       if [-->(`?Role)](?title==self.role_title) {
+            print("Role requirements already exist in graph. Fetching from Memory.\n");
+
+            fetched_role_requirements = root spawn get_all_role_requirements(role_title=self.role_title);
+            self.role_requirements = fetched_role_requirements.role_requirements;
+            report {
+                "status": "Info",
+                "message": "Role requirements already exist in graph. Fetched from memory.",
+                "body": {}
+            };
+            disengage;
+        }
+    }
+
+    can collect_certs_and_skills with `root entry {
+        print("Collecting role requirements using LLM...\n");
+
+        print("Role Title:", self.role_title);
+        print("Role Description:", self.role_description, "\n");
+
+
+        if self.role_title == None or self.role_title == "" {
+            print("ERROR: Missing role title.\n");
+
+            report {
+                "status": "Fail",
+                "message": "Missing required parameter: role_title",
+                "body": {}
+            };
+
+            disengage;
+        }
+
+        if self.role_description == None {
+            self.role_description = "";
+        }
+
+        print("Invoking LLM to get role requirements...\n");
+
+
+        try {
+            self.role_requirements = self.get_role_requirements(self.role_title, self.role_description);
+        } except Exception as e {
+            print("ERROR: LLM call failed:", e, "\n");
+
+            report {
+                "status": "Fail",
+                "message": "Failed to fetch role requirements: " + str(e),
+                "body": {}
+            };
+
+            disengage;
+        }
+
+        let required_skills = self.role_requirements.skills;
+        let required_certifications = self.role_requirements.certifications;
+
+        if (len(required_skills) == 0) and (len(required_certifications) == 0) {
+        report {
+            "status": "NoRequirements",
+            "message": "This role does not specify any skill or certification requirements.",
+            "body": {
+                "skills": [],
+                "certifications": []
+            }
+        };
+        disengage;
+    }
+
+        print("LLM returned role requirements.\n");
+
+        if required_skills == None or not isinstance(required_skills, list) {
+            required_skills = [];
+        }
+
+        if required_certifications == None or not isinstance(required_certifications, list) {
+            required_certifications = [];
+        }
+
+        required_skills = [
+            s for s in required_skills
+            if isinstance(s, Skill)
+        ];
+
+        required_certifications = [
+            c for c in required_certifications
+            if isinstance(c, Certification)
+        ];
+
+        report {
+            "status": "Success",
+            "message": "Role requirements fetched from the web successfully",
+            "body": {
+                "skills": [
+                    {"name": s.name, "description": s.description}
+                    for s in required_skills
+                ],
+                "certifications": [
+                    {"title": c.title, "provider": c.provider, "url": c.url}
+                    for c in required_certifications
+                ]
+            }
+        };
+
+        print("Spawning graph creation for role requirements...\n");
+
+        saved_role_requirements = root spawn create_role_requirements_graph(
+            role_title=self.role_title,
+            role_description=self.role_description,
+            required_skills=self.role_requirements.skills,
+            required_certifications=self.role_requirements.certifications
+        );
+                
+    }
+
+}
+
+
+# find skill gaps for a given role (Internal) (Compare target role graph and user profile)
+walker find_skill_and_certification_gaps {
+    
+    has role_title: str = "";
+    has user_profile: UserProfile = UserProfile([], [], []);
+    has role_requirements: RoleProfile = RoleProfile([], []);
+    has gaps: RoleProfile = RoleProfile([], []);
+
+
+    """
+    Find the skills and certification gaps by comparing the user profile and role requirements.
+    """
+    def find_gaps_between_profiles(user_profile: UserProfile, role_requirements: RoleProfile) -> RoleProfile
+    by llm(method="Reason");
+
+    # collect skills and certs from user graph
+    can fetch_user_profile with `root entry {
+        print("Fetching user profile for gap analysis...\n");
+
+        let fetched_profile = root spawn get_user_profile();
+        
+        # cease operation if user profile is not fetched
+        if fetched_profile == None or fetched_profile.user_profile == None {
+            print("ERROR: Failed to fetch user profile.\n");
+            report {
+                "status": "Fail",
+                "message": "Unable to load user profile.",
+                "body": {}
+            };
+            disengage;
+        }
+
+        self.user_profile = fetched_profile.user_profile;
+    }
+
+
+    # collect skills and certs from role requirements graph
+    can fetch_role_requirements with `root entry {
+        print("Fetching role requirements for gap analysis...\n");
+
+        let fetched_requirements = root spawn get_all_role_requirements(
+            role_title=self.role_title,
+            required_skills=[],
+            required_certifications=[]
+        );
+        
+
+        # cease operation if role requirements are not fetched
+        if fetched_requirements == None or fetched_requirements.role_requirements == None {
+            print("ERROR: Failed to fetch role requirements.\n");
+            report {
+                "status": "Fail",
+                "message": "Unable to load role requirements.",
+                "body": {}
+            };
+            disengage;
+        }
+
+
+        self.role_requirements = fetched_requirements.role_requirements;
+
+    }
+    
+    # compare and find gaps
+    can find_gaps with `root entry {
+        print("Finding skill and certification gaps using LLM...\n");
+        try {
+            self.gaps = self.find_gaps_between_profiles(
+                user_profile=self.user_profile,
+                role_requirements=self.role_requirements
+            );
+            report {
+                "status": "Success",
+                "message": "Skill and certification gaps found successfully",
+                "body": {
+                    "skills": [
+                        {"name": s.name, "description": s.description}
+                        for s in self.gaps.skills
+                    ],
+                    "certifications": [
+                        {"title": c.title, "provider": c.provider, "url": c.url}
+                        for c in self.gaps.certifications
+                    ]
+                }
+            };
+        } except Exception as e {
+            print("ERROR: LLM call failed:", str(e), "\n");
+
+            report {
+                "status": "Fail",
+                "message": "Failed to find skill and certification gaps: " + str(e),
+                "body": {}
+            };
+
+            disengage;
+
+        }
+        if (len(self.gaps.skills) == 0) and (len(self.gaps.certifications) == 0) {
+            report {
+                "status": "Qualified",
+                "message": "You already meet all the skills and certifications required for this role.",
+                "body": {
+                    "skills": [],
+                    "certifications": []
+                }
+            };
+            disengage;
+        }
+
+    }
+    can save_identified_gaps_to_graph with `root entry {
+        print("Saving identified gaps to skill gap graph...\n");
+
+        let saved_gaps = root spawn create_skill_gap_graph(
+            gaps=self.gaps,
+            role_title=self.role_title
+        );
+
+        #if saved_gaps.gaps {
+        #    report {
+        #        "status": "Success",
+        #        "message": "Skills and certifications gaps graph saved to memory.", 
+        #        "body": {}
+        #    };
+        #}
+    }
+
+}
+
+# create skill-and-cert gap graph (Fully Internal)
+walker create_skill_gap_graph {
+    has gaps: RoleProfile = RoleProfile([], []);
+    has role_title: str = "";
+    has initial_gap: int = 0;
+    has cert_count: int = 0;
+    has skill_count: int = 0;
+
+    can create_requirements_gap_node with `root entry {
+        print("Creating RG node..\n");
+
+        if [-->(`RequirementsGap)](?role_title==self.role_title){
+            report {
+                "status": "Fail",
+                "message": "Skill Gap Graph Already Exists!",
+                "body": {}
+            };
+            disengage;
+        }
+
+        let requirements_node = RequirementsGap(role_title=self.role_title);
+        here ++> requirements_node;
+
+        print("Visiting requirements gap...\n");
+        visit [-->(`?RequirementsGap)](?role_title==self.role_title);
+    }
+
+    can create_role_requirements_gap_graph with RequirementsGap entry {
+        print("Creating Skill Gap Graph...\n");
+
+        if not self.gaps {
+            report {
+                "status": "Fail",
+                "message": "No gaps provided!",
+                "body": {}
+            };
+            disengage;
+        }
+
+        if not self.gaps.skills or len(self.gaps.skills) == 0 {
+            report {
+                "status": "warning",
+                "message": "No skill gaps",
+                "body": {}
+            };
+        }
+        else {
+            for skill in self.gaps.skills {
+                here +>:has_skill_gap:+> skill;
+                self.skill_count += 1;
+            }
+
+            report {
+                "status": "success",
+                "message": "Skill gaps added to graph",
+                "body": {}
+            };
+        }
+
+        if not self.gaps.certifications or len(self.gaps.certifications) == 0 {
+            report {
+                "status": "warning",
+                "message": "No certification gaps",
+                "body": {}
+            };
+        }
+        else {
+            for cert in self.gaps.certifications {
+                here +>:has_certification_gap:+> cert;
+                self.cert_count += 1;
+            }
+
+            report {
+                "status": "success",
+                "message": "Certification gaps added to graph",
+                "body": {}
+            };
+        }
+
+        # Update progress
+        self.initial_gap = self.cert_count + self.skill_count;
+        here.initial_gap = self.initial_gap;
+    }
+   
+}
+
+# update Skill gap graph.
+walker update_skill_gap_graph {
+    has completed_skills: list = [];
+    has completed_certifications: list = [];
+    has role_title: str = "";
+
+    can visit_requirements_gap with `root entry {
+        print("Visiting Requirements Gap node to update skill gaps...\n");
+        visit [-->(`?RequirementsGap)] else {
+            report {
+                "status": "Fail",
+                "message": "No Requirements Gap node found",
+                "body": {}
+            };
+            disengage;
+        }
+    }
+
+    can visit_skills with RequirementsGap entry {
+        for skill in self.completed_skills {
+            visit [-->(`?Skill)](?name==skill) else {
+                continue;
+            }; 
+        }
+    }
+
+    can visit_certifications with RequirementsGap entry {
+        for cert in self.completed_certifications {
+            visit [-->(`?Certification)](?title==cert) else {
+                continue;
+            }; 
+        }
+    }
+
+    can update_skills with Skill entry {
+        #call a walker to update main skill graph
+        root spawn add_completed_skill_to_user_profile(
+            completed_skill=here
+        );
+        let completed_skill = here.name;
+        del here;
+        report {
+            "status": "Success",
+            "message": "Completed skill removed from skill gap graph",
+            "body": {completed_skill}
+        };
+
+    }
+
+    can update_certifications with Certification entry {
+        #call a walker to update main skill graph
+        root spawn add_completed_certification_to_user_profile(
+            completed_certification=here
+        );
+        let completed_certification = here.title;
+        del here;
+        report {
+            "status": "Success",
+            "message": "Completed certification removed from skill gap graph",
+            "body": {completed_certification}
+        };
+
+    }
+
+}
+
+# adds completed skills  to main user profile graph (Fully Internal)
+walker add_completed_skill_to_user_profile {
+    has completed_skill: Skill = Skill("", "");
+
+    can visit_memory with `root entry {
+        print("Visiting User Memory to add completed skill...\n");
+
+        visit [-->(`?Memory)] else {
+            report {
+                "status": "Fail",
+                "message": "User memory was never initialized",
+                "body": {}
+            };
+            disengage;
+        }
+    }
+
+    can add_skill with Memory entry {
+        # EMPTY CHECK
+        if not self.completed_skill.name or self.completed_skill.name == "" {
+            report {
+                "status": "Fail",
+                "message": "Completed skill entry is empty. Skipping.",
+                "body": {}
+            };
+            disengage;
+        }
+
+        if not [-->(`?Skill)](?name==self.completed_skill.name) {
+            here +>:skilled_in:+> self.completed_skill;
+
+            report {
+                "status": "Success",
+                "message": "Completed skill added to user profile",
+                "body": {self.completed_skill.name}
+            };
+        }
+        else {
+            report {
+                "status": "Fail",
+                "message": "Skill already exists in user profile",
+                "body": {self.completed_skill.name}
+            };
+        }
+    }
+}
+# Add completed certifications to user's main profile graph (Fully Internal)
+walker add_completed_certification_to_user_profile {
+    has completed_certification: Certification = Certification("", "", "");
+
+    can visit_memory with `root entry {
+        print("Visiting User Memory to add completed certification...\n");
+
+        visit [-->(`?Memory)] else {
+            report {
+                "status": "fail",
+                "message": "User memory was never initialized",
+                "body": {}
+            };
+            disengage;
+        }
+    }
+
+    can add_certification with Memory entry {
+        # EMPTY CHECK
+        if not self.completed_certification.title or self.completed_certification.title == "" {
+            report {
+                "status": "Fail",
+                "message": "Completed certification entry is empty. Skipping.",
+                "body": {}
+            };
+            disengage;
+        }
+
+        if not [-->(`?Certification)](?title==self.completed_certification.title) {
+            here +>:has_certification:+> self.completed_certification;
+
+            report {
+                "status": "Success",
+                "message": "Completed certification added to user profile",
+                "body": {self.completed_certification.title}
+            };
+        }
+        else {
+            report {
+                "status": "Fail",
+                "message": "Certification already exists in user profile",
+                "body": {self.completed_certification.title}
+            };
+        }
+    }
+}
+
+# Check skill/certification progress
+walker check_progress {
+    has current_gap: int = 0;
+    has role_title: str = "";
+
+    can visit_requirements_gap_node with `root entry {
+        visit [-->(`?RequirementsGap)](?role_title==self.role_title) else {
+            report {
+                "status": "Fail",
+                "message": "Progress for the specified role could not be fetched!",
+                "body": {}
+            };
+            disengage;
+        }
+    }
+
+    can check_learning_progress with RequirementsGap entry {
+        self.current_gap = len([-->]);
+        try {
+            here.progress = 1 - (self.current_gap / here.initial_gap) * 100;
+            report {
+                "status": "Success",
+                "message": "Progress retrieved successfully!",
+                "body": {here.progress}
+            };
+        } except Exception as e {
+            report {
+                "status": "Fail",
+                "message": "Could not fetch progress: " + str(e),
+                "body": {}
+            };
+        }
+
+    }
+}
+
+# recommend learning paths to fill skill gaps
+walker recommend_learning_paths {
+    has gaps: RoleProfile = RoleProfile([], []);
+    has user_profile: UserProfile = UserProfile([], [], []);
+    has target_role_requirements: RoleProfile = RoleProfile([], []);
+    has role_title: str = "";
+
+
+    """
+    You are an expert career coach, instructional designer, and learning architect.
+    Your task is to generate a complete, personalized, resource-driven learning path to help the user close their skill and certification gaps.
+    You must use the provided tool search_learning_resources to discover highly relevant, accurate, up-to-date learning materials.
+    Do not guess URLs—use the tool search_learning_links to find relevant URLs.
+    Include only 2 most relevant and reliable links. Dont clutter the output with links. 2 are enough.
+
+    Your output must strictly follow these requirements:
+    
+
+    1. Understand Inputs
+
+    Use and interpret the following inputs at a high level:
+
+    gaps: Missing skills and certifications
+
+    user_profile: Skills, experience level, background, and preferences
+
+    target_role_requirements: Full skill & certification list for the target job role
+
+    Use them to build a learning path tailored to the user’s gaps and their existing strengths.
+
+    2. Use the Tools
+
+    When you need external resources to recommend:
+
+    learning materials
+
+    tutorials
+
+    roadmaps
+
+    guides
+
+    courses
+
+    certifications
+
+    documentation
+
+    you must use search_learning_resources(search_phrase) with properly crafted phrases, e.g.:
+
+    "learn Kubernetes for beginners"
+
+    "how to gain proficiency in cloud security"
+
+    "best Python data engineering tutorials"
+
+    "AWS certification study guide 2025"
+
+    Use the results to populate URLs and resource summaries.
+    you must use search_learning_links(search_phrase) with properly crafted phrases e.g.:
+    "best online resources for learning python"
+
+    3. Deliver a Comprehensive Learning Path
+
+    The learning path must be exhaustive, structured, and ordered, containing:
+
+    A. Timeline Overview
+
+    Provide:
+
+    Total estimated duration
+
+    Weekly hour commitment
+
+    Beginner / intermediate / advanced segments
+
+    B. Stage-by-Stage Breakdown
+
+    For every required skill or certification gap:
+
+    Skill Definition
+
+    Why It Matters for the Role
+
+    Prerequisites (based on user’s profile)
+
+    Learning Objectives
+
+    Step-by-step Learning Plan
+
+    Recommended URLs (must come from tool (search_learning_links) output)
+
+    Hands-on Projects / Assignments
+
+    Milestones & Progress Checks
+
+    Estimated Time to Master (in weeks)
+
+    C. Integrated Roadmap
+
+    Show a combined timeline like:
+
+    Week 1–2: Python Data Fundamentals
+
+    Week 3–5: Machine Learning Foundations
+
+    Week 6–9: Deep Learning + Practical Projects
+
+    Week 10: Portfolio + Capstone Project
+
+    D. Certification Guidance
+
+    For each required certification:
+
+    What it covers
+
+    Best preparation strategy
+
+    Recommended URLs from the tool (search_learning_links)  
+
+    Study plan and weekly breakdown
+
+    Practice exams and expected difficulty
+
+    4. Quality Requirements
+
+    Your answer must be:
+
+    Accurate, up-to-date, resource-grounded
+
+    Comprehensive and deeply detailed
+
+    Role-specific (Never generic)
+
+    Actionable—every step must be implementable
+
+    User-tailored—based on background and skill level
+
+    Explicitly reference URLs from the tool results
+    Final Constraints
+
+    Never fabricate URLs.
+
+    If no URLs are found just skip the part. Dont mention that the tool did not find URLS
+
+    Always rely on the tool for external sites.
+
+    Provide enough clarity for a learner to follow with zero ambiguity.
+
+    Be extremely detailed and comprehensive.
+    """
+
+    def suggest_learning_paths(gaps: RoleProfile, user_profile: UserProfile, target_role_requirements: RoleProfile) -> LearningPath
+    by llm(method="ReAct", tools=([search_learning_resources, search_learning_links]));
+
+    can check_existing_learning_path  with `root entry {
+        if [-->(`?LearningPath)](?role_title==self.role_title) {
+            print("Learning path already exists in graph. Fetching from Memory.\n");
+
+            let existing_path = [-->(`?LearningPath)](?role_title==self.role_title);
+            report {
+                "status": "Info",
+                "message": "Learning path already exists in graph. Fetched from memory.",
+                "body": {
+                    "role_title": existing_path.role_title,
+                    "learning_path": existing_path.learning_path
+                }
+            };
+            disengage;
+        }
+    }
+    can fetch_gaps with `root entry {
+        print("Fetching skill and certification gaps for learning path recommendation...\n");
+
+        let fetched_gaps = root spawn find_skill_and_certification_gaps(
+            role_title=self.role_title,
+            user_profile=None,
+            role_requirements=None
+        );
+
+        # cease operation if gaps are not fetched
+        if fetched_gaps == None or fetched_gaps.gaps == None or (len(fetched_gaps.gaps.skills == 0) and 
+        len(fetched_gaps.gaps.certifications == 0)) {
+            print("ERROR: Failed to fetch skill and certification gaps.\n");
+            report {
+                "status": "Fail",
+                "message": "Unable to load skill and certification gaps.",
+                "body": {}
+            };
+            disengage;
+        }
+
+        self.gaps = fetched_gaps.gaps;
+
+    }
+
+    can fetch_role_requirements with `root entry {
+        print("Fetching target role requirements for learning path recommendation...\n");
+
+        let fetched_requirements = root spawn get_all_role_requirements(
+            role_title=self.role_title,
+            required_skills=[],
+            required_certifications=[]
+        );
+
+        # cease operation if role requirements are not fetched
+        if fetched_requirements == None or fetched_requirements.role_requirements == None {
+            print("ERROR: Failed to fetch role requirements.\n");
+            report {
+                "status": "Fail",
+                "message": "Unable to load role requirements.",
+                "body": {}
+            };
+            disengage;
+        }
+
+        self.target_role_requirements = fetched_requirements.role_requirements;
+
+    }
+
+    can fetch_user_profile with `root entry {
+        print("Fetching user profile for learning path recommendation...\n");
+
+        let fetched_profile = root spawn get_user_profile();
+        
+        # cease operation if user profile is not fetched
+        if fetched_profile == None or fetched_profile.user_profile == None {
+            print("ERROR: Failed to fetch user profile.\n");
+            report {
+                "status": "Fail",
+                "message": "Unable to load user profile.",
+                "body": {}
+            };
+            disengage;
+        }
+
+        self.user_profile = fetched_profile.user_profile;
+    }
+
+    can recommend_path with `root entry {
+        print("Recommending learning path using LLM...\n");
+
+        try {
+            let learning_path = self.suggest_learning_paths(
+                gaps=self.gaps,
+                user_profile=self.user_profile,
+                target_role_requirements=self.target_role_requirements
+            );
+
+            # save learning path to graph
+            here ++> learning_path;
+
+            # create subdir if it doesn't exist
+            if not os.path.exists("learning_paths"){
+                os.makedirs("learning_paths");
+            }
+            # sanitize role title to use as filename
+            let safe_title = learning_path.role_title.replace(" ", "_").replace("/", "-");
+            let file_path = "learning_paths/" + safe_title + ".md";
+
+            # convert escaped newlines to real newlines
+            let md_content = learning_path.learning_path.encode('utf-8').decode('unicode_escape');
+
+            # write to file
+            with open(file_path, "w", encoding="utf-8") as f {
+                f.write(md_content);
+            }
+            print("Learning path saved to:", file_path, "\n");
+
+            report {
+                "status": "Success",
+                "message": "Learning path recommended and saved to graph successfully",
+                "body": {
+                    "role_title": learning_path.role_title,
+                    "learning_path": learning_path.learning_path.encode('utf-8').decode('unicode_escape')
+                }
+            };
+        } except Exception as e {
+            print("ERROR: LLM call failed:", e, "\n");
+
+            report {
+                "status": "Fail",
+                "message": "Failed to recommend learning path: " + str(e),
+                "body": {}
+            };
+
+            disengage;
+
+        }
+
+    }
+}
 
 with entry {
     load_dotenv();
+    let SERPER_API_KEY = os.getenv('SERPER_API_KEY');
+    let FIRECRAWL_API_KEY = os.getenv('FIRECRAWL_API_KEY');
+    let firecrawl = FirecrawlApp(api_key=FIRECRAWL_API_KEY);
 }
-
