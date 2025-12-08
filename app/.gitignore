@@ -3,3 +3,5 @@ node_modules
 jac-env
 resumes
 learning_paths
+app.session
+app.session.users.json

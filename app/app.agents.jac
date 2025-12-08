@@ -1,467 +1,5 @@
-import from byllm.lib { Model }
-import from dotenv { load_dotenv }
-import base64;
-import re;
-import os;
-import PyPDF2;
-import docx;
-import requests;
-import json;
-import from firecrawl { FirecrawlApp }
-
-glob llm = Model(model_name="gemini/gemini-2.5-flash", verbose=False);
-
-# Helpers 
-def read_document_text(file_path: str) -> str{
-
-    if not os.path.exists(file_path){
-
-        return "";
-    }
-    file_path_lower = file_path.lower();
-
-    try{
- 
-        # PDF READER
-        if file_path_lower.endswith(".pdf"){
-            text = "";
-            with open(file_path, "rb") as f {
-                reader = PyPDF2.PdfReader(f);
-                for page in reader.pages {
-                    text += page.extract_text() or "";
-                }
-            }
-            return text.strip();
-        }
-
-        # DOCX READER
-        elif file_path_lower.endswith(".docx"){
-            doc = docx.Document(file_path);
-            text = "\n".join([para.text for para in doc.paragraphs]);
-            return text.strip();
-        }
-        else{
-            return "";
-        }
-    }
-    except Exception as e {
-        print(f"[ERROR] Failed to read document: {e}");
-        return "";
-    }
-
-}
-
-# Tools
-# Job recommender tools
-def is_valid_url(url: str) -> bool {
-    let invalid_hosts = [
-        'facebook.com',
-        'twitter.com',
-        'linkedin.com',
-        'youtube.com',
-        'pinterest.com',
-        'instagram.com'
-    ];
-    if any((host in url) for host in invalid_hosts) {
-        return False;
-    }
-    if (('utm_' in url) or ('redirect' in url)) {
-        return False;
-    }
-    return True;
-}
-def search_job_urls(job_title: str, limit: int = 10) -> list {
-    let url = 'https://google.serper.dev/search';
-    let headers = {'X-API-KEY': SERPER_API_KEY, 'Content-Type': 'application/json'};
-    let payload = {'q': f"{job_title}mandatory required in  demand  skills and certifications 2025"};
-    let resp = requests.post(url, json=payload, headers=headers);
-    if (resp.status_code != 200) {
-        raise Exception(f"Serper error {resp.status_code}: {resp.text}") ;
-    }
-    let data = resp.json();
-    let urls = [];
-    if ('organic' in data) {
-        for item in data['organic'] {
-            let link = item.get('link');
-            if (link and is_valid_url(link)) {
-                urls.append(link);
-            }
-        }
-    }
-    return list(dict.fromkeys(urls))[:limit];
-}
-def extract_markdown(url: str, max_chars: int = 5000) -> any {
-    let doc = firecrawl.scrape(url, formats=['markdown']);
-    let md = getattr(doc, 'markdown', '') or '';
-    if (isinstance(md, str) and (len(md) > max_chars)) {
-        let md = md[:max_chars] + '\n\n...[TRIMMED]...';
-    }
-    return {'url': url, 'markdown': md};
-}
-
-def search_job_requirements(job_title: str) -> str {
-
-    let urls = search_job_urls(job_title);
-    let out = [];
-
-    for url in urls {
-        try {
-            let md = extract_markdown(url);
-
-            out.append({
-                "url": url,
-                "markdown": md
-            });
-
-        } except Exception as e {
-            out.append({
-                "url": url,
-                "markdown": f"ERROR: {e}"
-            });
-        }
-    }
-
-    return json.dumps(out);
-}
-
-def fetch_careerjet_descriptions(job_title: str) -> str {
-
-    let hostname = 'search.api.careerjet.net';
-    let path = '/v4/query';
-    let api_key = 'cc5638024c6473dc2afe1dc8633ed5b1';
-
-    let params = {
-        'locale_code': 'en_US',
-        'keywords': job_title,
-        'location': '',
-        'user_ip': '154.159.237.212',
-        'user_agent': 'Mozilla/5.0',
-        'fragment_size': 1000,
-        'page_size': 50,
-        'page': 1,
-        'sort': 'date'
-    };
-
-    let headers = {
-        'content-type': 'application/json',
-        'Referer': 'https://www.agriscan.jhubafrica.com/find-jobs/'
-    };
-
-    try {
-        let resp = requests.get(
-            url=f'https://{hostname}{path}',
-            params=params,
-            auth=(api_key, ''),
-            headers=headers,
-            timeout=10
-        );
-
-        let data = resp.json();
-
-        let descriptions = [
-            job.get('description', '')
-            for job in data.get('jobs', [])
-            if ('description' in job)
-        ];
-
-        # Return as JSON string (required for LLM tools)
-        return json.dumps({
-            "descriptions": descriptions
-        });
-
-    } except Exception as e {
-        return json.dumps({
-            "error": str(e)
-        });
-    }
-}
-
-#Learning path tools
-def is_valid_url(url: str) -> bool {
-    let invalid_hosts = [
-        "facebook.com",
-        "twitter.com",
-        "linkedin.com",
-        "youtube.com",
-        "pinterest.com",
-        "instagram.com",
-    ];
-
-    for host in invalid_hosts {
-        if host in url {
-            return False;
-        }
-    }
-
-    if ("utm_" in url) or ("redirect" in url) {
-        return False;
-    }
-
-    return True;
-}
-
-
-def search_urls(search_phrase: str, limit: int = 10) -> list {
-    let url = "https://google.serper.dev/search";
-    let headers = {
-        "X-API-KEY": SERPER_API_KEY,
-        "Content-Type": "application/json",
-    };
-
-    # Replace job-title prompt with general-purpose Web search phrase
-    let payload = {
-        "q": f"{search_phrase} learning resources required skills certifications 2025"
-    };
-
-    let resp = requests.post(url, json=payload, headers=headers);
-
-    if resp.status_code != 200 {
-        raise Exception(f"Serper error {resp.status_code}: {resp.text}");
-    }
-
-    let data = resp.json();
-    let urls = [];
-
-    if "organic" in data {
-        for item in data["organic"] {
-            let link = item.get("link");
-            if link and is_valid_url(link) {
-                urls.append(link);
-            }
-        }
-    }
-
-    # Remove duplicates while keeping order
-    let deduped = [];
-    for u in urls {
-        if u not in deduped {
-            deduped.append(u);
-        }
-    }
-
-    return deduped[:limit];
-}
-
-
-def extract_markdown(url: str, max_chars: int = 5000) -> dict {
-    let doc = firecrawl.scrape(url, formats=["markdown"]);
-
-    let md = getattr(doc, "markdown", "");
-    if not isinstance(md, str) {
-        md = "";
-    }
-
-    if len(md) > max_chars {
-        md = md[:max_chars] + "\n\n...[TRIMMED]...";
-    }
-
-    return {
-        "url": url,
-        "markdown": md,
-    };
-}
-
-
-def search_learning_resources(search_phrase: str) -> str {
-    let urls = search_urls(search_phrase);
-    let out = [];
-
-    for url in urls {
-        try {
-            let md = extract_markdown(url);
-            out.append(md);
-        } except Exception as e {
-        }
-    }
-
-    return json.dumps(out);
-}
-
-# URL validity
-def is_learning_url(url: str) -> bool {
-    let banned_hosts = [
-        "facebook.com",
-        "twitter.com",
-        "instagram.com",
-        "reddit.com",
-        "pinterest.com",
-        "tiktok.com",
-        "linkedin.com",   # remove for learning?
-        "youtube.com"     # remove if you don’t want video resources
-    ];
-
-    for host in banned_hosts {
-        if host in url {
-            return False;
-        }
-    }
-
-    if ("utm_" in url) or ("redirect" in url) {
-        return False;
-    }
-
-    return True;
-}
-
-#Search Reliable Learning URLs ONLY
-def search_learning_links(search_phrase: str, limit: int = 10) -> list {
-    let url = "https://google.serper.dev/search";
-    let headers = {
-        "X-API-KEY": SERPER_API_KEY,
-        "Content-Type": "application/json"
-    };
-
-    # Focus search specifically on learning resources
-    let payload = {
-        "q": f"{search_phrase} best tutorials official documentation step-by-step course learning guide 2025"
-    };
-
-    let resp = requests.post(url, json=payload, headers=headers);
-
-    if resp.status_code != 200 {
-        raise Exception(f"Serper error {resp.status_code}: {resp.text}");
-    }
-
-    let results = resp.json();
-    let collected = [];
-
-    if "organic" in results {
-        for hit in results["organic"] {
-            let link = hit.get("link");
-
-            if link and is_learning_url(link) {
-                collected.append(link);
-            }
-        }
-    }
-
-    # Cleanup: remove duplicates
-    let deduped = [];
-    for u in collected {
-        if u not in deduped {
-            deduped.append(u);
-        }
-    }
-
-    return deduped[:limit];
-}
-
-
-
-
-# Backend Models
-node Memory {
-    has email: str = "";
-    has full_name: str = "";
-    has resume_uploaded: bool = False;
-    
-}
-
-node Resume {
-    has name: str = "";
-    has file_path: str = "";
-    has mime: str = "";
-    has content: any = None;   # will store decoded bytes
-}
-
-node Skill {
-    has name: str = "";
-    has description: str = "";
-}
-
-node Role {
-    has title: str = "";
-    has description: str = "";
-}
-
-node Course {
-    has title: str = "";
-    has provider: str = "";
-}
-
-node Certification {
-    has title: str = "";
-    has provider: str = "";
-    has url: str = "";
-}
-
-node Interest {
-    has name: str = "";
-    has description: str = "";
-}
-
-node RequirementsGap {
-    has role_title: str = "";
-    has initial_gap: int = 0;
-    has progress: int = 0;
-}
-
-# learning path node
-node LearningPath {
-    has role_title: str = "";
-    has learning_path: str = "";
-}
-
-# Used by get_user_profile agent to aggregate user's skills. interests and certifications and report back to FE
-node End{
-    has user_profile: UserProfile = UserProfile([], [], []);
-
-    can aggregate_user_info with get_user_profile entry {
-        self.user_profile = visitor.user_profile;
-        print("Finished Aggregating User Profile...Now reporting..\n");
-        report {
-            "status": "Success",
-            "message": "User profile fetched successfully",
-            "body": {
-                "skills": [
-                    {"name": s.name, "description": s.description}
-                    for s in self.user_profile.skills
-                ],
-                "interests": [
-                    {"name": i.name, "description": i.description}
-                    for i in self.user_profile.interests
-                ],
-                "certifications": [
-                    {
-                        "title": c.title,
-                        "provider": c.provider,
-                        "url": c.url
-                    }
-                    for c in self.user_profile.certifications
-                ]
-            }
-        };
-    }
-}
-
-# User profile object
-obj UserProfile {
-    has skills: list[Skill];
-    has certifications: list[Certification];
-    has interests: list[Interest];
-}
-
-# Role requires skills and certifications
-obj RoleProfile {
-    has skills: list[Skill];
-    has certifications: list[Certification];
-}
-
-
-
-
-
-# Relationships
-edge skilled_in {}
-edge has_certification {}
-edge interested_in {}
-edge requires_skill {}
-edge requires_certification {}
-edge has_skill_gap {}
-edge has_certification_gap {}
-
-
 # Agents
+
 # Initialize Memory for a new user
 walker initialize_memory {
     has email: str = "";
@@ -808,7 +346,7 @@ walker get_user_details {
 }
 
 
-# create and store user profile (Internal API: used by analyze_cv agent)
+# create and store user profile
 walker create_user_graph {
     has user_profile: UserProfile = UserProfile([], [], []);
 
@@ -871,7 +409,7 @@ walker generate_role_suggestions {
     has user_profile: UserProfile = UserProfile([], [], []);
 
     """
-    Analyze the user’s skills, interests, and certifications. Suggest top 5 realistic career roles that match their strengths.
+    Analyze the user’s skills, interests, and certifications. Suggest top 3 realistic career roles that match their strengths.
     Each role must include a short title and a concise description explaining why the user is a good fit.
     Avoid generic suggestions and prioritize roles where the user's skill combination provides a clear advantage.
     """
@@ -983,7 +521,7 @@ walker generate_role_suggestions {
 }
 
 
-# Retrieve user profile i.e skills, interests and certification
+# Retrieve user profile
 walker get_user_profile {
     has user_profile: UserProfile = UserProfile([], [], []);
 
@@ -1054,7 +592,7 @@ walker get_user_profile {
 
 }
 
-# Update user profile i.e add/remove skills, interests and certs
+# Update user profile
 walker update_user_profile {
 
     has updated_skills: list[dict] = [];
@@ -1092,12 +630,6 @@ walker update_user_profile {
             if not [-->(`?Skill)](?name==name) {
                 let new_skill = Skill(name=name, description=desc);
                 here +>:skilled_in:+> new_skill;
-
-                # delete newly added skill from skill gap graph if it exists
-                root spawn update_skill_gap_graph(
-                    completed_skills=[name]
-                );
-
                 report {
                     "status": "Success",
                     "message": "Skill added successfully",
@@ -1213,11 +745,6 @@ walker update_user_profile {
             if not [-->(`?Certification)](?title==title) {
                 let new_cert = Certification(title=title, provider=provider, url=url);
                 here +>:has_certification:+> new_cert;
-                
-                # Delete newly acquired certification from certification gap graph
-                root spawn update_skill_gap_graph(
-                    completed_certifications=[title]
-                );
 
                 report {
                     "status": "Success",
@@ -1317,8 +844,7 @@ walker delete_user_profile {
     }
 }
 
-# Target role Agents
-# create role requirements graph (Skills and certs required for a particular role)
+# create role requirements graph
 walker create_role_requirements_graph {
     has role_title: str = "";
     has role_description: str = "";
@@ -1385,7 +911,7 @@ walker create_role_requirements_graph {
 }
 
 
-# retrieve roles from graph (Traverse target role graph and retrieve required certs and skills)
+# retrieve roles from graph 
 walker get_all_role_requirements {
     has role_title: str = "";
     has required_skills: list = [];
@@ -1398,7 +924,7 @@ walker get_all_role_requirements {
         visit [-->(`?Role)](?title==self.role_title) else {
             report {
                 "status": "Fail",
-                "message": "No such role found",
+                "message": "No Role nodes found",
                 "body": {}
             };
             disengage;
@@ -1431,7 +957,7 @@ walker get_all_role_requirements {
     }
 }
 
-# Fetch live skills and certs from the web for a given target role
+# Fetch live skills and certs fron the web for a given role
 walker collect_role_requirements {
     has role_title: str = "";
     has role_description: str = "";
@@ -1569,7 +1095,7 @@ walker collect_role_requirements {
 }
 
 
-# find skill gaps for a given role (Internal) (Compare target role graph and user profile)
+# find skill gaps for a given role
 walker find_skill_and_certification_gaps {
     
     has role_title: str = "";
@@ -1687,42 +1213,29 @@ walker find_skill_and_certification_gaps {
             role_title=self.role_title
         );
 
-        #if saved_gaps.gaps {
-        #    report {
-        #        "status": "Success",
-        #        "message": "Skills and certifications gaps graph saved to memory.", 
-        #        "body": {}
-        #    };
-        #}
+        if saved_gaps.gaps {
+            report {
+                "status": "Success",
+                "message": "Skills and certifications gaps graph saved to memory.", 
+                "body": {}
+            };
+        }
     }
 
 }
-
-# create skill-and-cert gap graph (Fully Internal)
+# create skill gap graph
 walker create_skill_gap_graph {
     has gaps: RoleProfile = RoleProfile([], []);
     has role_title: str = "";
-    has initial_gap: int = 0;
-    has cert_count: int = 0;
-    has skill_count: int = 0;
 
     can create_requirements_gap_node with `root entry {
         print("Creating RG node..\n");
-
-        if [-->(`RequirementsGap)](?role_title==self.role_title){
-            report {
-                "status": "Fail",
-                "message": "Skill Gap Graph Already Exists!",
-                "body": {}
-            };
-            disengage;
-        }
 
         let requirements_node = RequirementsGap(role_title=self.role_title);
         here ++> requirements_node;
 
         print("Visiting requirements gap...\n");
-        visit [-->(`?RequirementsGap)](?role_title==self.role_title);
+        visit [-->(`?RequirementsGap)];
     }
 
     can create_role_requirements_gap_graph with RequirementsGap entry {
@@ -1730,8 +1243,8 @@ walker create_skill_gap_graph {
 
         if not self.gaps {
             report {
-                "status": "Fail",
-                "message": "No gaps provided!",
+                "status": "warning",
+                "message": "No gaps provided",
                 "body": {}
             };
             disengage;
@@ -1747,7 +1260,6 @@ walker create_skill_gap_graph {
         else {
             for skill in self.gaps.skills {
                 here +>:has_skill_gap:+> skill;
-                self.skill_count += 1;
             }
 
             report {
@@ -1767,7 +1279,6 @@ walker create_skill_gap_graph {
         else {
             for cert in self.gaps.certifications {
                 here +>:has_certification_gap:+> cert;
-                self.cert_count += 1;
             }
 
             report {
@@ -1776,15 +1287,11 @@ walker create_skill_gap_graph {
                 "body": {}
             };
         }
-
-        # Update progress
-        self.initial_gap = self.cert_count + self.skill_count;
-        here.initial_gap = self.initial_gap;
     }
    
 }
 
-# update Skill gap graph.
+# update Skill gap graph. Takes in a list of completed skill names and cert names and specific role title
 walker update_skill_gap_graph {
     has completed_skills: list = [];
     has completed_certifications: list = [];
@@ -1792,7 +1299,7 @@ walker update_skill_gap_graph {
 
     can visit_requirements_gap with `root entry {
         print("Visiting Requirements Gap node to update skill gaps...\n");
-        visit [-->(`?RequirementsGap)] else {
+        visit [-->(`?RequirementsGap)](?role_title==self.role_title) else {
             report {
                 "status": "Fail",
                 "message": "No Requirements Gap node found",
@@ -1850,7 +1357,7 @@ walker update_skill_gap_graph {
 
 }
 
-# adds completed skills  to main user profile graph (Fully Internal)
+#adds completed skills to users main skill graph
 walker add_completed_skill_to_user_profile {
     has completed_skill: Skill = Skill("", "");
 
@@ -1896,7 +1403,7 @@ walker add_completed_skill_to_user_profile {
         }
     }
 }
-# Add completed certifications to user's main profile graph (Fully Internal)
+# Add completed certifications to user's main skill graph
 walker add_completed_certification_to_user_profile {
     has completed_certification: Certification = Certification("", "", "");
 
@@ -1943,41 +1450,7 @@ walker add_completed_certification_to_user_profile {
     }
 }
 
-# Check skill/certification progress
-walker check_progress {
-    has current_gap: int = 0;
-    has role_title: str = "";
 
-    can visit_requirements_gap_node with `root entry {
-        visit [-->(`?RequirementsGap)](?role_title==self.role_title) else {
-            report {
-                "status": "Fail",
-                "message": "Progress for the specified role could not be fetched!",
-                "body": {}
-            };
-            disengage;
-        }
-    }
-
-    can check_learning_progress with RequirementsGap entry {
-        self.current_gap = len([-->]);
-        try {
-            here.progress = 1 - (self.current_gap / here.initial_gap) * 100;
-            report {
-                "status": "Success",
-                "message": "Progress retrieved successfully!",
-                "body": {here.progress}
-            };
-        } except Exception as e {
-            report {
-                "status": "Fail",
-                "message": "Could not fetch progress: " + str(e),
-                "body": {}
-            };
-        }
-
-    }
-}
 
 # recommend learning paths to fill skill gaps
 walker recommend_learning_paths {
@@ -2160,8 +1633,7 @@ walker recommend_learning_paths {
         );
 
         # cease operation if gaps are not fetched
-        if fetched_gaps == None or fetched_gaps.gaps == None or (len(fetched_gaps.gaps.skills == 0) and 
-        len(fetched_gaps.gaps.certifications == 0)) {
+        if fetched_gaps == None or fetched_gaps.gaps == None {
             print("ERROR: Failed to fetch skill and certification gaps.\n");
             report {
                 "status": "Fail",
@@ -2270,11 +1742,4 @@ walker recommend_learning_paths {
         }
 
     }
-}
-
-with entry {
-    load_dotenv();
-    let SERPER_API_KEY = os.getenv('SERPER_API_KEY');
-    let FIRECRAWL_API_KEY = os.getenv('FIRECRAWL_API_KEY');
-    let firecrawl = FirecrawlApp(api_key=FIRECRAWL_API_KEY);
 }
