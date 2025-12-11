@@ -33,7 +33,6 @@ function Auth() {
     } else {
       setError("Wrong email or password");
     }
-    navigate("/dashboard");
   }
   async function handleSignup(e) {
     e.preventDefault();

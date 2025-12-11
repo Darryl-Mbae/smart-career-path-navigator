@@ -1,7 +1,10 @@
-cl import from react { useState }
-cl import from 'lucide-react' { Mail, LogOut,  Puzzle, Briefcase, Map }
+cl import from react { useState ,useEffect, useRef}
+cl import from 'lucide-react' { Mail, LogOut,  Puzzle, Briefcase, Map, Send }
 cl import from "@jac-client/assets/images/jaseci.webp" { default as jaseciImg }
-
+cl import from '@jac-client/utils' {
+    useNavigate,
+    jacIsLoggedIn
+}
 
 
 cl {
@@ -11,6 +14,12 @@ cl {
         let [activeLink, setActiveLink] = useState("dashboard"); 
         let [selectedSkills, setSelectedSkills] = useState([]);
         let [selectedRoles, setSelectedRoles] = useState([]);
+        let [userDetails, setUserDetails] = useState([]);
+        let [skills,setSkills] = useState([]);
+        let [userRoles,setUserRoles] = useState([]);
+        let [isLoading, setIsLoading] = useState(false);
+        let [userSkillgap, setUserSkillGap] = useState([]);
+
         
         let [notifications, setNotifications] = useState([
             {id: 1, type: "message", title: "New message from Jane", description: "Hey, just wanted to follow up on our meeting yesterday.", time: "2 hours ago", read: false},
@@ -21,6 +30,7 @@ cl {
 
         let [selectedNotification, setSelectedNotification] = useState(null);        
         let unreadCount = notifications.filter(lambda n:any -> bool { return n.read == false; }).length;
+        let navigate = useNavigate();
 
         let baseLinkClasses = "flex items-center gap-3 px-4 py-3 rounded-lg transition-all cursor-pointer ";
         let dashboardClasses = "bg-primary text-white" if activeLink == "dashboard" else "text-gray-300 hover:bg-[#101010ff] hover:text-white";
@@ -28,10 +38,95 @@ cl {
         let skillsClasses = "bg-primary text-white" if activeLink == "skills" else "text-gray-300 hover:bg-[#101010ff] hover:text-white";
         let rolesClasses = "bg-primary text-white" if activeLink == "roles" else "text-gray-300 hover:bg-[#101010ff] hover:text-white";
         let roadmapClasses = "bg-primary text-white" if activeLink == "roadmap" else "text-gray-300 hover:bg-[#101010ff] hover:text-white";
-        let quizzesClasses = "bg-primary text-white" if activeLink == "quizzes" else "text-gray-300 hover:bg-[#101010ff] hover:text-white";
+        let ariseaiClasses = "bg-primary text-white" if activeLink == "ariseai" else "text-gray-300 hover:bg-[#101010ff] hover:text-white";
 
-        let devSkills = ["JavaScript", "Python", "React", "Node.js", "TypeScript", "HTML & CSS", "Django", "Flutter", "Git & GitHub", "SQL & Databases", "REST APIs", "GraphQL", "Docker", "Agile & Scrum"];
         let devRoles = ["Frontend Developer", "Backend Developer", "Fullstack Developer", "Mobile Developer", "DevOps Engineer", "UI/UX Designer", "Data Scientist", "Machine Learning Engineer"];
+
+
+        async def getUserDetails() -> None {
+            try {
+                let result = await root spawn get_user_details();
+                let profile = await root spawn get_user_profile();
+                let data = profile.reports[0].body.skills;
+                let skillNames = data.map(lambda skill:any -> any { return skill.name; });
+
+                setSelectedSkills(skillNames);
+                setUserDetails(result.reports[0].body);
+
+                
+            } except Exception as err {
+                console.log(err);
+                navigate("/onboarding");
+            }
+        }
+        async def getSkillGap() -> None {
+            try {
+                let data = await root spawn get_user_target_roles();
+                let roles = data.reports[0].body.roles;
+
+                setUserRoles(roles);
+
+
+                for role in roles {
+                    let result = await root spawn retrieve_skill_gaps(
+                        role_title=role.title
+                    );
+                    console.log(result);
+                    setUserSkillGap(userSkillgap.concat(result));
+                }     
+            } except Exception as err {
+                console.log(err);
+                navigate("/onboarding");
+            }
+        }
+
+        useEffect(lambda -> None {
+            # def ProtectedPage() -> any {
+            #     if not jacIsLoggedIn() {
+            #         navigate("/auth");
+                    
+            #     }
+            # }
+
+            getUserDetails();
+            getSkillGap();
+        }, []);
+
+        def LoadingDots() -> any {
+            return <div style={{
+                "display": "flex",
+                "justifyContent": "center",
+                "alignItems": "center",
+                "gap": "6px",
+                "height": "20px"
+            }}>
+                <span className="loading-dot"></span>
+                <span className="loading-dot"></span>
+                <span className="loading-dot"></span>
+            </div>;
+        }
+
+        def handleSaveSkills() -> None {
+            saveSkills();
+        }
+
+        async def saveSkills() -> None {
+            setIsLoading(true);
+            try{
+                let result = await root spawn update_user_profile(
+                    updated_skills=selectedSkills,
+                );
+
+                if result {
+                    console.log(result);
+                    setIsLoading(false);
+                }
+            }
+            except Exception as err {
+                console.log(err);
+            }
+
+        }
 
         def DashSideBar() -> any {
             return <div className="hidden md:flex md:w-64 bg-[#0b0b0b] h-screen flex-col border-r border-gray-800 fixed left-0 top-0">
@@ -50,13 +145,7 @@ cl {
                                     <span>Dashboard</span>
                                 </div>
                             </li>
-                              <li className="mb-[6px]">
-                                <div 
-                                    onClick={lambda e:any -> None { setActiveLink("profile"); setSidebarOpen(false); }}
-                                    className={baseLinkClasses + quizzesClasses}>
-                                    <span>Profile</span>
-                                </div>
-                            </li>
+                             
                             <li className="mb-[6px]">
                                 <div 
                                     onClick={lambda e:any -> None { setActiveLink("roadmap"); }}
@@ -67,9 +156,9 @@ cl {
                             
                             <li className="mb-[6px]">
                                 <div 
-                                    onClick={lambda e:any -> None { setActiveLink("quizzes"); }}
-                                    className={baseLinkClasses + quizzesClasses}>
-                                    <span>Quizzes</span>
+                                    onClick={lambda e:any -> None { setActiveLink("ariseai"); }}
+                                    className={baseLinkClasses + ariseaiClasses}>
+                                    <span>Arise AI</span>
                                 </div>
                             </li> 
                             <li className="mb-[6px]">
@@ -148,13 +237,7 @@ cl {
                                     <span>Dashboard</span>
                                 </div>
                             </li>
-                            <li className="mb-[6px]">
-                                <div 
-                                    onClick={lambda e:any -> None { setActiveLink("profile"); setSidebarOpen(false); }}
-                                    className={baseLinkClasses + quizzesClasses}>
-                                    <span>Profile</span>
-                                </div>
-                            </li>
+
                             <li className="mb-[6px]">
                                 <div 
                                     onClick={lambda e:any -> None { setActiveLink("roadmap"); setSidebarOpen(false); }}
@@ -164,9 +247,9 @@ cl {
                             </li>
                             <li className="mb-[6px]">
                                 <div 
-                                    onClick={lambda e:any -> None { setActiveLink("quizzes"); setSidebarOpen(false); }}
-                                    className={baseLinkClasses + quizzesClasses}>
-                                    <span>Quizzes</span>
+                                    onClick={lambda e:any -> None { setActiveLink("ariseai"); setSidebarOpen(false); }}
+                                    className={baseLinkClasses + ariseaiClasses}>
+                                    <span>Arise AI</span>
                                 </div>
                             </li>
                             <li className="mb-[6px]">
@@ -211,11 +294,11 @@ cl {
                 <div className="p-4 border-t border-gray-800">
                     <div className="flex items-center gap-3 px-4 py-3">
                         <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-semibold">
-                            U
+                            { userDetails.full_name[0]  if userDetails.full_name else 'U'}
                         </div>
                         <div className="flex-1">
-                            <div className="text-white text-sm font-medium">User Name</div>
-                            <div className="text-gray-400 text-xs">user@email.com</div>
+                            <div className="text-white text-sm font-medium">{userDetails.full_name if userDetails.full_name else "Guest"}</div>
+                            <div className="text-gray-400 text-xs">{userDetails.email if userDetails.email else ""}</div>
                         </div>
                     </div>
                 </div>
@@ -227,18 +310,50 @@ cl {
                 
                 <div className="flex flex-col items-center mb-6">
                     <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-white font-semibold text-2xl mb-4">
-                        U
+                                                    { userDetails.full_name[0]  if userDetails.full_name else 'U'}
                     </div>
-                    <div className="text-white font-medium">User Name</div>
-                    <div className="text-gray-400 text-sm">user@email.com</div>
+                    <div className="text-white font-medium">{userDetails.full_name if userDetails.full_name else "Guest"}</div>
+                    <div className="text-gray-400 text-sm">{userDetails.email if userDetails.email else ""}</div>
                 </div>
                 <div>
                    <h3 className="mt-4 text-base font-normal text-gray-300 mb-6">Skills Insight</h3>
                     <div className="h-[27vh] w-full bg-[black] rounded-md"></div>
                 </div>
-                <div>
-                   <h3 className="mt-4 text-base font-normal text-gray-300 mb-6">Recommendations</h3>
-                    <div className="h-[27vh] w-full bg-[black] rounded-md"></div>
+                 <div>
+                    <h3 className="mt-4 text-base font-normal text-gray-300 mb-4">My CV</h3>
+                    <div className="w-full flex flex-col gap-4">
+                        <div 
+                            onClick={lambda -> None { 
+                                # Add your view/open CV logic here
+                                console.log("Open CV clicked");
+                            }}
+                            className="flex items-start gap-3 p-3 bg-[black] rounded-lg hover:bg-[#1a1a1a] transition-colors cursor-pointer"
+                         >
+                            <div className="w-12 h-12 bg-red-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <div className="text-white font-medium text-sm mb-1 truncate">
+                                    Ven_CV_25.pdf
+                                </div>
+                                <div className="text-gray-500 text-xs">
+                                    Last updated: Dec 10, 2025
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button 
+                            onClick={lambda -> None { 
+                                # Add your update CV logic here
+                                console.log("Update CV clicked");
+                            }}
+                            className="w-full px-4 py-4 bg-primary text-white rounded-lg hover:bg-opacity-80 transition-all border-none cursor-pointer font-medium text-sm mt-auto"
+                        >
+                            Update CV
+                        </button>
+                    </div>
                 </div>
             </div>;
         }
@@ -297,7 +412,7 @@ cl {
                     <button 
                         onClick={props.onSave}
                         className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-opacity-80 transition-all border-none cursor-pointer font-semibold">
-                        Save Changes
+                            { LoadingDots() if isLoading else "Save Changes"}
                     </button>
                 </div>
 
@@ -354,7 +469,7 @@ cl {
                             </div>
                         </div>
                     )}
-
+                    {
                     <div className="w-full md:w-[80%]">
                         <div className="text-gray-400 text-sm mb-2">{props.availableLabel}</div>
                         <div className="flex flex-wrap gap-2 overflow-y-auto max-h-[40vh]">
@@ -377,6 +492,8 @@ cl {
                             )}
                         </div>
                     </div>
+
+                    if  not props.availableItems == "none" else ""}
                 </div>
             </div>;
         }
@@ -418,7 +535,7 @@ cl {
                 {activeLink == "dashboard" && (
                     <div>
                         <h1 className="text-2xl md:text-3xl font-bold text-white mb-6">Welcome Back!</h1>
-                        <div className="grid grid-cols-1 md:grid-cols-[70%_30%] gap-4 md:gap-1">
+                        <div className="grid grid-cols-1 md:grid-cols-[72%_28%] gap-4 md:gap-1">
                            <div className="w-[98%] h-[35vh] bg-gradient-to-br from-purple-600 to-blue-500 rounded-2xl p-8 flex flex-col justify-between relative overflow-hidden">
                                 <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl"></div>
                                 <div className="absolute bottom-0 right-20 w-40 h-40 bg-white opacity-5 rounded-full blur-2xl"></div>
@@ -441,18 +558,23 @@ cl {
                                     </button>
                                 </div>
                             </div>
-                           <div className="relative h-[35vh] border border-gray-300/30 rounded-lg p-6 overflow-hidden">
+                           <div className="relative h-[35vh] border border-gray-300/30 rounded-lg overflow-hidden">
                                 <img 
                                     src={jaseciImg} 
                                     alt="jaseci" 
-                                    className="z-10 absolute inset-0 w-full h-full object-cover"
+                                    className="absolute inset-0 w-full h-full object-cover z-0"
                                 />
-                                <div className="z-50 flex">
-                                    <div className="absolute text-xs top-[10px] right-[10px] rounded-md bg-orange-500 text-white px-3 py-2">Trending</div>
-                                    <button className="cursor-pointer absolute bottom-[15px] left-1/2 -translate-x-1/2 bg-orange-500 text-white rounded-md px-6 py-2 hover:bg-orange-600 transition-colors font-medium w-[90%]">
+                                <div className="relative z-10 flex h-full w-full">
+                                    <div className="absolute text-xs top-[10px] right-[10px] rounded-md bg-orange-500 text-white px-3 py-2">
+                                        Trending
+                                    </div>
+                                    <button 
+                                        onClick={lambda -> None { window.open('https://docs.jaseci.org/learn/tour/', '_blank'); }}
+                                        className="cursor-pointer absolute bottom-[15px] left-1/2 -translate-x-1/2 bg-orange-500 text-white rounded-md px-6 py-2 hover:bg-orange-600 transition-colors font-medium w-[90%]"
+                                    >
                                         Learn Jaseci
                                     </button>                               
-                                    </div>
+                                </div>
                             </div>
 
                         </div>
@@ -475,16 +597,16 @@ cl {
                                 />
                                 <QuickActionCard 
                                     color="green"
-                                    title="Roadmap"
-                                    description="View learning path"
+                                    title="Arise AI"
+                                    description="Learn with AI"
                                     icon={<Map className="w-6 h-6" />}
-                                    onClick={lambda e:any -> None { setActiveLink("roadmap"); }}
+                                    onClick={lambda e:any -> None { setActiveLink("ariseai"); }}
                                 />
                             </div>
                         </div>
     
                         <div>
-                            <h3 className="mt-4 text-base font-normal text-gray-300 mb-6">Quizes</h3>
+                            <h3 className="mt-4 text-base font-normal text-gray-300 mb-6">My Roadmaps</h3>
                         </div>
                     </div>
                 )}
@@ -583,11 +705,7 @@ cl {
 
                                 <div className="rounded-lg">
                                     {notifications.map(lambda notification:any -> any {
-                                        let iconBg = "bg-orange-500" if notification.type == "message" else (
-                                            "bg-blue-500" if notification.type == "event" else (
-                                                "bg-green-500" if notification.type == "success" else "bg-yellow-500"
-                                            )
-                                        );
+                                        let iconBg = "bg-none";
                                         
                                         let isUnread = notification.read == false;
                                         
@@ -658,10 +776,10 @@ cl {
                         placeholder="Search or type a skill and press Enter"
                         selectedLabel="Selected Skills"
                         availableLabel="Available Skills"
-                        availableItems={devSkills}
+                        availableItems="none"
                         selectedItems={selectedSkills}
                         setSelectedItems={setSelectedSkills}
-                        onSave={lambda -> None {}}
+                        onSave={handleSaveSkills}
                     />
                 )}
 
@@ -686,12 +804,155 @@ cl {
                     </div>
                 )}
 
-                {activeLink == "quizzes" && (
-                    <div>
-                        <h1 className="text-2xl md:text-3xl font-bold text-white mb-6">Quizzes</h1>
-                        <p className="text-gray-400">Test your knowledge</p>
-                    </div>
+                {activeLink == "ariseai" && (
+                   <ChatBot/>
                 )}
+            </div>;
+        }
+        
+        def ChatBot() -> any {
+
+            let [messages, setMessages] = useState([
+                {
+                id: 1,
+                type: 'bot',
+                content: 'Hello! I\'m Arise AI. How can I help you with your learning journey today?',
+                timestamp: "12:00"
+                }
+            ]);
+            let [inputValue, setInputValue] = useState('');
+            let [isTyping, setIsTyping] = useState(false);
+            let messagesEndRef = useRef(null);
+
+            def scrollToBottom() -> None {
+                messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }
+
+            useEffect(lambda -> None {
+                scrollToBottom();
+            }, [messages, isTyping]);
+
+            def handleSendMessage() -> None {
+                if (inputValue.trim() == '') {
+                    return;
+                }
+
+                let userMessage = {
+                    id: messages.length + 1,
+                    type: 'user',
+                    content: inputValue,
+                    timestamp: "12:14"
+                };
+
+                setMessages(lambda prev:any -> any { return prev.concat([userMessage]); });
+                setInputValue('');
+                setIsTyping(true);
+
+                setTimeout(lambda -> None {
+                    let botResponses = [
+                        "That's a great question! Let me help you with that.",
+                        "I understand. Here's what I can tell you about that topic.",
+                        "Interesting! Based on your skills, I'd recommend focusing on...",
+                        "Let me break that down for you step by step.",
+                        "That's an excellent area to explore. Here are some resources..."
+                    ];
+
+                    let botMessage = {
+                        id: messages.length + 2,
+                        type: 'bot',
+                        content: botResponses[Math.floor(Math.random() * botResponses.length)],
+                        timestamp: "12:65"
+                    };
+
+                    setMessages(lambda prev:any -> any { return prev.concat([botMessage]); });                     
+                    setIsTyping(false);
+                }, 2000);
+            }
+
+
+            def TypingIndicator() -> any {
+                return <div className="flex items-start gap-3 mb-4">
+                    <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
+                        <span className="text-white text-sm font-semibold">AI</span>
+                    </div>
+                    <div className="bg-[#1a1a1a] rounded-2xl rounded-tl-sm px-6 py-3 max-w-[80%]">
+                        <div style={{
+                            "display": "flex",
+                            "justifyContent": "center",
+                            "alignItems": "center",
+                            "gap": "6px",
+                            "height": "20px"
+                        }}>
+                            <span className="loading-dot"></span>
+                            <span className="loading-dot"></span>
+                            <span className="loading-dot"></span>
+                        </div>
+                    </div>
+                </div>;
+            }
+
+
+            return <div className="flex flex-col h-[calc(100vh-3rem)]">
+                <div className="mb-12">
+                    
+                </div>
+                <div className="flex-1 overflow-y-auto mb-4 pr-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
+                    {messages.map(lambda message:any -> any {
+                        console.log(message);
+                        let messageBase = "flex items-start gap-3 mb-4";
+                        let messageAlign = 'flex-row-reverse' if message.key == 'user' else '';
+                        
+                        let avatarBase = "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0";
+                        let avatarColor = 'bg-purple-600' if message.key == 'user' else 'bg-purple-600';
+                        
+                        let bubbleBase = "rounded-2xl px-4 py-3";
+                        let bubbleStyle = 'bg-purple-600 text-white rounded-tr-sm' if message.key == 'user' else 'bg-[#1a1a1a] text-gray-100 rounded-tl-sm';
+                        
+                        let timestampBase = "text-xs text-gray-500 mt-1";
+                        let timestampAlign = 'text-right' if message.key == 'user' else 'text-left';
+                        
+                        return <div key={message.id} className={messageBase + " " + messageAlign}>
+                            <div className={avatarBase + " " + avatarColor}>
+                                <span className="text-white text-sm font-semibold">
+                                    {'U' if message.key == 'user' else 'AI'}
+                                </span>
+                            </div>
+                            <div className="flex flex-col max-w-[80%]">
+                                <div className={bubbleBase + " " + bubbleStyle}>
+                                    <p className="text-sm leading-relaxed">{message.content}</p>
+                                </div>
+                                <span className={timestampBase + " " + timestampAlign}>
+                                    {message.timestamp}
+                                </span>
+                            </div>
+                        </div>;
+                    })}
+                    {TypingIndicator() if isTyping else ""}
+                    <div ref={messagesEndRef} />
+                </div>
+                <div className="border-t border-gray-800 pt-4">
+                    <div className="relative flex items-center gap-2">
+                        <input
+                            type="text"
+                            value={inputValue}
+                            onChange={lambda e:any -> None { setInputValue(e.target.value); }}
+                            onKeyPress={lambda e:any -> None {
+                                if (e.key == 'Enter' and not e.shiftKey) {
+                                    e.preventDefault();
+                                    handleSendMessage();
+                                }
+                            }}
+                            placeholder="Type your message..."
+                            className="flex-1  border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-purple-600 transition-colors"
+                        />
+                        <button
+                            onClick={lambda e:any -> None { handleSendMessage(); }}
+                            disabled={inputValue.trim() == ''}
+                            className="bg-purple-600 text-white p-3 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
+                            <Send className="w-5 h-5" />
+                        </button>
+                    </div>
+                </div>
             </div>;
         }
 

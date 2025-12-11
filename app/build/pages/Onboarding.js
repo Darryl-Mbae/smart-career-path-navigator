@@ -1,3 +1,4 @@
+function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t["return"] || t["return"](); } finally { if (u) throw o; } } }; }
 function _regenerator() { /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ var e, t, r = "function" == typeof Symbol ? Symbol : {}, n = r.iterator || "@@iterator", o = r.toStringTag || "@@toStringTag"; function i(r, n, o, i) { var c = n && n.prototype instanceof Generator ? n : Generator, u = Object.create(c.prototype); return _regeneratorDefine2(u, "_invoke", function (r, n, o) { var i, c, u, f = 0, p = o || [], y = !1, G = { p: 0, n: 0, v: e, a: d, f: d.bind(e, 4), d: function d(t, r) { return i = t, c = 0, u = e, G.n = r, a; } }; function d(r, n) { for (c = r, u = n, t = 0; !y && f && !o && t < p.length; t++) { var o, i = p[t], d = G.p, l = i[2]; r > 3 ? (o = l === n) && (u = i[(c = i[4]) ? 5 : (c = 3, 3)], i[4] = i[5] = e) : i[0] <= d && ((o = r < 2 && d < i[1]) ? (c = 0, G.v = n, G.n = i[1]) : d < l && (o = r < 3 || i[0] > n || n > l) && (i[4] = r, i[5] = n, G.n = l, c = 0)); } if (o || r > 1) return a; throw y = !0, n; } return function (o, p, l) { if (f > 1) throw TypeError("Generator is already running"); for (y && 1 === p && d(p, l), c = p, u = l; (t = c < 2 ? e : u) || !y;) { i || (c ? c < 3 ? (c > 1 && (G.n = -1), d(c, u)) : G.n = u : G.v = u); try { if (f = 2, i) { if (c || (o = "next"), t = i[o]) { if (!(t = t.call(i, u))) throw TypeError("iterator result is not an object"); if (!t.done) return t; u = t.value, c < 2 && (c = 0); } else 1 === c && (t = i["return"]) && t.call(i), c < 2 && (u = TypeError("The iterator does not provide a '" + o + "' method"), c = 1); i = e; } else if ((t = (y = G.n < 0) ? u : r.call(n, G)) !== a) break; } catch (t) { i = e, c = 1, u = t; } finally { f = 1; } } return { value: t, done: y }; }; }(r, o, i), !0), u; } var a = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} t = Object.getPrototypeOf; var c = [][n] ? t(t([][n]())) : (_regeneratorDefine2(t = {}, n, function () { return this; }), t), u = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(c); function f(e) { return Object.setPrototypeOf ? Object.setPrototypeOf(e, GeneratorFunctionPrototype) : (e.__proto__ = GeneratorFunctionPrototype, _regeneratorDefine2(e, o, "GeneratorFunction")), e.prototype = Object.create(u), e; } return GeneratorFunction.prototype = GeneratorFunctionPrototype, _regeneratorDefine2(u, "constructor", GeneratorFunctionPrototype), _regeneratorDefine2(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = "GeneratorFunction", _regeneratorDefine2(GeneratorFunctionPrototype, o, "GeneratorFunction"), _regeneratorDefine2(u), _regeneratorDefine2(u, o, "Generator"), _regeneratorDefine2(u, n, function () { return this; }), _regeneratorDefine2(u, "toString", function () { return "[object Generator]"; }), (_regenerator = function _regenerator() { return { w: i, m: f }; })(); }
 function _regeneratorDefine2(e, r, n, t) { var i = Object.defineProperty; try { i({}, "", {}); } catch (e) { i = 0; } _regeneratorDefine2 = function _regeneratorDefine(e, r, n, t) { function o(r, n) { _regeneratorDefine2(e, r, function (e) { return this._invoke(r, n, e); }); } r ? i ? i(e, r, { value: n, enumerable: !t, configurable: !t, writable: !t }) : e[r] = n : (o("next", 0), o("throw", 1), o("return", 2)); }, _regeneratorDefine2(e, r, n, t); }
 function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
@@ -289,6 +290,126 @@ function Onboarding() {
     }));
     return _handleStep2Next.apply(this, arguments);
   }
+  function handleStep3Next() {
+    return _handleStep3Next.apply(this, arguments);
+  }
+  function _handleStep3Next() {
+    _handleStep3Next = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee3() {
+      var finalRoles, _iterator, _step, roleTitle, allSuccessful, roleIndex, _iterator2, _step2, currentRole, result, requirements_gap, requirements_gap_status, learning_path, _t3;
+      return _regenerator().w(function (_context3) {
+        while (1) switch (_context3.p = _context3.n) {
+          case 0:
+            if (!(selectedRoles === null || selectedRoles.length === 0)) {
+              _context3.n = 1;
+              break;
+            }
+            return _context3.a(2);
+          case 1:
+            finalRoles = [];
+            _iterator = _createForOfIteratorHelper(selectedRoles);
+            try {
+              for (_iterator.s(); !(_step = _iterator.n()).done;) {
+                roleTitle = _step.value;
+                finalRoles = finalRoles.concat({
+                  "title": roleTitle,
+                  "description": ""
+                });
+              }
+            } catch (err) {
+              _iterator.e(err);
+            } finally {
+              _iterator.f();
+            }
+            allSuccessful = true;
+            roleIndex = 0;
+            _iterator2 = _createForOfIteratorHelper(finalRoles);
+            _context3.p = 2;
+            _iterator2.s();
+          case 3:
+            if ((_step2 = _iterator2.n()).done) {
+              _context3.n = 11;
+              break;
+            }
+            currentRole = _step2.value;
+            roleIndex += 1;
+            console.log("Processing Role ".concat(roleIndex, "/").concat(finalRoles.length, ":"), currentRole);
+            _context3.n = 4;
+            return __jacSpawn("collect_role_requirements", "", {
+              "role_title": currentRole.title
+            });
+          case 4:
+            result = _context3.v;
+            console.log("Role requirements collected:");
+            console.log(result.reports[0]);
+            if (!(result.reports[0]["status"] === "Success")) {
+              _context3.n = 9;
+              break;
+            }
+            _context3.n = 5;
+            return __jacSpawn("find_skill_and_certification_gaps", "", {
+              "role_title": currentRole.title
+            });
+          case 5:
+            requirements_gap = _context3.v;
+            requirements_gap_status = requirements_gap.reports[requirements_gap.reports.length - 1]["status"];
+            if (!(requirements_gap_status === "Success")) {
+              _context3.n = 7;
+              break;
+            }
+            console.log("Skill Gaps for ".concat(currentRole.title, ": "));
+            console.log(requirements_gap.reports[requirements_gap.reports.length - 4]);
+            _context3.n = 6;
+            return __jacSpawn("recommend_learning_paths", "", {
+              "role_title": currentRole.title
+            });
+          case 6:
+            learning_path = _context3.v;
+            console.log("Learning Path for ".concat(currentRole.title, ": "));
+            console.log(learning_path.reports[learning_path.reports.length - 1]["body"]["learning_path"]);
+            _context3.n = 8;
+            break;
+          case 7:
+            allSuccessful = false;
+            console.log("Failed to find skill gaps for ".concat(currentRole.title));
+          case 8:
+            _context3.n = 10;
+            break;
+          case 9:
+            allSuccessful = false;
+            console.log("Failed to collect requirements for ".concat(currentRole.title));
+          case 10:
+            _context3.n = 3;
+            break;
+          case 11:
+            _context3.n = 13;
+            break;
+          case 12:
+            _context3.p = 12;
+            _t3 = _context3.v;
+            _iterator2.e(_t3);
+          case 13:
+            _context3.p = 13;
+            _iterator2.f();
+            return _context3.f(13);
+          case 14:
+            if (!allSuccessful) {
+              _context3.n = 15;
+              break;
+            }
+            setCurrentStep(4);
+            setIsLoading(false);
+            _context3.n = 16;
+            break;
+          case 15:
+            console.log("Error");
+            return _context3.a(2);
+          case 16:
+            return _context3.a(2);
+        }
+      }, _callee3, null, [[2, 12, 13, 14]]);
+    }));
+    return _handleStep3Next.apply(this, arguments);
+  }
   function Step(props) {
     var circleBase = "w-[40px] aspect-square rounded-full flex items-center justify-center relative z-10 transition-all duration-200 text-white";
     var circleShadow = props.step.id === currentStep ? "shadow-[0_0_20px_rgba(110,17,176,0.5)]" : "";
@@ -357,7 +478,7 @@ function Onboarding() {
     }, [__jacJsx("div", {
       "className": "text-gray-400 text-sm mb-2"
     }, ["Selected Skills"]), __jacJsx("div", {
-      "className": "flex flex-wrap gap-2"
+      "className": "flex flex-wrap gap-2 max-h-[250px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-500"
     }, [props.selectedInterests.map(function (skill) {
       return __jacJsx("div", {
         "key": skill,
@@ -615,7 +736,9 @@ function Onboarding() {
           handleStep1Next();
         } else if (currentStep === 2) {
           handleStep2Next();
-        } else if (currentStep === 3) {}
+        } else if (currentStep === 3) {
+          handleStep3Next();
+        }
       } else {
         navigate("/dashboard");
       }

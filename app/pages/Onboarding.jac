@@ -203,36 +203,75 @@ cl{
             }
         }
 
-        # async def handleStep3Next() -> None {
-        #     try {
-        #         let result = await root spawn update_user_profile(
-        #             updated_roles=selectedRoles,
-        #         );
+        # Function to handle step 3 role submission
+        async def handleStep3Next() -> None {
+            # If user has NOT selected any roles AND has NOT chosen a custom role
+            if (selectedRoles == None or selectedRoles.length == 0) {
+                return;
+            }
+            
+            # Prepare final roles array
+            let finalRoles = [];
+            
+            
+            for roleTitle in selectedRoles {
+            finalRoles = finalRoles.concat({
+                "title": roleTitle,
+                "description": ""
+            });
+        }
 
-        #         if result {
+            # Process each role
+            let allSuccessful = True;
+            let roleIndex = 0;
+            
+            for currentRole in finalRoles {
+                roleIndex += 1;
+                console.log(f"Processing Role {roleIndex}/{finalRoles.length}:", currentRole);
+                        
+                # Call backend with correct role values
+                result = await root spawn collect_role_requirements(
+                    role_title=currentRole.title,
+                );
+                console.log("Role requirements collected:");
+                console.log(result.reports[0]);
+                
+                # Check if this role was successful
+                if result.reports[0]["status"] == "Success" {
+                    requirements_gap = await root spawn find_skill_and_certification_gaps(
+                        role_title=currentRole.title
+                    );
+                    let requirements_gap_status = requirements_gap.reports[requirements_gap.reports.length - 1]["status"];
+                    
+                    if requirements_gap_status == "Success" {
+                        console.log(f"Skill Gaps for {currentRole.title}: ");
+                        console.log(requirements_gap.reports[requirements_gap.reports.length - 4]);
+                        
+                        learning_path = await root spawn recommend_learning_paths(
+                            role_title=currentRole.title
+                        );
+                        console.log(f"Learning Path for {currentRole.title}: ");
+                        console.log(learning_path.reports[learning_path.reports.length - 1]["body"]["learning_path"]);
+                    } else {
+                        allSuccessful = False;
+                        console.log(f"Failed to find skill gaps for {currentRole.title}");
+                    }
+                } else {
+                    allSuccessful = False;
+                    console.log(f"Failed to collect requirements for {currentRole.title}");
+                }
+            }
+            
+            # Navigate or show error based on results
+            if allSuccessful {
+                setCurrentStep(4);
+                setIsLoading(False);
 
-        #             let rolesReport = await root spawn generate_role_suggestions();
-        #             let latestReport = rolesReport.reports[rolesReport.reports.length - 1];
-
-        #             if latestReport.status == "Success" {
-        #                 # Store the array of suggestions in state
-        #                 setSuggestedRoles(latestReport.body);
-        #             } else {
-        #                 console.log("Failed to generate role suggestions: " + (latestReport.message or "Unknown error"));
-        #             }
-
-        #             setCurrentStep(3);
-
-        #         } else {
-        #             console.log("Failed to save profile. Please try again.");
-        #         }
-
-        #     } except Exception as err {
-        #         console.log(err);
-        #     } finally {
-        #         setIsLoading(False);
-        #     }
-        # }
+            } else {
+                console.log("Error");
+                return;
+            }
+        }
 
 
 
@@ -298,7 +337,7 @@ cl{
                 {props.selectedInterests.length > 0 && (
                     <div className="mb-6">
                         <div className="text-gray-400 text-sm mb-2">Selected Skills</div>
-                        <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap gap-2 max-h-[250px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-500">
                             {props.selectedInterests.map(
                                 lambda skill:any -> any {
                                     return <div 
@@ -586,7 +625,7 @@ cl{
                                     } elif (currentStep == 2) {
                                         handleStep2Next();
                                     } elif (currentStep == 3) {
-                                        # handleStep3Next();
+                                        handleStep3Next();
                                     }
                                     
                                 } else {

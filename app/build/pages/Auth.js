@@ -86,8 +86,6 @@ function Auth() {
           case 4:
             setError("Wrong email or password");
           case 5:
-            navigate("/dashboard");
-          case 6:
             return _context.a(2);
         }
       }, _callee);

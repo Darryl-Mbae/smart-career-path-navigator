@@ -465,7 +465,8 @@ node RequirementsGap {
 # learning path node
 node LearningPath {
     has role_title: str = "";
-    has learning_path: str = "";
+    has learning_path: str = ""; # Actual learning path in markdown format
+    has disk_path: str = ""; # Path where learning path markdown is saved in memory
 }
 
 # Used by get_user_profile agent to aggregate user's skills. interests and certifications and report back to FE
@@ -1120,6 +1121,71 @@ walker get_user_profile {
 
 }
 
+# Retrieve user target roles (Used in dashboard to display user's target roles)
+walker get_user_target_roles {
+    has target_roles: list[Role] = [];
+
+    can fetch_target_roles with `root entry {
+        print("Fetching user target roles from Memory...\n");
+        if not [-->(`?Role)] {
+            report {
+                "status": "Fail",
+                "message": "No target roles found",
+                "body": []
+            };
+            disengage;
+        }
+        else {
+            self.target_roles = [r for r in [-->(`?Role)]];
+            report {
+                "status": "Success",
+                "message": "Target roles fetched successfully",
+                "body": {
+                    "roles": [
+                        {
+                            "title": role.title,
+                            "description": role.description
+                        }
+                        for role in self.target_roles
+                    ]
+                }
+            };
+        }
+
+    }
+}
+
+# Retrieve roadmap for a target role 
+walker get_road_map {
+    has role_title: str = "";
+    has learning_path: str | any = "";
+
+    can fetch_learning_path with `root entry {
+        print("Fetching learning path for role...\n");
+        visit [-->(`?LearningPath)](?role_title == self.role_title) else {
+            report {
+                "status": "Fail",
+                "message": "No learning path found for the specified role",
+                "body": {}
+            };
+            disengage;
+        }
+    }
+
+    can return_learning_path with LearningPath entry {
+        print("Found learning path, reporting...\n");
+        self.learning_path = here.learning_path.encode('utf-8').decode('unicode_escape');
+        report {
+            "status": "Success",
+            "message": "Learning path fetched successfully",
+            "body": {
+                "role_title": here.role_title,
+                "learning_path": self.learning_path
+            }
+        };
+    }
+}
+
 # Update user profile i.e add/remove skills, interests and certs
 walker update_user_profile {
 
@@ -1324,7 +1390,6 @@ walker update_user_profile {
         }
     }
 }
-
 
 # delete entire user profile
 walker delete_user_profile {
@@ -1635,6 +1700,7 @@ walker collect_role_requirements {
 }
 
 
+# Skill Gap Agents
 # find skill gaps for a given role (Internal) (Compare target role graph and user profile)
 walker find_skill_and_certification_gaps {
     
@@ -1753,13 +1819,12 @@ walker find_skill_and_certification_gaps {
             role_title=self.role_title
         );
 
-        #if saved_gaps.gaps {
-        #    report {
-        #        "status": "Success",
-        #        "message": "Skills and certifications gaps graph saved to memory.", 
-        #        "body": {}
-        #    };
-        #}
+            report {
+                "status": "Success",
+                "message": "Skills and certifications gaps graph saved to memory.", 
+                "body": {}
+            };
+        
     }
 
 }
@@ -1773,9 +1838,9 @@ walker create_skill_gap_graph {
     has skill_count: int = 0;
 
     can create_requirements_gap_node with `root entry {
-        print("Creating RG node..\n");
+        
 
-        if [-->(`RequirementsGap)](?role_title==self.role_title){
+        if [-->(`?RequirementsGap)](?role_title==self.role_title){
             report {
                 "status": "Fail",
                 "message": "Skill Gap Graph Already Exists!",
@@ -1784,6 +1849,7 @@ walker create_skill_gap_graph {
             disengage;
         }
 
+        print("Creating RG node..\n");
         let requirements_node = RequirementsGap(role_title=self.role_title);
         here ++> requirements_node;
 
@@ -1962,6 +2028,7 @@ walker add_completed_skill_to_user_profile {
         }
     }
 }
+
 # Add completed certifications to user's main profile graph (Fully Internal)
 walker add_completed_certification_to_user_profile {
     has completed_certification: Certification = Certification("", "", "");
@@ -2044,6 +2111,60 @@ walker check_progress {
 
     }
 }
+
+# Retrieve Skill gap graph
+walker retrieve_skill_gaps {
+    has gaps: RoleProfile = RoleProfile([], []);
+    has role_title: str = "";
+
+    can visit_requirements_gap_node with `root entry {
+        if not [-->(`?RequirementsGap)](?role_title==self.role_title) {
+            report {
+                "status": "Fail",
+                "message": "No gaps for the specified role",
+                "body": {}
+            };
+            disengage;
+        }
+
+        print("Visiting RG Node to retrive gaps...\n");
+        visit [-->(`?RequirementsGap)](?role_title==self.role_title);
+
+    }
+
+    can visit_skills with RequirementsGap entry {
+        print("Visiting Skill gap nodes...\n");
+        visit [-->(`?Skill)];
+    }
+
+    can visit_certs with RequirementsGap entry {
+        print("Visiting  gap nodes...\n");
+        visit [-->(`?Certification)];
+    }
+
+    can retrieve_skills with Skill entry {
+        print("Now at skill node..retrieving..\n");
+        self.gaps.skills.append(here);
+        print("Finished retreiving skills..now reporting..\n");
+        report {
+            "status": "Succcess",
+            "message": "Skill gaps retrieved successfully",
+            "body": self.gaps.skills
+        };
+    }
+
+    can retrieve_certifications with Certification entry {
+        print("Now at cert node..retrieving..\n");
+        self.gaps.certifications.append(here);
+        print("Finished retreiving certs..now reporting..\n");
+        report {
+            "status": "Succcess",
+            "message": "Certification gaps retrieved successfully",
+            "body": self.gaps.certifications
+        };
+    }
+}
+
 
 # recommend learning paths to fill skill gaps
 walker recommend_learning_paths {
@@ -2206,12 +2327,9 @@ walker recommend_learning_paths {
 
             let existing_path = [-->(`?LearningPath)](?role_title==self.role_title);
             report {
-                "status": "Info",
+                "status": "Fail",
                 "message": "Learning path already exists in graph. Fetched from memory.",
-                "body": {
-                    "role_title": existing_path.role_title,
-                    "learning_path": existing_path.learning_path
-                }
+                "body": {}
             };
             disengage;
         }
@@ -2219,15 +2337,12 @@ walker recommend_learning_paths {
     can fetch_gaps with `root entry {
         print("Fetching skill and certification gaps for learning path recommendation...\n");
 
-        let fetched_gaps = root spawn find_skill_and_certification_gaps(
-            role_title=self.role_title,
-            user_profile=None,
-            role_requirements=None
+        let fetched_gaps = root spawn retrieve_skill_gaps(
+            role_title=self.role_title
         );
 
         # cease operation if gaps are not fetched
-        if fetched_gaps == None or fetched_gaps.gaps == None or (len(fetched_gaps.gaps.skills == 0) and 
-        len(fetched_gaps.gaps.certifications == 0)) {
+        if fetched_gaps == None or fetched_gaps.gaps == None {
             print("ERROR: Failed to fetch skill and certification gaps.\n");
             report {
                 "status": "Fail",
@@ -2313,6 +2428,7 @@ walker recommend_learning_paths {
                 f.write(md_content);
             }
             print("Learning path saved to:", file_path, "\n");
+            learning_path.disk_path = file_path;
 
             report {
                 "status": "Success",

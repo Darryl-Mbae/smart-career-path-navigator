@@ -115,6 +115,48 @@ function Onboarding() {
       setIsLoading(false);
     }
   }
+  async function handleStep3Next() {
+    if (selectedRoles === null || selectedRoles.length === 0) {
+      return;
+    }
+    let finalRoles = [];
+    for (const roleTitle of selectedRoles) {
+      finalRoles = finalRoles.concat({"title": roleTitle, "description": ""});
+    }
+    let allSuccessful = true;
+    let roleIndex = 0;
+    for (const currentRole of finalRoles) {
+      roleIndex += 1;
+      console.log(`Processing Role ${roleIndex}/${finalRoles.length}:`, currentRole);
+      let result = await __jacSpawn("collect_role_requirements", "", {"role_title": currentRole.title});
+      console.log("Role requirements collected:");
+      console.log(result.reports[0]);
+      if (result.reports[0]["status"] === "Success") {
+        let requirements_gap = await __jacSpawn("find_skill_and_certification_gaps", "", {"role_title": currentRole.title});
+        let requirements_gap_status = requirements_gap.reports[requirements_gap.reports.length - 1]["status"];
+        if (requirements_gap_status === "Success") {
+          console.log(`Skill Gaps for ${currentRole.title}: `);
+          console.log(requirements_gap.reports[requirements_gap.reports.length - 4]);
+          let learning_path = await __jacSpawn("recommend_learning_paths", "", {"role_title": currentRole.title});
+          console.log(`Learning Path for ${currentRole.title}: `);
+          console.log(learning_path.reports[learning_path.reports.length - 1]["body"]["learning_path"]);
+        } else {
+          allSuccessful = false;
+          console.log(`Failed to find skill gaps for ${currentRole.title}`);
+        }
+      } else {
+        allSuccessful = false;
+        console.log(`Failed to collect requirements for ${currentRole.title}`);
+      }
+    }
+    if (allSuccessful) {
+      setCurrentStep(4);
+      setIsLoading(false);
+    } else {
+      console.log("Error");
+      return;
+    }
+  }
   function Step(props) {
     let circleBase = "w-[40px] aspect-square rounded-full flex items-center justify-center relative z-10 transition-all duration-200 text-white";
     let circleShadow = props.step.id === currentStep ? "shadow-[0_0_20px_rgba(110,17,176,0.5)]" : "";
@@ -138,7 +180,7 @@ function Onboarding() {
         }
         setInputValue("");
       }
-    }, "className": "w-full px-4 py-3 pl-10 bg-[#101010ff] border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#6e11b0] transition-colors"}, []), __jacJsx("svg", {"className": "absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"}, [])])]), props.selectedInterests.length > 0 && __jacJsx("div", {"className": "mb-6"}, [__jacJsx("div", {"className": "text-gray-400 text-sm mb-2"}, ["Selected Skills"]), __jacJsx("div", {"className": "flex flex-wrap gap-2"}, [props.selectedInterests.map(skill => {
+    }, "className": "w-full px-4 py-3 pl-10 bg-[#101010ff] border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#6e11b0] transition-colors"}, []), __jacJsx("svg", {"className": "absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"}, [])])]), props.selectedInterests.length > 0 && __jacJsx("div", {"className": "mb-6"}, [__jacJsx("div", {"className": "text-gray-400 text-sm mb-2"}, ["Selected Skills"]), __jacJsx("div", {"className": "flex flex-wrap gap-2 max-h-[250px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-500"}, [props.selectedInterests.map(skill => {
       return __jacJsx("div", {"key": skill, "className": "bg-primary text-white px-4 py-2 rounded-full text-sm font-medium cursor-pointer flex items-center gap-2 hover:bg-opacity-80 transition-all"}, [skill, __jacJsx("svg", {"onClick": e => {
         props.setSelectedInterests(props.selectedInterests.filter(i => {
           return i !== skill;
@@ -190,7 +232,9 @@ function Onboarding() {
         handleStep1Next();
       } else if (currentStep === 2) {
         handleStep2Next();
-      } else if (currentStep === 3) {}
+      } else if (currentStep === 3) {
+        handleStep3Next();
+      }
     } else {
       navigate("/dashboard");
     }

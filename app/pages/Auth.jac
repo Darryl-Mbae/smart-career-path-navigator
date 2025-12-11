@@ -50,7 +50,6 @@ cl{
                 setError("Wrong email or password");
             }
 
-            navigate("/dashboard");
         }
         async def handleSignup(e: any) -> None {
             e.preventDefault();
