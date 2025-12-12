@@ -63,7 +63,6 @@ cl {
     }
 }
 
-
 import from byllm.lib { Model }
 import from dotenv { load_dotenv }
 import base64;
@@ -1159,31 +1158,110 @@ walker get_user_target_roles {
 walker get_road_map {
     has role_title: str = "";
     has learning_path: str | any = "";
+    has disk_path: str = "";
 
     can fetch_learning_path with `root entry {
-        print("Fetching learning path for role...\n");
-        visit [-->(`?LearningPath)](?role_title == self.role_title) else {
-            report {
-                "status": "Fail",
-                "message": "No learning path found for the specified role",
-                "body": {}
-            };
-            disengage;
+        print("Starting roadmap retrieval...\n");
+
+        if self.role_title != "" {
+            print("Role title provided. Visiting LearningPath node...\n");
+
+            visit [-->(`?LearningPath)](?role_title == self.role_title) else {
+                report {
+                    "status": "Fail",
+                    "message": "No learning path found for the specified role",
+                    "body": {}
+                };
+                disengage;
+            }
+        }
+        else {
+            print("No role title provided. Using provided disk path directly...\n");
+            if not self.disk_path or self.disk_path == "" {
+                report {
+                    "status": "Fail",
+                    "message": "No role title or disk path provided",
+                    "body": {}
+                };
+                disengage;
+            }
+            else {
+                print("Using provided disk path...\n");
+                let path = self.disk_path;
+
+                if os.path.exists(path) {
+                    with open(path, "r", encoding="utf-8") as f {
+                        let content = f.read();
+                    }
+
+                    self.learning_path = content;
+
+                    report {
+                        "status": "Success",
+                        "message": "Learning path fetched successfully",
+                        "body": {
+                            "role_title": self.role_title,
+                            "learning_path": self.learning_path
+                        }
+                    };
+                }
+                else {
+                    report {
+                        "status": "Fail",
+                        "message": "Provided disk path does not exist",
+                        "body": {}
+                    };
+                }
+
+            }
         }
     }
 
     can return_learning_path with LearningPath entry {
-        print("Found learning path, reporting...\n");
-        self.learning_path = here.learning_path.encode('utf-8').decode('unicode_escape');
-        report {
-            "status": "Success",
-            "message": "Learning path fetched successfully",
-            "body": {
-                "role_title": here.role_title,
-                "learning_path": self.learning_path
+        print("Checking stored learning path in LearningPath Node...\n");
+
+        let path = "";
+
+        if not self.disk_path or self.disk_path == "" {
+            print("Using internal path from LearningPath  node...\n");
+            path = here.disk_path;
+        } else {
+            print("Using provided disk path...\n");
+            path = self.disk_path;
+
+        }
+        
+
+        # check if file exists
+        if os.path.exists(path) {
+
+            # read markdown from disk
+            with open(path, "r", encoding="utf-8") as f {
+                let content = f.read();
             }
-        };
+
+            self.learning_path = content;
+
+            report {
+                "status": "Success",
+                "message": "Learning path fetched successfully",
+                "body": {
+                    "role_title": here.role_title,
+                    "learning_path": self.learning_path
+                }
+            };
+
+        } else {
+
+            report {
+                "status": "Fail",
+                "message": "Learning path file missing on disk",
+                "body": {}
+            };
+
+        }
     }
+
 }
 
 # Update user profile i.e add/remove skills, interests and certs
@@ -2316,6 +2394,8 @@ walker recommend_learning_paths {
     Provide enough clarity for a learner to follow with zero ambiguity.
 
     Be extremely detailed and comprehensive.
+
+    Return a blank disk_path because this will be filled later on. 
     """
 
     def suggest_learning_paths(gaps: RoleProfile, user_profile: UserProfile, target_role_requirements: RoleProfile) -> LearningPath
@@ -2416,19 +2496,32 @@ walker recommend_learning_paths {
             if not os.path.exists("learning_paths"){
                 os.makedirs("learning_paths");
             }
+
             # sanitize role title to use as filename
             let safe_title = learning_path.role_title.replace(" ", "_").replace("/", "-");
-            let file_path = "learning_paths/" + safe_title + ".md";
+            let base_path = "learning_paths/" + safe_title + ".md";
+            let file_path = base_path;
+
+            # check if file exists and increment
+            let counter = 1;
+            while os.path.exists(file_path) {
+                let numbered_title = safe_title + "(" + str(counter) + ")";
+                file_path = "learning_paths/" + numbered_title + ".md";
+                counter = counter + 1;
+            }
 
             # convert escaped newlines to real newlines
-            let md_content = learning_path.learning_path.encode('utf-8').decode('unicode_escape');
+            let md_content = learning_path.learning_path.encode("utf-8").decode("unicode_escape");
 
             # write to file
             with open(file_path, "w", encoding="utf-8") as f {
                 f.write(md_content);
             }
+
             print("Learning path saved to:", file_path, "\n");
+
             learning_path.disk_path = file_path;
+
 
             report {
                 "status": "Success",
