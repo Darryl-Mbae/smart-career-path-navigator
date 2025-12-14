@@ -219,7 +219,7 @@ cl{
                 "title": roleTitle,
                 "description": ""
             });
-        }
+            }
 
             # Process each role
             let allSuccessful = True;

@@ -1,5 +1,11 @@
 node_modules
 .env
-jac-env
+jac-env/
 resumes
 learning_paths
+dist/
+build/
+*.session
+*.session.users.json
+__pycache__/
+*.pyc
