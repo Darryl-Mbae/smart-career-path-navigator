@@ -712,6 +712,69 @@ walker save_resume {
     }
 }
 
+# Retrieve resume/cv
+walker retrieve_resume {
+
+    can visit_resume with `root entry {
+        print("Visiting resume node...\n");
+        visit [-->(`?Resume)] else {
+            report {
+                "status": "Fail",
+                "message": "No Resume node found",
+                "body": {}
+            };
+            disengage;
+        }
+    }
+    can retrieve_resume with Resume entry {
+        if not here.file_path or here.file_path == "" {
+            report {
+                "status": "Fail",
+                "message": "No resume file path found",
+                "body": {}
+            };
+            disengage;
+        }
+
+        if not os.path.exists(here.file_path) {
+            report {
+                "status": "Fail",
+                "message": "Resume file does not exist on disk",
+                "body": {}
+            };
+            disengage;
+        }
+
+        # Read file bytes
+        try {
+            with open(here.file_path, "rb") as f {
+                let file_bytes = f.read();
+            }
+        } except Exception as e {
+            print(f"Error reading resume file: {e}");
+            report {
+                "status": "Fail",
+                "message": "Error reading resume file from disk",
+                "body": {}
+            };
+            disengage;
+        }
+
+        # Encode to base64 for transmission
+        let encoded = base64.b64encode(file_bytes).decode('utf-8');
+
+        report {
+            "status": "Success",
+            "message": "Resume retrieved successfully",
+            "body": {
+                "name": here.name,
+                "mime": here.mime,
+                "file_base64": encoded
+            }
+        };
+    }
+}
+
 # analyze CV and report findings to FE
 walker analyze_cv {
     has user_profile: UserProfile = UserProfile([], [], []);
@@ -1648,11 +1711,46 @@ walker collect_role_requirements {
 
     # LLM function: extract skills + certs from title + description
     """
-    You are now a career advisor
-    Use you knowledge, reasoning and the tool `search_job_requirements`  to search the web for skills and
-    certifications required for the given job title. Analyze the tool results
-    and extract only skills and certifications that are relevant and most in demand (i.e those that appear frequently)
-    If a a job title seems to not exist just fill it a most relevant similar role.
+    You are an expert career advisor and labor-market analyst.
+
+    Your task is to determine the most in-demand SKILLS and CERTIFICATIONS for a given job role.
+
+    TOOLS:
+    - You have access to the tool `search_job_requirements`, which searches the web.
+
+    INSTRUCTIONS:
+
+    1. ROLE VALIDATION (FIRST STEP)
+    - Evaluate whether `role_title` represents a real, recognizable job role used in the labor market.
+    - If the role title is clearly gibberish, random text, or not a profession (e.g. "asdasd123", "qwerty job", "!!!"), 
+        immediately return.
+    - Do NOT hallucinate skills for invalid roles.
+
+    2. TOOL-FIRST SEARCH (MANDATORY)
+    - If the role is valid, you MUST attempt to use the tool `search_job_requirements` to gather real-world data.
+    - Search using:
+        - the role_title
+        - and role_description if provided
+    - Prefer recent and commonly referenced sources such as:
+        job descriptions, hiring requirements, professional frameworks, certification bodies.
+
+    3. EXTRACTION & SYNTHESIS
+    - From the tool results:
+        - Identify skills that appear frequently or are clearly emphasized.
+        - Identify certifications that are widely recognized or commonly required/preferred.
+    - Filter out:
+        - Soft or vague traits (e.g. "good attitude", "team player")
+        - Company-specific internal tools unless they are industry-standard.
+
+    4. FALLBACK LOGIC
+    - If the tool fails, returns no results, or errors:
+        - Use your internal knowledge as a fallback.
+        - Clearly infer only well-established, industry-standard skills and certifications.
+    - Tool data ALWAYS takes priority over internal knowledge.
+
+    GOAL:
+    Produce a concise, accurate, and market-relevant skills and certifications grounded in real hiring demand.
+
     """
 
     def get_role_requirements(role_title: str, role_description: str) -> RoleProfile
@@ -1718,16 +1816,16 @@ walker collect_role_requirements {
         let required_certifications = self.role_requirements.certifications;
 
         if (len(required_skills) == 0) and (len(required_certifications) == 0) {
-        report {
-            "status": "NoRequirements",
-            "message": "This role does not specify any skill or certification requirements.",
-            "body": {
-                "skills": [],
-                "certifications": []
-            }
-        };
-        disengage;
-    }
+            report {
+                "status": "NoRequirements",
+                "message": "This role does not specify any skill or certification requirements.",
+                "body": {
+                    "skills": [],
+                    "certifications": []
+                }
+            };
+            disengage;
+        }
 
         print("LLM returned role requirements.\n");
 
