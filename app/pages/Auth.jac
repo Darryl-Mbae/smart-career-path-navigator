@@ -89,7 +89,7 @@ cl{
             <div className={signInClass + " w-full h-screen flex items-center justify-center"}>
                 <div className="w-full flex flex-col items-center p-6">
                     <Header/>
-                    <h2 className="w-[90%] md:w-[calc(70%+1.25rem)] text-xl font-bold my-[20px] md:pl-[10px]">Create your account</h2>
+                    <h2 className="w-[90%] md:w-[calc(70%+1.25rem)] text-xl font-bold my-[20px] md:pl-[10px]">Log In</h2>
                     <form onSubmit={handleLogin} className="w-full flex flex-col items-center w-[90%] md:w-[70%]">
                         <input
                             type="email"

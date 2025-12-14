@@ -159,7 +159,7 @@ function Auth() {
     "className": "w-full flex flex-col items-center p-6"
   }, [__jacJsx(Header, {}, []), __jacJsx("h2", {
     "className": "w-[90%] md:w-[calc(70%+1.25rem)] text-xl font-bold my-[20px] md:pl-[10px]"
-  }, ["Create your account"]), __jacJsx("form", {
+  }, ["Log In"]), __jacJsx("form", {
     "onSubmit": handleLogin,
     "className": "w-full flex flex-col items-center w-[90%] md:w-[70%]"
   }, [__jacJsx("input", {
