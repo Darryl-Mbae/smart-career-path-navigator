@@ -1,5 +1,6 @@
 cl import from react { useState ,useEffect, useRef}
-cl import from 'lucide-react' { Mail, LogOut,  Puzzle, Briefcase, Map, Send }
+cl import from 'react-markdown' { default as ReactMarkdown }
+cl import from 'lucide-react' { Mail,Bubbles, LogOut,  Puzzle, Briefcase, Map, Send }
 cl import from "@jac-client/assets/images/jaseci.webp" { default as jaseciImg }
 cl import from '@jac-client/utils' {
     useNavigate,
@@ -19,10 +20,12 @@ cl {
         let [userRoles,setUserRoles] = useState([]);
         let [isLoading, setIsLoading] = useState(false);
         let [userSkillgap, setUserSkillGap] = useState([]);
+        let [roadmapData, setRoadmapData] = useState([]);
+        let [roadmapMarkdown, setRoadmapMarkdown] = useState("");
 
         
         let [notifications, setNotifications] = useState([
-            {id: 1, type: "message", title: "New message from Jane", description: "Hey, just wanted to follow up on our meeting yesterday.", time: "2 hours ago", read: false},
+            {id: 1, type: "message", titFle: "New message from Jane", description: "Hey, just wanted to follow up on our meeting yesterday.", time: "2 hours ago", read: false},
             {id: 2, type: "event", title: "Upcoming event", description: "Team meeting scheduled for Friday at 2pm.", time: "1 day ago", read: false},
             {id: 3, type: "success", title: "Task completed", description:'You completed the "Update website content" task.', time: "3 days ago", read: true},
             {id: 4, type: "warning", title: "Account suspended", description: "Your account has been suspended due to a billing issue.", time: "1 week ago", read: true}
@@ -56,7 +59,7 @@ cl {
                 
             } except Exception as err {
                 console.log(err);
-                navigate("/onboarding");
+                # navigate("/onboarding");
             }
         }
         async def getSkillGap() -> None {
@@ -65,18 +68,26 @@ cl {
                 let roles = data.reports[0].body.roles;
 
                 setUserRoles(roles);
+                setSelectedRoles(roles.map(lambda role:any -> any { return role.title; }));
 
 
                 for role in roles {
                     let result = await root spawn retrieve_skill_gaps(
                         role_title=role.title
                     );
-                    console.log(result);
-                    setUserSkillGap(userSkillgap.concat(result));
-                }     
+                    # console.log(result.result.gaps);
+                    setUserSkillGap(userSkillgap.concat(result.result.gaps));
+                } 
+
+                let roadmap = await root spawn get_road_map(
+                    role_title = "fullstack developer"
+                );
+                setRoadmapData(roadmap.reports);
+
+
             } except Exception as err {
                 console.log(err);
-                navigate("/onboarding");
+                # navigate("/onboarding");
             }
         }
 
@@ -118,7 +129,6 @@ cl {
                 );
 
                 if result {
-                    console.log(result);
                     setIsLoading(false);
                 }
             }
@@ -305,6 +315,9 @@ cl {
             </div>;
         }
 
+
+        console.log(userSkillgap[0]);
+
         def ProfilePanel() -> any {
             return <div className="hidden lg:block lg:w-80 bg-[#0b0b0b] h-screen border-l border-gray-800 p-6">
                 
@@ -315,10 +328,41 @@ cl {
                     <div className="text-white font-medium">{userDetails.full_name if userDetails.full_name else "Guest"}</div>
                     <div className="text-gray-400 text-sm">{userDetails.email if userDetails.email else ""}</div>
                 </div>
-                <div>
-                   <h3 className="mt-4 text-base font-normal text-gray-300 mb-6">Skills Insight</h3>
-                    <div className="h-[27vh] w-full bg-[black] rounded-md"></div>
-                </div>
+                    {
+                    <div>
+                        {
+                            <>
+                                <h3 className="mt-4 text-base font-normal text-gray-300 mb-6">Skills Gap Analysis</h3>
+                                {userSkillgap[0].skills.slice(0, 3).map(
+                                    lambda skillgap:any -> any {
+                                        return <InsightContent 
+                                            key={skillgap.id}
+                                            skill={skillgap.name}/>;
+                                    }
+                                )}
+                            </>
+
+                            if userSkillgap[0].skills else ""
+                        }
+
+                        {
+                            <>
+                                <h3 className="mt-4 text-base font-normal text-gray-300 mb-6">Certification recommendations</h3>
+                                {userSkillgap[0].certifications.slice(0, 2).map(
+                                    lambda cert:any -> any {
+                                        return <InsightContent 
+                                            key={cert._jac_id}
+                                            skill={cert.title}/>;
+                                    }
+                                )}
+                            </>
+
+                            if userSkillgap[0].certifications else ""
+                        }
+                    </div>
+                    if userSkillgap.length > 0 else "" 
+                    }
+
                  <div>
                     <h3 className="mt-4 text-base font-normal text-gray-300 mb-4">My CV</h3>
                     <div className="w-full flex flex-col gap-4">
@@ -344,15 +388,15 @@ cl {
                             </div>
                         </div>
                         
-                        <button 
-                            onClick={lambda -> None { 
-                                # Add your update CV logic here
-                                console.log("Update CV clicked");
-                            }}
-                            className="w-full px-4 py-4 bg-primary text-white rounded-lg hover:bg-opacity-80 transition-all border-none cursor-pointer font-medium text-sm mt-auto"
-                        >
-                            Update CV
-                        </button>
+                        # <button 
+                        #     onClick={lambda -> None { 
+                        #         # Add your update CV logic here
+                        #         console.log("Update CV clicked");
+                        #     }}
+                        #     className="w-full px-4 py-4 bg-primary text-white rounded-lg hover:bg-opacity-80 transition-all border-none cursor-pointer font-medium text-sm mt-auto"
+                        # >
+                        #     Update CV
+                        # </button>
                     </div>
                 </div>
             </div>;
@@ -548,7 +592,13 @@ cl {
                                 </div>
                                 
                                 <div className="relative z-10">
-                                    <button className="bg-black text-white pl-8 pr-3 py-3 rounded-full font-semibold flex items-center gap-3 hover:bg-gray-900 transition-all hover:translate-x-1 shadow-lg">
+                                    <button 
+                                    onClick={lambda -> None {
+                                            let query = userRoles[0].title if userRoles.length > 0 else "";
+                                            let url = f"https://www.udemy.com/courses/search/?src=ukw&q={query}";
+                                            window.open(url, '_blank');
+                                        }}
+                                        className="bg-black text-white pl-8 pr-3 py-3 rounded-full font-semibold flex items-center gap-3 hover:bg-gray-900 transition-all hover:translate-x-1 shadow-lg">
                                         <span>Join Now</span>
                                         <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
                                             <svg className="w-3 h-3 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -599,7 +649,7 @@ cl {
                                     color="green"
                                     title="Arise AI"
                                     description="Learn with AI"
-                                    icon={<Map className="w-6 h-6" />}
+                                    icon={<Bubbles className="w-6 h-6" />}
                                     onClick={lambda e:any -> None { setActiveLink("ariseai"); }}
                                 />
                             </div>
@@ -607,6 +657,17 @@ cl {
     
                         <div>
                             <h3 className="mt-4 text-base font-normal text-gray-300 mb-6">My Roadmaps</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {roadmapData.map(
+                                lambda roadmap:any -> any {
+                                    return <RoadmapContent 
+                                        key={roadmap.id}
+                                        roadmap={roadmap.body.role_title}
+                                        markdown={roadmap.body.learning_path}
+                                    />;
+                                }
+                            )}
+                            </div>
                         </div>
                     </div>
                 )}
@@ -790,7 +851,7 @@ cl {
                         placeholder="Search or type a role and press Enter"
                         selectedLabel="Selected Roles"
                         availableLabel="Available Roles"
-                        availableItems={devRoles}
+                        availableItems={"none"}
                         selectedItems={selectedRoles}
                         setSelectedItems={setSelectedRoles}
                         onSave={lambda -> None {}}
@@ -801,8 +862,60 @@ cl {
                     <div>
                         <h1 className="text-2xl md:text-3xl font-bold text-white mb-6">My Roadmap</h1>
                         <p className="text-gray-400">Your personalized learning path</p>
+
+                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {roadmapData.map(
+                                lambda roadmap:any -> any {
+                                    return <RoadmapContent 
+                                        key={roadmap.id}
+                                        roadmap={roadmap.body.role_title}
+                                        markdown={roadmap.body.learning_path}
+
+                                    />;
+                                }
+                            )}
+                            </div>
                     </div>
                 )}
+
+                {activeLink == "roadmap-inside" && (
+                        <div>
+                            <button 
+                                onClick={lambda e:any -> None { setActiveLink("roadmap"); }}
+                                className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-6 bg-transparent border-none cursor-pointer">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
+                                <span>Back to Roadmaps</span>
+                            </button>
+
+                            <div className="rounded-lg p-8">
+                               <div className="max-w-4xl mx-auto px-6 py-8 text-white">
+                                <ReactMarkdown
+                                    components={{
+                                    h1: lambda props:any -> any { return <h1 className="text-4xl font-bold mb-6 pb-2 border-b border-gray-700">{props.children}</h1>; },
+                                    h2: lambda props:any -> any { return <h2 className="text-3xl font-semibold mt-8 mb-4 pb-2 border-b border-gray-700">{props.children}</h2>; },
+                                    h3: lambda props:any -> any { return <h3 className="text-2xl font-semibold mt-6 mb-3">{props.children}</h3>; },
+                                    h4: lambda props:any -> any { return <h4 className="text-xl font-semibold mt-4 mb-2">{props.children}</h4>; },
+                                    p: lambda props:any -> any { return <p className="mb-4 leading-7 text-gray-200">{props.children}</p>; },
+                                    ul: lambda props:any -> any { return <ul className="list-disc ml-6 mb-4 space-y-2">{props.children}</ul>; },
+                                    ol: lambda props:any -> any { return <ol className="list-decimal ml-6 mb-4 space-y-2">{props.children}</ol>; },
+                                    li: lambda props:any -> any { return <li className="leading-7 text-gray-200">{props.children}</li>; },
+                                    strong: lambda props:any -> any { return <strong className="font-semibold text-white">{props.children}</strong>; },
+                                    em: lambda props:any -> any { return <em className="italic text-gray-300">{props.children}</em>; },
+                                    code: lambda props:any -> any { return <code className="bg-gray-800 text-pink-400 px-1.5 py-0.5 rounded text-sm font-mono">{props.children}</code>; },
+                                    pre: lambda props:any -> any { return <pre className="bg-gray-900 p-4 rounded-lg overflow-x-auto mb-4 border border-gray-700">{props.children}</pre>; },
+                                    blockquote: lambda props:any -> any { return <blockquote className="border-l-4 border-gray-600 pl-4 italic text-gray-400 my-4">{props.children}</blockquote>; },
+                                    a: lambda props:any -> any { return <a className="text-blue-400 hover:text-blue-300 underline" href={props.href}>{props.children}</a>; }
+                                    }}
+                                >
+                                    {roadmapMarkdown}
+                                </ReactMarkdown>
+                                </div>
+                            </div>
+                        </div>
+                    )
+                }
 
                 {activeLink == "ariseai" && (
                    <ChatBot/>
@@ -898,7 +1011,6 @@ cl {
                 </div>
                 <div className="flex-1 overflow-y-auto mb-4 pr-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
                     {messages.map(lambda message:any -> any {
-                        console.log(message);
                         let messageBase = "flex items-start gap-3 mb-4";
                         let messageAlign = 'flex-row-reverse' if message.key == 'user' else '';
                         
@@ -953,6 +1065,29 @@ cl {
                         </button>
                     </div>
                 </div>
+            </div>;
+        }
+
+        def RoadmapContent(props:any) -> any {
+            return <div onClick={lambda e:any -> None { 
+                setActiveLink("roadmap-inside");
+                setRoadmapMarkdown(props.markdown);
+
+            }} className="bg-gradient-to-br from-purple-600 to-blue-500 w-full h-[170px] rounded-[30px] p-[5px] mt-4">
+            <div className="bg-black h-[88%] rounded-[30px] p-5">
+                <Map className="w-6 h-6 text-[#6e11b0]" />
+                <div className="text-white mt-3 capitalize">{props.roadmap}</div>
+                <div className="text-gray-400 text-sm mt-1 cursor-pointer flex flex-row items-center">View More</div>
+                # <div className="border w-[70%] flex justify-center align-middle border-[#d1d5dc33] mt-3 text-white p-2 rounded-md pointer">View Roadmap</div>
+            </div>
+            </div>;
+        }
+
+        def InsightContent(props:any) -> any {
+            return <div >
+            <p className="group font-regular text-[12px] relative block overflow-hidden rounded-lg border border-black bg-black p-2.5 text-neutral-400 no-underline mb-2 hover:border-black hover:text-neutral-100 sm:p-3.5">
+            {props.skill}
+            </p>
             </div>;
         }
 

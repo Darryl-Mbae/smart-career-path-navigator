@@ -11,7 +11,8 @@ function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" !=
 function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
 import { __jacJsx, __jacSpawn } from "@jac-client/utils";
 import { useState, useEffect, useRef } from "react";
-import { Mail, LogOut, Puzzle, Briefcase, Map, Send } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import { Mail, Bubbles, LogOut, Puzzle, Briefcase, Map, Send } from "lucide-react";
 import jaseciImg from "@jac-client/assets/images/jaseci.webp";
 import { useNavigate, jacIsLoggedIn } from "@jac-client/utils";
 function Dashboard() {
@@ -55,10 +56,18 @@ function Dashboard() {
     _useState18 = _slicedToArray(_useState17, 2),
     userSkillgap = _useState18[0],
     setUserSkillGap = _useState18[1];
-  var _useState19 = useState([{
+  var _useState19 = useState([]),
+    _useState20 = _slicedToArray(_useState19, 2),
+    roadmapData = _useState20[0],
+    setRoadmapData = _useState20[1];
+  var _useState21 = useState(""),
+    _useState22 = _slicedToArray(_useState21, 2),
+    roadmapMarkdown = _useState22[0],
+    setRoadmapMarkdown = _useState22[1];
+  var _useState23 = useState([{
       id: 1,
       "key": "message",
-      title: "New message from Jane",
+      titFle: "New message from Jane",
       description: "Hey, just wanted to follow up on our meeting yesterday.",
       time: "2 hours ago",
       read: false
@@ -84,13 +93,13 @@ function Dashboard() {
       time: "1 week ago",
       read: true
     }]),
-    _useState20 = _slicedToArray(_useState19, 2),
-    notifications = _useState20[0],
-    setNotifications = _useState20[1];
-  var _useState21 = useState(null),
-    _useState22 = _slicedToArray(_useState21, 2),
-    selectedNotification = _useState22[0],
-    setSelectedNotification = _useState22[1];
+    _useState24 = _slicedToArray(_useState23, 2),
+    notifications = _useState24[0],
+    setNotifications = _useState24[1];
+  var _useState25 = useState(null),
+    _useState26 = _slicedToArray(_useState25, 2),
+    selectedNotification = _useState26[0],
+    setSelectedNotification = _useState26[1];
   var unreadCount = notifications.filter(function (n) {
     return n.read === false;
   }).length;
@@ -133,7 +142,6 @@ function Dashboard() {
             _context.p = 3;
             _t = _context.v;
             console.log(_t);
-            navigate("/onboarding");
           case 4:
             return _context.a(2);
         }
@@ -146,7 +154,7 @@ function Dashboard() {
   }
   function _getSkillGap() {
     _getSkillGap = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee2() {
-      var data, roles, _iterator, _step, role, result, _t2, _t3;
+      var data, roles, _iterator, _step, role, result, roadmap, _t2, _t3;
       return _regenerator().w(function (_context2) {
         while (1) switch (_context2.p = _context2.n) {
           case 0:
@@ -157,6 +165,9 @@ function Dashboard() {
             data = _context2.v;
             roles = data.reports[0].body.roles;
             setUserRoles(roles);
+            setSelectedRoles(roles.map(function (role) {
+              return role.title;
+            }));
             _iterator = _createForOfIteratorHelper(roles);
             _context2.p = 2;
             _iterator.s();
@@ -172,8 +183,7 @@ function Dashboard() {
             });
           case 4:
             result = _context2.v;
-            console.log(result);
-            setUserSkillGap(userSkillgap.concat(result));
+            setUserSkillGap(userSkillgap.concat(result.result.gaps));
           case 5:
             _context2.n = 3;
             break;
@@ -189,17 +199,23 @@ function Dashboard() {
             _iterator.f();
             return _context2.f(8);
           case 9:
-            _context2.n = 11;
-            break;
+            _context2.n = 10;
+            return __jacSpawn("get_road_map", "", {
+              "role_title": "fullstack developer"
+            });
           case 10:
-            _context2.p = 10;
+            roadmap = _context2.v;
+            setRoadmapData(roadmap.reports);
+            _context2.n = 12;
+            break;
+          case 11:
+            _context2.p = 11;
             _t3 = _context2.v;
             console.log(_t3);
-            navigate("/onboarding");
-          case 11:
+          case 12:
             return _context2.a(2);
         }
-      }, _callee2, null, [[2, 7, 8, 9], [0, 10]]);
+      }, _callee2, null, [[2, 7, 8, 9], [0, 11]]);
     }));
     return _getSkillGap.apply(this, arguments);
   }
@@ -245,7 +261,6 @@ function Dashboard() {
           case 2:
             result = _context3.v;
             if (result) {
-              console.log(result);
               setIsLoading(false);
             }
             _context3.n = 4;
@@ -436,6 +451,7 @@ function Dashboard() {
       "className": "text-gray-400 text-xs"
     }, [userDetails.email ? userDetails.email : ""])])])])]);
   }
+  console.log(userSkillgap[0]);
   function ProfilePanel() {
     return __jacJsx("div", {
       "className": "hidden lg:block lg:w-80 bg-[#0b0b0b] h-screen border-l border-gray-800 p-6"
@@ -447,11 +463,21 @@ function Dashboard() {
       "className": "text-white font-medium"
     }, [userDetails.full_name ? userDetails.full_name : "Guest"]), __jacJsx("div", {
       "className": "text-gray-400 text-sm"
-    }, [userDetails.email ? userDetails.email : ""])]), __jacJsx("div", {}, [__jacJsx("h3", {
+    }, [userDetails.email ? userDetails.email : ""])]), userSkillgap.length > 0 ? __jacJsx("div", {}, [userSkillgap[0].skills ? __jacJsx(null, {}, [__jacJsx("h3", {
       "className": "mt-4 text-base font-normal text-gray-300 mb-6"
-    }, ["Skills Insight"]), __jacJsx("div", {
-      "className": "h-[27vh] w-full bg-[black] rounded-md"
-    }, [])]), __jacJsx("div", {}, [__jacJsx("h3", {
+    }, ["Skills Gap Analysis"]), userSkillgap[0].skills.slice(0, 3).map(function (skillgap) {
+      return __jacJsx(InsightContent, {
+        "key": skillgap.id,
+        "skill": skillgap.name
+      }, []);
+    })]) : "", userSkillgap[0].certifications ? __jacJsx(null, {}, [__jacJsx("h3", {
+      "className": "mt-4 text-base font-normal text-gray-300 mb-6"
+    }, ["Certification recommendations"]), userSkillgap[0].certifications.slice(0, 2).map(function (cert) {
+      return __jacJsx(InsightContent, {
+        "key": cert._jac_id,
+        "skill": cert.title
+      }, []);
+    })]) : ""]) : "", __jacJsx("div", {}, [__jacJsx("h3", {
       "className": "mt-4 text-base font-normal text-gray-300 mb-4"
     }, ["My CV"]), __jacJsx("div", {
       "className": "w-full flex flex-col gap-4"
@@ -478,12 +504,7 @@ function Dashboard() {
       "className": "text-white font-medium text-sm mb-1 truncate"
     }, ["Ven_CV_25.pdf"]), __jacJsx("div", {
       "className": "text-gray-500 text-xs"
-    }, ["Last updated: Dec 10, 2025"])])]), __jacJsx("button", {
-      "onClick": function onClick() {
-        console.log("Update CV clicked");
-      },
-      "className": "w-full px-4 py-4 bg-primary text-white rounded-lg hover:bg-opacity-80 transition-all border-none cursor-pointer font-medium text-sm mt-auto"
-    }, ["Update CV"])])])]);
+    }, ["Last updated: Dec 10, 2025"])])])])])]);
   }
   function MobileProfilePanel() {
     var baseClasses = "fixed top-0 right-0 bg-[#0b0b0b] h-screen w-[80%] max-w-[300px] transform transition-transform duration-300 ease-in-out z-[100000] border-l border-gray-800 p-6 overflow-y-auto";
@@ -547,10 +568,10 @@ function Dashboard() {
     }, ["U"])]);
   }
   function SelectionManager(props) {
-    var _useState23 = useState(""),
-      _useState24 = _slicedToArray(_useState23, 2),
-      inputValue = _useState24[0],
-      setInputValue = _useState24[1];
+    var _useState27 = useState(""),
+      _useState28 = _slicedToArray(_useState27, 2),
+      inputValue = _useState28[0],
+      setInputValue = _useState28[1];
     return __jacJsx("div", {}, [__jacJsx("div", {
       "className": "flex items-center justify-between mb-6"
     }, [__jacJsx("div", {}, []), __jacJsx("button", {
@@ -681,6 +702,11 @@ function Dashboard() {
     }, ["Sharpen Your Skills with", __jacJsx("br", {}, []), "Professional Online Courses"])]), __jacJsx("div", {
       "className": "relative z-10"
     }, [__jacJsx("button", {
+      "onClick": function onClick() {
+        var query = userRoles.length > 0 ? userRoles[0].title : "";
+        var url = "https://www.udemy.com/courses/search/?src=ukw&q=".concat(query);
+        window.open(url, "_blank");
+      },
       "className": "bg-black text-white pl-8 pr-3 py-3 rounded-full font-semibold flex items-center gap-3 hover:bg-gray-900 transition-all hover:translate-x-1 shadow-lg"
     }, [__jacJsx("span", {}, ["Join Now"]), __jacJsx("div", {
       "className": "w-6 h-6 bg-white rounded-full flex items-center justify-center"
@@ -737,7 +763,7 @@ function Dashboard() {
       "color": "green",
       "title": "Arise AI",
       "description": "Learn with AI",
-      "icon": __jacJsx(Map, {
+      "icon": __jacJsx(Bubbles, {
         "className": "w-6 h-6"
       }, []),
       "onClick": function onClick(e) {
@@ -745,7 +771,15 @@ function Dashboard() {
       }
     }, [])])]), __jacJsx("div", {}, [__jacJsx("h3", {
       "className": "mt-4 text-base font-normal text-gray-300 mb-6"
-    }, ["My Roadmaps"])])]), activeLink === "notifications" && __jacJsx("div", {}, [selectedNotification ? __jacJsx("div", {}, [__jacJsx("button", {
+    }, ["My Roadmaps"]), __jacJsx("div", {
+      "className": "grid grid-cols-1 md:grid-cols-3 gap-4"
+    }, [roadmapData.map(function (roadmap) {
+      return __jacJsx(RoadmapContent, {
+        "key": roadmap.id,
+        "roadmap": roadmap.body.role_title,
+        "markdown": roadmap.body.learning_path
+      }, []);
+    })])])]), activeLink === "notifications" && __jacJsx("div", {}, [selectedNotification ? __jacJsx("div", {}, [__jacJsx("button", {
       "onClick": function onClick(e) {
         setSelectedNotification(null);
       },
@@ -950,7 +984,7 @@ function Dashboard() {
       "placeholder": "Search or type a role and press Enter",
       "selectedLabel": "Selected Roles",
       "availableLabel": "Available Roles",
-      "availableItems": devRoles,
+      "availableItems": "none",
       "selectedItems": selectedRoles,
       "setSelectedItems": setSelectedRoles,
       "onSave": function onSave() {}
@@ -958,26 +992,127 @@ function Dashboard() {
       "className": "text-2xl md:text-3xl font-bold text-white mb-6"
     }, ["My Roadmap"]), __jacJsx("p", {
       "className": "text-gray-400"
-    }, ["Your personalized learning path"])]), activeLink === "ariseai" && __jacJsx(ChatBot, {}, [])]);
+    }, ["Your personalized learning path"]), __jacJsx("div", {
+      "className": "grid grid-cols-1 md:grid-cols-3 gap-4"
+    }, [roadmapData.map(function (roadmap) {
+      return __jacJsx(RoadmapContent, {
+        "key": roadmap.id,
+        "roadmap": roadmap.body.role_title,
+        "markdown": roadmap.body.learning_path
+      }, []);
+    })])]), activeLink === "roadmap-inside" && __jacJsx("div", {}, [__jacJsx("button", {
+      "onClick": function onClick(e) {
+        setActiveLink("roadmap");
+      },
+      "className": "flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-6 bg-transparent border-none cursor-pointer"
+    }, [__jacJsx("svg", {
+      "className": "w-5 h-5",
+      "fill": "none",
+      "stroke": "currentColor",
+      "viewBox": "0 0 24 24"
+    }, [__jacJsx("path", {
+      "strokeLinecap": "round",
+      "strokeLinejoin": "round",
+      "strokeWidth": 2,
+      "d": "M15 19l-7-7 7-7"
+    }, [])]), __jacJsx("span", {}, ["Back to Roadmaps"])]), __jacJsx("div", {
+      "className": "rounded-lg p-8"
+    }, [__jacJsx("div", {
+      "className": "max-w-4xl mx-auto px-6 py-8 text-white"
+    }, [__jacJsx(ReactMarkdown, {
+      "components": {
+        h1: function h1(props) {
+          return __jacJsx("h1", {
+            "className": "text-4xl font-bold mb-6 pb-2 border-b border-gray-700"
+          }, [props.children]);
+        },
+        h2: function h2(props) {
+          return __jacJsx("h2", {
+            "className": "text-3xl font-semibold mt-8 mb-4 pb-2 border-b border-gray-700"
+          }, [props.children]);
+        },
+        h3: function h3(props) {
+          return __jacJsx("h3", {
+            "className": "text-2xl font-semibold mt-6 mb-3"
+          }, [props.children]);
+        },
+        h4: function h4(props) {
+          return __jacJsx("h4", {
+            "className": "text-xl font-semibold mt-4 mb-2"
+          }, [props.children]);
+        },
+        p: function p(props) {
+          return __jacJsx("p", {
+            "className": "mb-4 leading-7 text-gray-200"
+          }, [props.children]);
+        },
+        ul: function ul(props) {
+          return __jacJsx("ul", {
+            "className": "list-disc ml-6 mb-4 space-y-2"
+          }, [props.children]);
+        },
+        ol: function ol(props) {
+          return __jacJsx("ol", {
+            "className": "list-decimal ml-6 mb-4 space-y-2"
+          }, [props.children]);
+        },
+        li: function li(props) {
+          return __jacJsx("li", {
+            "className": "leading-7 text-gray-200"
+          }, [props.children]);
+        },
+        strong: function strong(props) {
+          return __jacJsx("strong", {
+            "className": "font-semibold text-white"
+          }, [props.children]);
+        },
+        em: function em(props) {
+          return __jacJsx("em", {
+            "className": "italic text-gray-300"
+          }, [props.children]);
+        },
+        code: function code(props) {
+          return __jacJsx("code", {
+            "className": "bg-gray-800 text-pink-400 px-1.5 py-0.5 rounded text-sm font-mono"
+          }, [props.children]);
+        },
+        pre: function pre(props) {
+          return __jacJsx("pre", {
+            "className": "bg-gray-900 p-4 rounded-lg overflow-x-auto mb-4 border border-gray-700"
+          }, [props.children]);
+        },
+        blockquote: function blockquote(props) {
+          return __jacJsx("blockquote", {
+            "className": "border-l-4 border-gray-600 pl-4 italic text-gray-400 my-4"
+          }, [props.children]);
+        },
+        a: function a(props) {
+          return __jacJsx("a", {
+            "className": "text-blue-400 hover:text-blue-300 underline",
+            "href": props.href
+          }, [props.children]);
+        }
+      }
+    }, [roadmapMarkdown])])])]), activeLink === "ariseai" && __jacJsx(ChatBot, {}, [])]);
   }
   function ChatBot() {
-    var _useState25 = useState([{
+    var _useState29 = useState([{
         id: 1,
         "key": "bot",
         content: "Hello! I\\'m Arise AI. How can I help you with your learning journey today?",
         timestamp: "12:00"
       }]),
-      _useState26 = _slicedToArray(_useState25, 2),
-      messages = _useState26[0],
-      setMessages = _useState26[1];
-    var _useState27 = useState(""),
-      _useState28 = _slicedToArray(_useState27, 2),
-      inputValue = _useState28[0],
-      setInputValue = _useState28[1];
-    var _useState29 = useState(false),
       _useState30 = _slicedToArray(_useState29, 2),
-      isTyping = _useState30[0],
-      setIsTyping = _useState30[1];
+      messages = _useState30[0],
+      setMessages = _useState30[1];
+    var _useState31 = useState(""),
+      _useState32 = _slicedToArray(_useState31, 2),
+      inputValue = _useState32[0],
+      setInputValue = _useState32[1];
+    var _useState33 = useState(false),
+      _useState34 = _slicedToArray(_useState33, 2),
+      isTyping = _useState34[0],
+      setIsTyping = _useState34[1];
     var messagesEndRef = useRef(null);
     function scrollToBottom() {
       messagesEndRef.current.scrollIntoView({
@@ -1048,7 +1183,6 @@ function Dashboard() {
     }, []), __jacJsx("div", {
       "className": "flex-1 overflow-y-auto mb-4 pr-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent"
     }, [messages.map(function (message) {
-      console.log(message);
       var messageBase = "flex items-start gap-3 mb-4";
       var messageAlign = message.key === "user" ? "flex-row-reverse" : "";
       var avatarBase = "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0";
@@ -1102,6 +1236,28 @@ function Dashboard() {
     }, [__jacJsx(Send, {
       "className": "w-5 h-5"
     }, [])])])])]);
+  }
+  function RoadmapContent(props) {
+    return __jacJsx("div", {
+      "onClick": function onClick(e) {
+        setActiveLink("roadmap-inside");
+        setRoadmapMarkdown(props.markdown);
+      },
+      "className": "bg-gradient-to-br from-purple-600 to-blue-500 w-full h-[170px] rounded-[30px] p-[5px] mt-4"
+    }, [__jacJsx("div", {
+      "className": "bg-black h-[88%] rounded-[30px] p-5"
+    }, [__jacJsx(Map, {
+      "className": "w-6 h-6 text-[#6e11b0]"
+    }, []), __jacJsx("div", {
+      "className": "text-white mt-3 capitalize"
+    }, [props.roadmap]), __jacJsx("div", {
+      "className": "text-gray-400 text-sm mt-1 cursor-pointer flex flex-row items-center"
+    }, ["View More"])])]);
+  }
+  function InsightContent(props) {
+    return __jacJsx("div", {}, [__jacJsx("p", {
+      "className": "group font-regular text-[12px] relative block overflow-hidden rounded-lg border border-black bg-black p-2.5 text-neutral-400 no-underline mb-2 hover:border-black hover:text-neutral-100 sm:p-3.5"
+    }, [props.skill])]);
   }
   return __jacJsx("div", {
     "className": "min-h-screen bg-black"
