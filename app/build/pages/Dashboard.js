@@ -108,7 +108,7 @@ function Dashboard() {
   }
   function _getUserDetails() {
     _getUserDetails = _asyncToGenerator(/*#__PURE__*/_regenerator().m(function _callee() {
-      var result, profile, data, skillNames, _t;
+      var result, profile, data, skillObjects, _t;
       return _regenerator().w(function (_context) {
         while (1) switch (_context.p = _context.n) {
           case 0:
@@ -122,10 +122,13 @@ function Dashboard() {
           case 2:
             profile = _context.v;
             data = profile.reports[0].body.skills;
-            skillNames = data.map(function (skill) {
-              return skill.name;
+            skillObjects = data.map(function (skill) {
+              return {
+                name: skill.name,
+                description: skill.description
+              };
             });
-            setSelectedSkills(skillNames);
+            setSelectedSkills(skillObjects);
             setUserDetails(result.reports[0].body);
             _context.n = 4;
             break;
@@ -573,9 +576,14 @@ function Dashboard() {
       },
       "onKeyDown": function onKeyDown(e) {
         if (e.key === "Enter" && inputValue.trim() !== "") {
-          var alreadySelected = props.selectedItems.includes(inputValue.trim());
+          var alreadySelected = props.selectedItems.some(function (s) {
+            return s.name === inputValue.trim();
+          });
           if (alreadySelected === false) {
-            var newSelected = props.selectedItems.concat([inputValue.trim()]);
+            var newSelected = props.selectedItems.concat([{
+              name: inputValue.trim(),
+              description: ""
+            }]);
             props.setSelectedItems(newSelected);
           }
           setInputValue("");
@@ -602,10 +610,10 @@ function Dashboard() {
       return __jacJsx("div", {
         "key": item,
         "className": "bg-primary text-white px-4 py-2 rounded-full text-sm font-medium cursor-pointer flex items-center gap-2 hover:bg-opacity-80 transition-all"
-      }, [item, __jacJsx("svg", {
+      }, [item.name, __jacJsx("svg", {
         "onClick": function onClick(e) {
           props.setSelectedItems(props.selectedItems.filter(function (i) {
-            return i !== item;
+            return i.name !== item.name;
           }));
         },
         "className": "w-4 h-4 hover:scale-110 transition-transform",

@@ -48,9 +48,18 @@ cl {
                 let result = await root spawn get_user_details();
                 let profile = await root spawn get_user_profile();
                 let data = profile.reports[0].body.skills;
-                let skillNames = data.map(lambda skill:any -> any { return skill.name; });
 
-                setSelectedSkills(skillNames);
+                let skillObjects = data.map(
+                    lambda skill:any -> any {
+                        return {
+                            name: skill.name,
+                            description: skill.description
+                        };
+                    }
+                );
+
+                setSelectedSkills(skillObjects);
+
                 setUserDetails(result.reports[0].body);
 
                 
@@ -114,7 +123,7 @@ cl {
             setIsLoading(true);
             try{
                 let result = await root spawn update_user_profile(
-                    updated_skills=selectedSkills,
+                    updated_skills=selectedSkills
                 );
 
                 if result {
@@ -428,11 +437,20 @@ cl {
                             onChange={lambda e:any -> None { setInputValue(e.target.value); }}
                             onKeyDown={lambda e:any -> None {
                                 if (e.key == "Enter" && inputValue.trim() != "") {
-                                    let alreadySelected = props.selectedItems.includes(inputValue.trim());
+                                    let alreadySelected = props.selectedItems.some(
+                                        lambda s:any -> bool { return s.name == inputValue.trim(); }
+                                    );
+
                                     if (alreadySelected == false) {
-                                        let newSelected = props.selectedItems.concat([inputValue.trim()]);
+                                        let newSelected = props.selectedItems.concat([
+                                            {
+                                                name: inputValue.trim(),
+                                                description: ""
+                                            }
+                                        ]);
                                         props.setSelectedItems(newSelected);
                                     }
+
                                     setInputValue("");
                                 }
                             }}
@@ -452,10 +470,15 @@ cl {
                                         return <div 
                                             key={item}
                                             className="bg-primary text-white px-4 py-2 rounded-full text-sm font-medium cursor-pointer flex items-center gap-2 hover:bg-opacity-80 transition-all">
-                                            {item}
+                                            {item.name}
                                             <svg 
                                                 onClick={lambda e:any -> None {
-                                                    props.setSelectedItems(props.selectedItems.filter(lambda i:any -> bool { return i != item; }));
+                                                    props.setSelectedItems(
+                                                        props.selectedItems.filter(
+                                                            lambda i:any -> bool { return i.name != item.name; }
+                                                        )
+                                                    );
+
                                                 }}
                                                 className="w-4 h-4 hover:scale-110 transition-transform" 
                                                 fill="none" 

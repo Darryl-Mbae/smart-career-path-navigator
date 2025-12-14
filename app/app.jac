@@ -527,7 +527,7 @@ edge has_skill_gap {}
 edge has_certification_gap {}
 
 
-# Agents
+# User Agents
 # Initialize Memory for a new user
 walker initialize_memory {
     has email: str = "";

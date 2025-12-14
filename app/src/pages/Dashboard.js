@@ -33,10 +33,10 @@ function Dashboard() {
       let result = await __jacSpawn("get_user_details", "", {});
       let profile = await __jacSpawn("get_user_profile", "", {});
       let data = profile.reports[0].body.skills;
-      let skillNames = data.map(skill => {
-        return skill.name;
+      let skillObjects = data.map(skill => {
+        return {name: skill.name, description: skill.description};
       });
-      setSelectedSkills(skillNames);
+      setSelectedSkills(skillObjects);
       setUserDetails(result.reports[0].body);
     } catch (err) {
       console.log(err);
@@ -147,17 +147,19 @@ function Dashboard() {
       setInputValue(e.target.value);
     }, "onKeyDown": e => {
       if (e.key === "Enter" && inputValue.trim() !== "") {
-        let alreadySelected = props.selectedItems.includes(inputValue.trim());
+        let alreadySelected = props.selectedItems.some(s => {
+          return s.name === inputValue.trim();
+        });
         if (alreadySelected === false) {
-          let newSelected = props.selectedItems.concat([inputValue.trim()]);
+          let newSelected = props.selectedItems.concat([{name: inputValue.trim(), description: ""}]);
           props.setSelectedItems(newSelected);
         }
         setInputValue("");
       }
     }, "className": "w-full md:w-[70%] px-4 py-3 pl-10 bg-[#0b0b0b] border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors"}, []), __jacJsx("svg", {"className": "absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"}, [])])]), props.selectedItems.length > 0 && __jacJsx("div", {"className": "mb-6"}, [__jacJsx("div", {"className": "text-gray-400 text-sm mb-2"}, [props.selectedLabel]), __jacJsx("div", {"className": "flex flex-wrap gap-2"}, [props.selectedItems.map(item => {
-      return __jacJsx("div", {"key": item, "className": "bg-primary text-white px-4 py-2 rounded-full text-sm font-medium cursor-pointer flex items-center gap-2 hover:bg-opacity-80 transition-all"}, [item, __jacJsx("svg", {"onClick": e => {
+      return __jacJsx("div", {"key": item, "className": "bg-primary text-white px-4 py-2 rounded-full text-sm font-medium cursor-pointer flex items-center gap-2 hover:bg-opacity-80 transition-all"}, [item.name, __jacJsx("svg", {"onClick": e => {
         props.setSelectedItems(props.selectedItems.filter(i => {
-          return i !== item;
+          return i.name !== item.name;
         }));
       }, "className": "w-4 h-4 hover:scale-110 transition-transform", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M6 18L18 6M6 6l12 12"}, [])])]);
     })])]), !props.availableItems === "none" ? __jacJsx("div", {"className": "w-full md:w-[80%]"}, [__jacJsx("div", {"className": "text-gray-400 text-sm mb-2"}, [props.availableLabel]), __jacJsx("div", {"className": "flex flex-wrap gap-2 overflow-y-auto max-h-[40vh]"}, [props.availableItems.map(item => {
