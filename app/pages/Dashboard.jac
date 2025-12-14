@@ -86,12 +86,14 @@ cl {
                     );
                     # console.log(result.result.gaps);
                     setUserSkillGap(userSkillgap.concat(result.result.gaps));
+
+                    let roadmap = await root spawn get_road_map(
+                    role_title = role.title
+                    );
+                    setRoadmapData(roadmap.reports);
                 } 
 
-                let roadmap = await root spawn get_road_map(
-                    role_title = "fullstack developer"
-                );
-                setRoadmapData(roadmap.reports);
+                
 
 
             } except Exception as err {

@@ -56,9 +56,9 @@ function Dashboard() {
       for (const role of roles) {
         let result = await __jacSpawn("retrieve_skill_gaps", "", {"role_title": role.title});
         setUserSkillGap(userSkillgap.concat(result.result.gaps));
+        let roadmap = await __jacSpawn("get_road_map", "", {"role_title": role.title});
+        setRoadmapData(roadmap.reports);
       }
-      let roadmap = await __jacSpawn("get_road_map", "", {"role_title": "fullstack developer"});
-      setRoadmapData(roadmap.reports);
     } catch (err) {
       console.log(err);
     }
