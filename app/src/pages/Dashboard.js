@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import { Mail, Bubbles, LogOut, Puzzle, Briefcase, Map, Send } from "lucide-react";
 import jaseciImg from "@jac-client/assets/images/jaseci.webp";
 import { useNavigate, jacIsLoggedIn } from "@jac-client/utils";
+import { base64ToFileBytes } from "../fileutils.js";
 function Dashboard() {
   let [sidebarOpen, setSidebarOpen] = useState(false);
   let [profileOpen, setProfileOpen] = useState(false);
