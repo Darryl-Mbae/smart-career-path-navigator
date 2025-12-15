@@ -7,6 +7,7 @@ cl import from '@jac-client/utils' {
     jacIsLoggedIn
 }
 
+cl import from ..fileutils { base64ToFileBytes }
 
 cl {
     def Dashboard() -> any {
