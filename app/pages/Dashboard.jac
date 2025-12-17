@@ -359,18 +359,32 @@ cl {
 
                         {
                             <>
-                                <h3 className="mt-4 text-base font-normal text-gray-300 mb-6">Certification recommendations</h3>
+                                <h3 className="mt-4 text-base font-normal text-gray-300 mb-6">
+                                    Certification recommendations
+                                </h3>
+
                                 {userSkillgap[0].certifications.slice(0, 2).map(
                                     lambda cert:any -> any {
-                                        return <InsightContent 
-                                            key={cert._jac_id}
-                                            skill={cert.title}/>;
+                                        return (
+                                            <a
+                                                key={cert._jac_id}
+                                                href={cert.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="block"
+                                            >
+                                                <InsightContent 
+                                                    skill={cert.title}
+                                                />
+                                            </a>
+                                        );
                                     }
                                 )}
                             </>
-
                             if userSkillgap[0].certifications else ""
                         }
+
+
                     </div>
                     if userSkillgap.length > 0 else "" 
                     }
