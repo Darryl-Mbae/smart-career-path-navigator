@@ -1634,6 +1634,7 @@ sem recommend_learning_paths.suggest_learning_paths =  """
     You must use the provided tool search_learning_resources to discover highly relevant, accurate, up-to-date learning materials.
     Do not guess URLs—use the tool search_learning_links to find relevant URLs.
     Include only 2 most relevant and reliable links. Dont clutter the output with links. 2 are enough.
+    Don't get stuck calling the tools too many times. 
 
     Your output must strictly follow these requirements:
     
@@ -1771,7 +1772,6 @@ sem recommend_learning_paths.suggest_learning_paths =  """
 
     Be extremely detailed and comprehensive.
 
-    Return a blank disk_path because this will be filled later on. 
     """;
 
 impl recommend_learning_paths.check_existing_learning_path  {
@@ -1864,7 +1864,11 @@ impl recommend_learning_paths.recommend_path {
         );
 
         # save learning path to graph
-        here ++> learning_path;
+        let learning_path_node = LearningPath(
+            role_title=self.role_title,
+            learning_path=learning_path
+        );
+        here ++> learning_path_node;
 
         # create subdir if it doesn't exist
         if not os.path.exists("learning_paths"){
@@ -1872,7 +1876,7 @@ impl recommend_learning_paths.recommend_path {
         }
 
         # sanitize role title to use as filename
-        let safe_title = learning_path.role_title.replace(" ", "_").replace("/", "-");
+        let safe_title = learning_path_node.role_title.replace(" ", "_").replace("/", "-");
         let base_path = "learning_paths/" + safe_title + ".md";
         let file_path = base_path;
 
@@ -1885,7 +1889,7 @@ impl recommend_learning_paths.recommend_path {
         }
 
         # convert escaped newlines to real newlines
-        let md_content = learning_path.learning_path.encode("utf-8").decode("unicode_escape");
+        let md_content = learning_path_node.learning_path.encode("utf-8").decode("unicode_escape");
 
         # write to file
         with open(file_path, "w", encoding="utf-8") as f {
@@ -1894,15 +1898,15 @@ impl recommend_learning_paths.recommend_path {
 
         print("Learning path saved to:", file_path, "\n");
 
-        learning_path.disk_path = file_path;
+        learning_path_node.disk_path = file_path;
 
 
         report {
             "status": "Success",
             "message": "Learning path recommended and saved to graph successfully",
             "body": {
-                "role_title": learning_path.role_title,
-                "learning_path": learning_path.learning_path.encode('utf-8').decode('unicode_escape')
+                "role_title": learning_path_node.role_title,
+                "learning_path": learning_path_node.learning_path.encode('utf-8').decode('unicode_escape')
             }
         };
     } except Exception as e {

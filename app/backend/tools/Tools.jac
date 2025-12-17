@@ -1,3 +1,14 @@
+import from dotenv { load_dotenv }
+import from dotenv { load_dotenv }
+import base64;
+import re;
+import os;
+import PyPDF2;
+import docx;
+import requests;
+import json;
+import from firecrawl { FirecrawlApp }
+
 # Tools
 # Job recommender tools
 def is_valid_url(url: str) -> bool {
@@ -17,7 +28,7 @@ def is_valid_url(url: str) -> bool {
     }
     return True;
 }
-def search_job_urls(job_title: str, limit: int = 10) -> list {
+def search_job_urls(job_title: str, limit: int = 5) -> list {
     let url = 'https://google.serper.dev/search';
     let headers = {'X-API-KEY': SERPER_API_KEY, 'Content-Type': 'application/json'};
     let payload = {'q': f"{job_title}mandatory required in  demand  skills and certifications 2025"};
@@ -37,14 +48,7 @@ def search_job_urls(job_title: str, limit: int = 10) -> list {
     }
     return list(dict.fromkeys(urls))[:limit];
 }
-def extract_markdown(url: str, max_chars: int = 5000) -> any {
-    let doc = firecrawl.scrape(url, formats=['markdown']);
-    let md = getattr(doc, 'markdown', '') or '';
-    if (isinstance(md, str) and (len(md) > max_chars)) {
-        let md = md[:max_chars] + '\n\n...[TRIMMED]...';
-    }
-    return {'url': url, 'markdown': md};
-}
+
 
 def search_job_requirements(job_title: str) -> str {
 
@@ -124,31 +128,10 @@ def fetch_careerjet_descriptions(job_title: str) -> str {
 }
 
 #Learning path tools
-def is_valid_url(url: str) -> bool {
-    let invalid_hosts = [
-        "facebook.com",
-        "twitter.com",
-        "linkedin.com",
-        "youtube.com",
-        "pinterest.com",
-        "instagram.com",
-    ];
-
-    for host in invalid_hosts {
-        if host in url {
-            return False;
-        }
-    }
-
-    if ("utm_" in url) or ("redirect" in url) {
-        return False;
-    }
-
-    return True;
-}
 
 
-def search_urls(search_phrase: str, limit: int = 10) -> list {
+
+def search_urls(search_phrase: str, limit: int = 5) -> list {
     let url = "https://google.serper.dev/search";
     let headers = {
         "X-API-KEY": SERPER_API_KEY,
@@ -291,4 +274,11 @@ def search_learning_links(search_phrase: str, limit: int = 10) -> list {
     }
 
     return deduped[:limit];
+}
+
+with entry {
+    load_dotenv();
+    let SERPER_API_KEY = os.getenv('SERPER_API_KEY');
+    let FIRECRAWL_API_KEY = os.getenv('FIRECRAWL_API_KEY');
+    let firecrawl = FirecrawlApp(api_key=FIRECRAWL_API_KEY);
 }

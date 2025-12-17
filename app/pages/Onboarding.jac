@@ -259,6 +259,7 @@ cl{
                 } else {
                     allSuccessful = False;
                     console.log(f"Failed to collect requirements for {currentRole.title}");
+                    setIsLoading(False);
                 }
             }
             
@@ -270,6 +271,7 @@ cl{
             } else {
                 console.log("Error");
                 return;
+                setIsLoading(False);
             }
         }
 

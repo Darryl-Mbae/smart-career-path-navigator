@@ -9,3 +9,4 @@ build/
 *.session.users.json
 __pycache__/
 *.pyc
+src

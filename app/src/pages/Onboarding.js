@@ -147,6 +147,7 @@ function Onboarding() {
       } else {
         allSuccessful = false;
         console.log(`Failed to collect requirements for ${currentRole.title}`);
+        setIsLoading(false);
       }
     }
     if (allSuccessful) {
@@ -155,6 +156,7 @@ function Onboarding() {
     } else {
       console.log("Error");
       return;
+      setIsLoading(false);
     }
   }
   function Step(props) {

@@ -73,20 +73,43 @@ import docx;
 import requests;
 import json;
 import from firecrawl { FirecrawlApp }
-import from models.Models { Memory, Resume, Skill, Role, Certification, Interest, RequirementsGap, LearningPath }
-import from relationships.Relationships { skilled_in, has_certification, interested_in, requires_skill, requires_certification, has_skill_gap, has_certification_gap }
-import from tools.Tools { is_valid_url, search_job_urls, extract_markdown, search_job_requirements, fetch_careerjet_descriptions,
-is_valid_url, search_urls, extract_markdown, search_learning_resources, is_learning_url, search_learning_links }
-import from helpers.Helpers { read_document_text }
+import from backend.models.Models { 
+    Memory,
+    Resume,
+    Skill,
+    Role,
+    Certification,
+    Interest,
+    RequirementsGap,
+    LearningPath
+}
+
+import from backend.relationships.Relationships {
+    skilled_in,
+    has_certification,
+    interested_in,
+    requires_skill,
+    requires_certification,
+    has_skill_gap,
+    has_certification_gap
+}
+
+import from backend.tools.Tools {
+    is_valid_url,
+    search_job_urls,
+    search_job_requirements,
+    fetch_careerjet_descriptions,
+    search_urls,
+    extract_markdown,
+    search_learning_resources,
+    is_learning_url,
+    search_learning_links
+}
+import from backend.helpers.Helpers { read_document_text }
 
 
-glob llm = Model(model_name="gemini/gemini-2.5-flash", verbose=False);
+glob llm = Model(model_name="mistral/mistral-large-latest", verbose=True);
 
-# Helpers 
-
-
-
-# Backend Models
 
 # Used by get_user_profile agent to aggregate user's skills. interests and certifications and report back to FE
 node End {
@@ -471,7 +494,7 @@ walker recommend_learning_paths {
     has role_title: str = "";
 
 
-    def suggest_learning_paths(gaps: RoleProfile, user_profile: UserProfile, target_role_requirements: RoleProfile) -> LearningPath
+    def suggest_learning_paths(gaps: RoleProfile, user_profile: UserProfile, target_role_requirements: RoleProfile) -> str
     by llm(method="ReAct", tools=([search_learning_resources, search_learning_links]));
 
     can check_existing_learning_path  with `root entry;
