@@ -28,7 +28,7 @@ def is_valid_url(url: str) -> bool {
     }
     return True;
 }
-def search_job_urls(job_title: str, limit: int = 5) -> list {
+def search_job_urls(job_title: str, limit: int = 3) -> list {
     let url = 'https://google.serper.dev/search';
     let headers = {'X-API-KEY': SERPER_API_KEY, 'Content-Type': 'application/json'};
     let payload = {'q': f"{job_title}mandatory required in  demand  skills and certifications 2025"};
@@ -131,7 +131,7 @@ def fetch_careerjet_descriptions(job_title: str) -> str {
 
 
 
-def search_urls(search_phrase: str, limit: int = 5) -> list {
+def search_urls(search_phrase: str, limit: int = 3) -> list {
     let url = "https://google.serper.dev/search";
     let headers = {
         "X-API-KEY": SERPER_API_KEY,

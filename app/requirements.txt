@@ -6,3 +6,4 @@ beautifulsoup4
 firecrawl-py
 jac-client
 byllm
+mistralai
