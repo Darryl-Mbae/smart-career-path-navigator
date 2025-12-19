@@ -733,7 +733,7 @@ cl {
                                 />
                                 <div className="relative z-10 flex h-full w-full">
                                     <div className="absolute text-xs top-[10px] right-[10px] rounded-md bg-orange-500 text-white px-3 py-2">
-                                        Trending
+                                        Built With Jaseci
                                     </div>
                                     <button 
                                         onClick={lambda -> None { window.open('https://docs.jaseci.org/learn/tour/', '_blank'); }}
