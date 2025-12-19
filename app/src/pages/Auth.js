@@ -67,9 +67,9 @@ function Auth() {
     setSignupName(e.target.value);
   }, "className": "p-[1.25rem] rounded-[0.5rem] border-none bg-[#0b0b0b] text-white text-[16px] w-full mb-[16px]"}, []), __jacJsx("input", {"type": "email", "placeholder": "Email", "value": signupEmail, "onChange": e => {
     setSignupEmail(e.target.value);
-  }, "className": "p-[1.25rem] rounded-[0.5rem] border-none bg-[#0b0b0b] text-white text-[16px] w-full mb-[16px]"}, []), __jacJsx("input", {"type": "password", "placeholder": "Password", "value": signupPassword, "onChange": e => {
+  }, "className": "p-[1.25rem] rounded-[0.5rem] border-none bg-[#0b0b0b] text-white text-[16px] w-full mb-[16px]"}, []), __jacJsx("div", {}, [__jacJsx("input", {"type": "password", "placeholder": "Password", "value": signupPassword, "onChange": e => {
     setSignupPassword(e.target.value);
-  }, "className": "p-[1.25rem] rounded-[0.5rem] border-none bg-[#0b0b0b] text-white text-[16px] w-full mb-[16px]"}, []), __jacJsx("input", {}, []), error && __jacJsx("p", {"className": "text-[#dc2626] mb-4 text-sm"}, [error]), __jacJsx("button", {"type": "submit", "className": "w-full p-5 rounded-[8px] border-none bg-primary text-white font-semibold cursor-pointer"}, ["Sign Up"])]), __jacJsx("p", {"className": "mt-[19px] text-[14px] text-[#bbbbbb] items-center"}, ["Already have an account?", __jacJsx("span", {"onClick": e => {
+  }, "className": "p-[1.25rem] rounded-[0.5rem] border-none bg-[#0b0b0b] text-white text-[16px] w-full mb-[16px]"}, [])]), error && __jacJsx("p", {"className": "text-[#dc2626] mb-4 text-sm"}, [error]), __jacJsx("button", {"type": "submit", "className": "w-full p-5 rounded-[8px] border-none bg-primary text-white font-semibold cursor-pointer"}, ["Sign Up"])]), __jacJsx("p", {"className": "mt-[19px] text-[14px] text-[#bbbbbb] items-center"}, ["Already have an account?", __jacJsx("span", {"onClick": e => {
     setIsSignIn(true);
     setError();
   }, "className": "text-primary cursor-pointer ml-[5px] font-semibold"}, ["Sign In"])])])]), __jacJsx("div", {"className": baseClasses + " " + positionClass}, [__jacJsx("div", {"className": "m-auto bg-primary w-[97%] h-[97%] z-[9999] rounded-[10px] flex justify-center items-center overflow-hidden"}, [])])]);

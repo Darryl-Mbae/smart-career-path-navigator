@@ -1,13 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Zalando+Sans:ital,wght@0,200..900;1,200..900&display=swap');
+
 @import "tailwindcss";
+
 
 @theme{
     --color-primary: #6e11b0;
-    --font-display: "Zalando Sans", sans-serif;
+    --font-zalando: "Zalando Sans", sans-serif;
 }
 
 :root{
     --bg-primary: #6e11b0;
-    --font-display: "Zalando Sans", sans-serif;
+    --font-zalando: "Zalando Sans", sans-serif;
 
 }
 body{

@@ -139,6 +139,7 @@ cl{
                             onChange={lambda e: any -> None { setSignupEmail(e.target.value); }}
                             className="p-[1.25rem] rounded-[0.5rem] border-none bg-[#0b0b0b] text-white text-[16px] w-full mb-[16px]"
                         />
+                        <div>
                         <input
                             type="password"
                             placeholder="Password"
@@ -146,7 +147,7 @@ cl{
                             onChange={lambda e: any -> None { setSignupPassword(e.target.value); }}
                             className="p-[1.25rem] rounded-[0.5rem] border-none bg-[#0b0b0b] text-white text-[16px] w-full mb-[16px]"
                         />
-                        <input/>
+                        </div>
                         {error && <p className="text-[#dc2626] mb-4 text-sm">{error}</p>}
 
                         <button
