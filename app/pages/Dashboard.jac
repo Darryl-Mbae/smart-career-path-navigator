@@ -97,33 +97,58 @@ cl {
             }
         }
 
-        async def getSkillGap() -> None {
+       async def getSkillGap() -> None {
             try {
                 let data = await root spawn get_user_target_roles();
                 let roles = data.reports[0].body.roles;
 
                 setUserRoles(roles);
-                setSelectedRoles(roles.map(lambda role:any -> any { return role.title; }));
 
+                let roleObjects = roles.map(
+                    lambda role:any -> any {
+                        let roleName = "";
+
+                        if role.title {
+                            roleName = role.title;
+                        } else {
+                            roleName = role.name;
+                        }
+
+                        return {
+                            name: roleName
+                        };
+                    }
+                );
+
+                setSelectedRoles(roleObjects);
 
                 for role in roles {
+                    let roleTitle = "";
+
+                    if role.title {
+                        roleTitle = role.title;
+                    } else {
+                        roleTitle = role.name;
+                    }
+
                     let result = await root spawn retrieve_skill_gaps(
-                        role_title=role.title
+                        role_title=roleTitle
                     );
-                    # console.log(result.result.gaps);
+
                     setUserSkillGap(userSkillgap.concat(result.result.gaps));
 
                     let roadmap = await root spawn get_road_map(
-                    role_title = role.title
+                        role_title = roleTitle
                     );
+
                     setRoadmapData(roadmap.reports);
-                } 
+                }
 
             } except Exception as err {
                 console.log(err);
-                # navigate("/onboarding");
             }
         }
+
 
         useEffect(lambda -> None {
             # def ProtectedPage() -> any {

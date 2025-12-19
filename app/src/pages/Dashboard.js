@@ -64,13 +64,26 @@ function Dashboard() {
       let data = await __jacSpawn("get_user_target_roles", "", {});
       let roles = data.reports[0].body.roles;
       setUserRoles(roles);
-      setSelectedRoles(roles.map(role => {
-        return role.title;
-      }));
+      let roleObjects = roles.map(role => {
+        let roleName = "";
+        if (role.title) {
+          roleName = role.title;
+        } else {
+          roleName = role.name;
+        }
+        return {name: roleName};
+      });
+      setSelectedRoles(roleObjects);
       for (const role of roles) {
-        let result = await __jacSpawn("retrieve_skill_gaps", "", {"role_title": role.title});
+        let roleTitle = "";
+        if (role.title) {
+          roleTitle = role.title;
+        } else {
+          roleTitle = role.name;
+        }
+        let result = await __jacSpawn("retrieve_skill_gaps", "", {"role_title": roleTitle});
         setUserSkillGap(userSkillgap.concat(result.result.gaps));
-        let roadmap = await __jacSpawn("get_road_map", "", {"role_title": role.title});
+        let roadmap = await __jacSpawn("get_road_map", "", {"role_title": roleTitle});
         setRoadmapData(roadmap.reports);
       }
     } catch (err) {
