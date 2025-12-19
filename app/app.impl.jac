@@ -861,9 +861,9 @@ impl update_user_profile.add_new_certifications {
     }
     print(f"Adding new certifications...{self.updated_certifications}\n");
     for cert in self.updated_certifications {
-        let title = cert["title"];
-        let provider = cert["provider"];
-        let url = cert["url"];
+        let title = cert["name"];
+        let provider = cert.get("provider", "");
+        let url = cert.get("url", "");
 
         if not [-->(`?Certification)](?title==title) {
             let new_cert = Certification(title=title, provider=provider, url=url);

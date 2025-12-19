@@ -18,6 +18,7 @@ function Dashboard() {
   let [userSkillgap, setUserSkillGap] = useState([]);
   let [roadmapData, setRoadmapData] = useState([]);
   let [roadmapMarkdown, setRoadmapMarkdown] = useState("");
+  let [selectedCertifications, setSelectedCertifications] = useState([]);
   let [notifications, setNotifications] = useState([{id: 1, "key": "message", titFle: "New message from Jane", description: "Hey, just wanted to follow up on our meeting yesterday.", time: "2 hours ago", read: false}, {id: 2, "key": "event", title: "Upcoming event", description: "Team meeting scheduled for Friday at 2pm.", time: "1 day ago", read: false}, {id: 3, "key": "success", title: "Task completed", description: "You completed the \"Update website content\" task.", time: "3 days ago", read: true}, {id: 4, "key": "warning", title: "Account suspended", description: "Your account has been suspended due to a billing issue.", time: "1 week ago", read: true}]);
   let [selectedNotification, setSelectedNotification] = useState(null);
   let unreadCount = notifications.filter(n => {
@@ -31,12 +32,18 @@ function Dashboard() {
   let rolesClasses = activeLink === "roles" ? "bg-primary text-white" : "text-gray-300 hover:bg-[#101010ff] hover:text-white";
   let roadmapClasses = activeLink === "roadmap" ? "bg-primary text-white" : "text-gray-300 hover:bg-[#101010ff] hover:text-white";
   let ariseaiClasses = activeLink === "ariseai" ? "bg-primary text-white" : "text-gray-300 hover:bg-[#101010ff] hover:text-white";
+  let certificationsClasses = activeLink === "certifications" ? "bg-primary text-white" : "text-gray-300 hover:bg-[#101010ff] hover:text-white";
   let devRoles = ["Frontend Developer", "Backend Developer", "Fullstack Developer", "Mobile Developer", "DevOps Engineer", "UI/UX Designer", "Data Scientist", "Machine Learning Engineer"];
   async function getUserDetails() {
     try {
       let result = await __jacSpawn("get_user_details", "", {});
       let profile = await __jacSpawn("get_user_profile", "", {});
       let data = profile.reports[0].body.skills;
+      let certData = profile.reports[0].body.certifications;
+      let certObjects = certData.map(cert => {
+        return {title: cert.title, url: cert.url};
+      });
+      setSelectedCertifications(certObjects);
       let skillObjects = data.map(skill => {
         return {name: skill.name, description: skill.description};
       });
@@ -77,13 +84,27 @@ function Dashboard() {
   async function saveSkills() {
     setIsLoading(true);
     try {
-      let result = await __jacSpawn("update_user_profile", "", {"updated_skills": selectedSkills});
+      let result = await __jacSpawn("update_user_profile", "", {"updated_skills": selectedSkills, "updated_certifications": selectedCertifications});
       if (result) {
         setIsLoading(false);
       }
     } catch (err) {
       console.log(err);
     }
+  }
+  async function saveCertifications() {
+    setIsLoading(true);
+    try {
+      let result = await __jacSpawn("update_user_profile", "", {"updated_certifications": selectedCertifications, "updated_skills": selectedSkills});
+      if (result) {
+        setIsLoading(false);
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  }
+  function handleSaveCertifications() {
+    saveCertifications();
   }
   function DashSideBar() {
     return __jacJsx("div", {"className": "hidden md:flex md:w-64 bg-[#0b0b0b] h-screen flex-col border-r border-gray-800 fixed left-0 top-0"}, [__jacJsx("div", {"className": "p-6"}, [__jacJsx("div", {"className": "text-xl font-semibold text-white"}, ["Arise"])]), __jacJsx("nav", {"className": "flex-1 p-4 overflow-y-auto"}, [__jacJsx("div", {"className": "mb-6"}, [__jacJsx("div", {"className": "text-gray-500 text-xs uppercase font-semibold my-2 px-4 mb-4"}, ["Main"]), __jacJsx("ul", {"className": "list-none p-0 m-0 ml-[8px]"}, [__jacJsx("li", {"className": "mb-[6px]"}, [__jacJsx("div", {"onClick": e => {
@@ -98,7 +119,9 @@ function Dashboard() {
       setActiveLink("skills");
     }, "className": baseLinkClasses + skillsClasses}, [__jacJsx("span", {}, ["Skills"])])]), __jacJsx("li", {"className": "mb-[6px]"}, [__jacJsx("div", {"onClick": e => {
       setActiveLink("roles");
-    }, "className": baseLinkClasses + rolesClasses}, [__jacJsx("span", {}, ["Roles"])])])])])]), __jacJsx("div", {"className": "p-4 "}, [__jacJsx("div", {"className": "flex items-center gap-3 px-4 py-3 text-red-400"}, [__jacJsx(LogOut, {}, []), __jacJsx("div", {"className": "text-sm text-red-400 font-medium"}, ["Logout"])])])]);
+    }, "className": baseLinkClasses + rolesClasses}, [__jacJsx("span", {}, ["Roles"])])]), __jacJsx("li", {"className": "mb-[6px]"}, [__jacJsx("div", {"onClick": e => {
+      setActiveLink("certifications");
+    }, "className": baseLinkClasses + certificationsClasses}, [__jacJsx("span", {}, ["Certifications"])])])])])]), __jacJsx("div", {"className": "p-4 "}, [__jacJsx("div", {"className": "flex items-center gap-3 px-4 py-3 text-red-400"}, [__jacJsx(LogOut, {}, []), __jacJsx("div", {"className": "text-sm text-red-400 font-medium"}, ["Logout"])])])]);
   }
   function MobileDashSideBar() {
     let baseClasses = "fixed top-0 left-0 bg-[#0b0b0b] h-screen w-[80%] max-w-[300px] transform transition-transform duration-300 ease-in-out z-[100000] flex flex-col border-r border-gray-800";
@@ -229,7 +252,7 @@ function Dashboard() {
           setNotifications(updatedNotifications);
         }
       }}, [__jacJsx("div", {"className": "flex items-start gap-4"}, [__jacJsx("div", {"className": "w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 " + iconBg}, [notification.type === "message" && __jacJsx("svg", {"className": "w-6 h-6 text-white", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"}, [])]), notification.type === "event" && __jacJsx("svg", {"className": "w-6 h-6 text-white", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"}, [])]), notification.type === "success" && __jacJsx("svg", {"className": "w-6 h-6 text-white", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M5 13l4 4L19 7"}, [])]), notification.type === "warning" && __jacJsx("svg", {"className": "w-6 h-6 text-white", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"}, [])])]), __jacJsx("div", {"className": "flex-1 min-w-0"}, [__jacJsx("div", {"className": "flex items-start justify-between gap-4 mb-1"}, [__jacJsx("h3", {"className": "text-white font-semibold flex items-center gap-2"}, [notification.title, isUnread && __jacJsx("span", {"className": "w-2 h-2 bg-primary rounded-full"}, [])]), __jacJsx("span", {"className": "text-gray-400 text-sm flex-shrink-0"}, [notification.time])]), __jacJsx("p", {"className": "text-gray-400 text-sm line-clamp-2"}, [notification.description])])])]);
-    })])])]), activeLink === "skills" && __jacJsx(SelectionManager, {"title": "Select Your Skills", "description": "Choose or add your skills", "placeholder": "Search or type a skill and press Enter", "selectedLabel": "Selected Skills", "availableLabel": "Available Skills", "availableItems": "none", "selectedItems": selectedSkills, "setSelectedItems": setSelectedSkills, "onSave": handleSaveSkills}, []), activeLink === "roles" && __jacJsx(SelectionManager, {"title": "Select Your Roles", "description": "Choose or add your target roles", "placeholder": "Search or type a role and press Enter", "selectedLabel": "Selected Roles", "availableLabel": "Available Roles", "availableItems": "none", "selectedItems": selectedRoles, "setSelectedItems": setSelectedRoles, "onSave": () => {}}, []), activeLink === "roadmap" && __jacJsx("div", {}, [__jacJsx("h1", {"className": "text-2xl md:text-3xl font-bold text-white mb-6"}, ["My Roadmap"]), __jacJsx("p", {"className": "text-gray-400"}, ["Your personalized learning path"]), __jacJsx("div", {"className": "grid grid-cols-1 md:grid-cols-3 gap-4"}, [roadmapData.map(roadmap => {
+    })])])]), activeLink === "skills" && __jacJsx(SelectionManager, {"title": "Select Your Skills", "description": "Choose or add your skills", "placeholder": "Search or type a skill and press Enter", "selectedLabel": "Selected Skills", "availableLabel": "Available Skills", "availableItems": "none", "selectedItems": selectedSkills, "setSelectedItems": setSelectedSkills, "onSave": handleSaveSkills}, []), activeLink === "roles" && __jacJsx(SelectionManager, {"title": "Select Your Roles", "description": "Choose or add your target roles", "placeholder": "Search or type a role and press Enter", "selectedLabel": "Selected Roles", "availableLabel": "Available Roles", "availableItems": "none", "selectedItems": selectedRoles, "setSelectedItems": setSelectedRoles, "onSave": () => {}}, []), activeLink === "certifications" && __jacJsx(SelectionManager, {"title": "Select Your Certifications", "description": "Choose or add your certifications", "placeholder": "Search or type a certification and press Enter", "selectedLabel": "Selected Certifications", "availableLabel": "Available Certifications", "availableItems": "none", "selectedItems": selectedCertifications, "setSelectedItems": setSelectedCertifications, "onSave": handleSaveCertifications}, []), activeLink === "roadmap" && __jacJsx("div", {}, [__jacJsx("h1", {"className": "text-2xl md:text-3xl font-bold text-white mb-6"}, ["My Roadmap"]), __jacJsx("p", {"className": "text-gray-400"}, ["Your personalized learning path"]), __jacJsx("div", {"className": "grid grid-cols-1 md:grid-cols-3 gap-4"}, [roadmapData.map(roadmap => {
       return __jacJsx(RoadmapContent, {"key": roadmap.id, "roadmap": roadmap.body.role_title, "markdown": roadmap.body.learning_path}, []);
     })])]), activeLink === "roadmap-inside" && __jacJsx("div", {}, [__jacJsx("button", {"onClick": e => {
       setActiveLink("roadmap");

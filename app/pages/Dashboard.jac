@@ -23,6 +23,8 @@ cl {
         let [userSkillgap, setUserSkillGap] = useState([]);
         let [roadmapData, setRoadmapData] = useState([]);
         let [roadmapMarkdown, setRoadmapMarkdown] = useState("");
+        let [selectedCertifications, setSelectedCertifications] = useState([]);
+
 
         
         let [notifications, setNotifications] = useState([
@@ -43,6 +45,9 @@ cl {
         let rolesClasses = "bg-primary text-white" if activeLink == "roles" else "text-gray-300 hover:bg-[#101010ff] hover:text-white";
         let roadmapClasses = "bg-primary text-white" if activeLink == "roadmap" else "text-gray-300 hover:bg-[#101010ff] hover:text-white";
         let ariseaiClasses = "bg-primary text-white" if activeLink == "ariseai" else "text-gray-300 hover:bg-[#101010ff] hover:text-white";
+        let certificationsClasses = "bg-primary text-white"
+        if activeLink == "certifications"
+        else "text-gray-300 hover:bg-[#101010ff] hover:text-white";
 
         let devRoles = ["Frontend Developer", "Backend Developer", "Fullstack Developer", "Mobile Developer", "DevOps Engineer", "UI/UX Designer", "Data Scientist", "Machine Learning Engineer"];
 
@@ -52,6 +57,19 @@ cl {
                 let result = await root spawn get_user_details();
                 let profile = await root spawn get_user_profile();
                 let data = profile.reports[0].body.skills;
+                let certData = profile.reports[0].body.certifications;
+
+                let certObjects = certData.map(
+                    lambda cert:any -> any {
+                        return {
+                            title: cert.title,
+                            url: cert.url
+                        };
+                    }
+                );
+
+                setSelectedCertifications(certObjects);
+
 
                 let skillObjects = data.map(
                     lambda skill:any -> any {
@@ -94,9 +112,6 @@ cl {
                     setRoadmapData(roadmap.reports);
                 } 
 
-                
-
-
             } except Exception as err {
                 console.log(err);
                 # navigate("/onboarding");
@@ -133,10 +148,30 @@ cl {
             saveSkills();
         }
 
+
         async def saveSkills() -> None {
             setIsLoading(true);
             try{
                 let result = await root spawn update_user_profile(
+                    updated_skills=selectedSkills,
+                    updated_certifications=selectedCertifications
+
+                );
+
+                if result {
+                    setIsLoading(false);
+                }
+            }
+            except Exception as err {
+                console.log(err);
+            }
+        }
+
+        async def saveCertifications() -> None {
+            setIsLoading(true);
+            try {
+                let result = await root spawn update_user_profile(
+                    updated_certifications=selectedCertifications,
                     updated_skills=selectedSkills
                 );
 
@@ -147,7 +182,10 @@ cl {
             except Exception as err {
                 console.log(err);
             }
+        }
 
+        def handleSaveCertifications() -> None {
+            saveCertifications();
         }
 
         def DashSideBar() -> any {
@@ -217,6 +255,13 @@ cl {
                                     onClick={lambda e:any -> None { setActiveLink("roles"); }}
                                     className={baseLinkClasses + rolesClasses}>
                                     <span>Roles</span>
+                                </div>
+                            </li>
+                                <li className="mb-[6px]">
+                                <div 
+                                    onClick={lambda e:any -> None { setActiveLink("certifications"); }}
+                                    className={baseLinkClasses + certificationsClasses}>
+                                    <span>Certifications</span>
                                 </div>
                             </li>
                         </ul>
@@ -897,6 +942,21 @@ cl {
                         onSave={lambda -> None {}}
                     />
                 )}
+
+                {activeLink == "certifications" && (
+                    <SelectionManager 
+                        title="Select Your Certifications"
+                        description="Choose or add your certifications"
+                        placeholder="Search or type a certification and press Enter"
+                        selectedLabel="Selected Certifications"
+                        availableLabel="Available Certifications"
+                        availableItems="none"
+                        selectedItems={selectedCertifications}
+                        setSelectedItems={setSelectedCertifications}
+                        onSave={handleSaveCertifications}
+                    />
+                )}
+
 
                 {activeLink == "roadmap" && (
                     <div>

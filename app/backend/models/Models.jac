@@ -45,4 +45,3 @@ node LearningPath {
     has learning_path: str = ""; # Actual learning path in markdown format
     has disk_path: str = ""; # Path where learning path markdown is saved in memory
 }
-
