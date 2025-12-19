@@ -41,7 +41,13 @@ function Dashboard() {
       let data = profile.reports[0].body.skills;
       let certData = profile.reports[0].body.certifications;
       let certObjects = certData.map(cert => {
-        return {title: cert.title, url: cert.url};
+        let certName = "";
+        if (cert.name) {
+          certName = cert.name;
+        } else {
+          certName = cert.title;
+        }
+        return {name: certName, url: cert.url};
       });
       setSelectedCertifications(certObjects);
       let skillObjects = data.map(skill => {

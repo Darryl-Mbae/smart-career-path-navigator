@@ -56,20 +56,28 @@ cl {
             try {
                 let result = await root spawn get_user_details();
                 let profile = await root spawn get_user_profile();
+
                 let data = profile.reports[0].body.skills;
                 let certData = profile.reports[0].body.certifications;
 
                 let certObjects = certData.map(
                     lambda cert:any -> any {
+                        let certName = "";
+
+                        if cert.name {
+                            certName = cert.name;
+                        } else {
+                            certName = cert.title;
+                        }
+
                         return {
-                            title: cert.title,
+                            name: certName,
                             url: cert.url
                         };
                     }
                 );
 
                 setSelectedCertifications(certObjects);
-
 
                 let skillObjects = data.map(
                     lambda skill:any -> any {
@@ -81,15 +89,14 @@ cl {
                 );
 
                 setSelectedSkills(skillObjects);
-
                 setUserDetails(result.reports[0].body);
 
-                
             } except Exception as err {
                 console.log(err);
                 # navigate("/onboarding");
             }
         }
+
         async def getSkillGap() -> None {
             try {
                 let data = await root spawn get_user_target_roles();
