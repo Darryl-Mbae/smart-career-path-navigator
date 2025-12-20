@@ -40,3 +40,18 @@ body{
   animation-delay: 0.4s;
 }
 
+.swiper-wrapper{
+  padding-bottom: calc(.25rem * 12);
+}
+.swiper-pagination-bullet{
+  background: white !important;
+
+}
+
+#root > div > div > div.w-\[80\%\].mx-auto.py-20.grid.grid-cols-1.lg\:grid-cols-\[40\%_60\%\].gap-10.items-center > div:nth-child(2) > div > div.swiper-pagination.swiper-pagination-clickable.swiper-pagination-bullets.swiper-pagination-horizontal > span.swiper-pagination-bullet.swiper-pagination-bullet-active{
+  background: var(--color-primary) !important;
+}
+
+#root > div > div > div.w-\[80\%\].mx-auto.py-20.grid.grid-cols-1.lg\:grid-cols-\[40\%_60\%\].gap-10.items-center > div:nth-child(2) > div > div.swiper-pagination.swiper-pagination-clickable.swiper-pagination-bullets.swiper-pagination-horizontal > span{
+  background: white !important;
+}

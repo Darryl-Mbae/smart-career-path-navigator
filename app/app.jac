@@ -1,4 +1,5 @@
 cl import from .pages.Website { Website }
+cl import from react { useEffect }
 cl import from .pages.Auth { Auth }
 cl import from .pages.Dashboard { Dashboard }
 cl import from .pages.Onboarding { Onboarding }
@@ -11,6 +12,11 @@ cl import ".global.css";
 
 cl {
     def app() -> any {
+        
+        let viewport = document.createElement('meta');
+        viewport.name = 'viewport';
+        viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+        document.head.appendChild(viewport);
 
        return <Router>
             <div>
