@@ -1,13 +1,13 @@
 cl import from react { useState,useRef,useEffect }
 cl import from "@jac-client/utils" { useNavigate }
-cl import from 'lucide-react' { Mail,User, ChevronUp,ChevronRight, ChevronLeft, Github, Linkedin }
+cl import from 'lucide-react' { Mail,User, ChevronUp,ChevronRight, ChevronLeft, Github, Linkedin, AudioLines }
 cl import from 'radix-ui' { Accordion }
 cl import from '@radix-ui/react-icons' { ChevronDownIcon }
 
 cl import from "@jac-client/assets/team/Darryl.png" { default as Darryl}
 cl import from "@jac-client/assets/team/Dennis.png" { default as Dennis}
 cl import from "@jac-client/assets/team/Moha.png" { default as Moha}
-
+cl import from "@jac-client/assets/images/mac-skills.png" { default as skills}
 
 cl import from "swiper/react" {
     Swiper,
@@ -112,8 +112,48 @@ cl {
             }
             
             def Features() -> any {
-                return<div>
-                </div>;
+                return 
+                    <div className='w-[90%] my-[15vh] mx-auto grid grid-cols-1 lg:grid-cols-[50%_50%] mb-[10vh] lg:mb-[20vh]'>
+                        <div className='w-full overflow-hidden relative mb-4 lg:mb-0 lg:w-[90%] bg-primary rounded-4xl aspect-square'>
+                            <img
+                                src={skills}
+                                alt="skills illustration"
+                                className='absolute top-10 -right-50 lg:top-20 lg:-right-80 h-[80%] w-auto max-w-none'
+                            />
+                        </div>
+                        <div className='w-full lg:w-[90%] ml-[5%] flex flex-col justify-center'>
+                            <AudioLines className="w-10 h-10 mb-4 text-purple-300" />
+                            <h2 className="font-bold text-4xl text-white mb-7 w-full font-sans">
+                                AI-Powered Career Mapping,<br /> Made for Learners
+                            </h2>
+                            <p className="text-base text-gray-100 mb-8 w-[95%]">
+                                Arise is an intelligent career platform that analyzes your skills, identifies career opportunities, 
+                                and creates personalized learning roadmaps to help you reach your professional goals.
+                            </p>
+
+                            <div className='w-[90%] bg-[#0b0b0b] text-white placeholder-gray-400 lg:w-[85%] flex items-center gap-3 py-4 px-4 mt-6 rounded-lg'>
+                                <div className='w-1.5 h-1.5 rounded-full bg-primary'></div>
+                                <div className=''>Analyzing your CV and skill profile</div>
+                            </div>
+
+                            <div className='w-[90%] bg-[#0b0b0b] text-white placeholder-gray-400 lg:w-[85%] flex items-center gap-3 py-4 px-4 mt-2 rounded-lg'>
+                                <div className='w-1.5 h-1.5 rounded-full bg-primary'></div>
+                                <div className=''>Identifying career opportunities that fit you</div>
+                            </div>
+
+                            <div className='w-[90%] bg-[#0b0b0b] text-white placeholder-gray-400 lg:w-[85%] flex items-center gap-3  py-4 px-4 mt-2 rounded-lg'>
+                                <div className='w-1.5 h-1.5 rounded-full bg-primary'></div>
+                                <div className=''>Highlighting skill gaps and growth areas</div>
+                            </div>
+
+                            <div className='w-[90%] bg-[#0b0b0b] text-white placeholder-gray-400 lg:w-[85%] flex items-center gap-3  py-4 px-4 mt-2 rounded-lg'>
+                                <div className='w-1.5 h-1.5 rounded-full bg-primary'></div>
+                                <div className=''>Building personalized learning roadmaps</div>
+                            </div>
+
+                        </div>
+                    </div>;
+                
             }
 
             def Team() -> any {
@@ -127,7 +167,7 @@ cl {
                 let teamMembers = [
                     { id: 1, name: "Darryl Mbae",image: Darryl },
                     { id: 2, name: "Kiptanui Denis",image: Dennis },
-                    { id: 3, name: "Mohammed",image: Moha},
+                    { id: 3, name: "Mohamed Ibrahim",image: Moha},
                     { id: 4, name: "Darryl Mbae", image: Darryl},
                     { id: 5, name: "Kiptanui Denis", image: Dennis },
                     { id: 6, name: "Mohammed",image: Moha }
@@ -144,7 +184,7 @@ cl {
                         </p>
                     </div>
                     <div className="relative">
-                        <div className="absolute left-0 bottom-0 w-full lg:w-[calc(33.333%-10px)] z-20 pointer-events-none">
+                        <div className="absolute left-0 bottom-0 w-full lg:w-[calc(33.333%-20px)] z-20 pointer-events-none">
                            <div className="w-full bg-primary backdrop-blur-sm rounded-xl px-5 py-3 border border-gray-700/50 shadow-xl">
                             <h3 className="text-white font-bold text-lg mb-3">
                                 {teamMembers[activeSlide].name}

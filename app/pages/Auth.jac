@@ -1,5 +1,7 @@
 cl import from react { useState }
-cl import from 'lucide-react' { ChevronLeft }
+cl import from 'lucide-react' { ChevronLeft,Eye, EyeClosed }
+cl import from "@jac-client/assets/images/mac-roles.png" { default as roles}
+
 cl import from "@jac-client/utils" {
     useNavigate,
     jacSignup,
@@ -11,6 +13,8 @@ cl{
 
         let navigate = useNavigate();
 
+        let [isLoading, setIsLoading] = useState(False);
+
         let [loginEmail, setLoginEmail] = useState("");
         let [loginPassword, setLoginPassword] = useState("");
 
@@ -18,8 +22,10 @@ cl{
         let [signupEmail, setSignupEmail] = useState("");
         let [signupPassword, setSignupPassword] = useState("");
 
-        let [isSignIn, setIsSignIn] = useState(True);
+        let [isSignIn, setIsSignIn] = useState(False);
         let [error, setError] = useState("");
+        let [showPassword, setShowPassword] = useState(false);
+
 
         let baseClasses = "hidden md:flex w-1/2 h-full absolute top-0 justify-center items-center pointer-events-none transition-all duration-300 ease-in";
         let positionClass = "left-1/2" if isSignIn else "left-0";
@@ -29,15 +35,18 @@ cl{
 
         async def handleLogin(e: any) -> None {
             e.preventDefault();
+            setIsLoading(True);
             setError("");
 
             if not loginEmail or not loginPassword {
                 setError("Please fill all fields");
+                setIsLoading(False);
                 return;
             }
 
             success = await jacLogin(loginEmail, loginPassword);
             if success {
+                setIsLoading(False);
                 resume_status = await root spawn check_resume_upload_status();
 
                 if resume_status.reports[0]["body"] == True {
@@ -48,27 +57,36 @@ cl{
                 }
             } else {
                 setError("Wrong email or password");
+                setIsLoading(False);
+
             }
+
+
 
         }
         async def handleSignup(e: any) -> None {
             e.preventDefault();
+            setIsLoading(True);
             setError("");
 
             if not signupName or not signupEmail or not signupPassword {
                 setError("Please fill in all fields");
+                setIsLoading(False);
                 return;
             }
 
             result = await jacSignup(signupEmail, signupPassword);
 
             if result["success"] {
+                setIsLoading(False);
                 new_memory = root spawn initialize_memory(full_name=signupName, email=signupEmail);
                 console.log("New Memory initialized:");
                 console.log(new_memory);
                 navigate("/onboarding");
             } else {
                 setError(result["error"] if result["error"] else "Signup failed");
+                setIsLoading(False);
+
             }
         }
 
@@ -84,6 +102,36 @@ cl{
             </div>;
         }
 
+        def LoadingDots() -> any {
+            return <div style={{
+                "display": "flex",
+                "justifyContent": "center",
+                "alignItems": "center",
+                "gap": "6px",
+                "height": "20px"
+            }}>
+                <span className="loading-dot"></span>
+                <span className="loading-dot"></span>
+                <span className="loading-dot"></span>
+            
+            </div>;
+        }
+
+        def PasswordToggleIcon(props:any) -> any {
+                if props.showPassword {
+                    return <EyeClosed
+                        onClick={lambda -> None { props.setShowPassword(False); }}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 cursor-pointer hover:text-white transition-colors"
+                        size={20}
+                    />;
+                } else {
+                    return <Eye
+                        onClick={lambda -> None { props.setShowPassword(True); }}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 cursor-pointer hover:text-white transition-colors"
+                        size={20}
+                    />;
+                }
+        }
         return <div className="w-full h-screen bg-black grid overflow-hidden grid-cols-[100%] md:grid-cols-[50%_50%] relative text-white">
 
             <div className={signInClass + " w-full h-screen flex items-center justify-center"}>
@@ -96,22 +144,31 @@ cl{
                             placeholder="Email"
                             value={loginEmail}
                             onChange={lambda e: any -> None { setLoginEmail(e.target.value); }}
-                            className="p-[1.25rem] rounded-[0.5rem] border-none bg-[#0b0b0b] text-white text-[16px] w-full mb-[16px]"
+                            className="p-[1.25rem] rounded-[0.5rem] border-none bg-[#0b0b0b] text-white text-[16px] w-full mb-[16px] focus:border-primary focus:ring-1 focus:ring-primary"
+                            autoComplete="new-email" 
+
                         />
                         <input/>
+                        <div className="w-full relative">
                         <input
-                            type="password"
+                            type={"text" if showPassword else "password"}
                             placeholder="Password"
                             value={loginPassword}
                             onChange={lambda e: any -> None { setLoginPassword(e.target.value); }}
-                            className="p-[1.25rem] rounded-[0.5rem] border-none bg-[#0b0b0b] text-white text-[16px] w-full mb-[16px]"
+                            className="p-[1.25rem] rounded-[0.5rem] border-none bg-[#0b0b0b] text-white text-[16px] w-full focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                            autoComplete="new-password" 
+ 
                         />
                         <input/>
+                          { PasswordToggleIcon({showPassword: showPassword, setShowPassword: setShowPassword}) }
+                        </div>
                         {error && <p className="text-[#dc2626] mb-4 text-sm">{error}</p>}
                         <button
                             type="submit"
                             className="w-full p-5 rounded-[8px] border-none bg-primary text-white font-semibold cursor-pointer"
-                        >Sign In</button>
+                        >
+                            { LoadingDots() if isLoading else "Sign In" }
+                        </button>
                     </form>
                     <p className="mt-[19px] text-[14px] text-[#bbbbbb] items-center">
                         Don't have an account?
@@ -130,30 +187,35 @@ cl{
                             placeholder="Full Name"
                             value={signupName}
                             onChange={lambda e: any -> None { setSignupName(e.target.value); }}
-                            className="p-[1.25rem] rounded-[0.5rem] border-none bg-[#0b0b0b] text-white text-[16px] w-full mb-[16px]"
+                            className="focus:outline-none p-[1.25rem] rounded-[0.5rem] border-none bg-[#0b0b0b] text-white text-[16px] w-full mb-[16px]"
                         />
                         <input
                             type="email"
                             placeholder="Email"
                             value={signupEmail}
                             onChange={lambda e: any -> None { setSignupEmail(e.target.value); }}
-                            className="p-[1.25rem] rounded-[0.5rem] border-none bg-[#0b0b0b] text-white text-[16px] w-full mb-[16px]"
+                            className="focus:outline-none p-[1.25rem] rounded-[0.5rem] border-none bg-[#0b0b0b] text-white text-[16px] w-full mb-[16px]"
+                             autoComplete="new-email" 
                         />
-                        <div>
+                        <div className="w-full relative mb-[16px]">
                         <input
-                            type="password"
+                            type={"text" if showPassword else "password"}
                             placeholder="Password"
                             value={signupPassword}
                             onChange={lambda e: any -> None { setSignupPassword(e.target.value); }}
-                            className="p-[1.25rem] rounded-[0.5rem] border-none bg-[#0b0b0b] text-white text-[16px] w-full mb-[16px]"
+                            className="focus:outline-none p-[1.25rem] rounded-[0.5rem] border-none bg-[#0b0b0b] text-white text-[16px] w-full "
+                             autoComplete="new-password" 
                         />
+                        { PasswordToggleIcon({showPassword: showPassword, setShowPassword: setShowPassword}) }
                         </div>
                         {error && <p className="text-[#dc2626] mb-4 text-sm">{error}</p>}
 
                         <button
                             type="submit"
                             className="w-full p-5 rounded-[8px] border-none bg-primary text-white font-semibold cursor-pointer"
-                        >Sign Up</button>
+                        >
+                            { LoadingDots() if isLoading else "Sign Up" }
+                        </button>
                     </form>
                     <p className="mt-[19px] text-[14px] text-[#bbbbbb] items-center">
                         Already have an account?
@@ -163,7 +225,13 @@ cl{
             </div>
 
             <div className={baseClasses + " " + positionClass}>
-                <div className="m-auto bg-primary w-[97%] h-[97%] z-[9999] rounded-[10px] flex justify-center items-center overflow-hidden"></div>
+                <div className="relative m-auto bg-primary w-[97%] h-[97%] z-[9999] rounded-[10px] overflow-hidden">
+                    <img
+                        src={roles}
+                        alt="skills illustration"
+                        className='absolute top-10 -left-50 lg:top-20 lg:-left-80 h-[72%] w-auto max-w-none'
+                        />
+                </div>
             </div>
 
         </div>;
