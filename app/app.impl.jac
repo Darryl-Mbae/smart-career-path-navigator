@@ -1651,9 +1651,7 @@ For each skill gap or certification gap:
 - You may generate AT MOST ONE search phrase.
 - All generated search phrases MUST be bundled into a single list before calling the tool.
 
---------------------------------------------------
 1. Understand Inputs
---------------------------------------------------
 
 Use and interpret the following inputs at a high level:
 
@@ -1663,9 +1661,8 @@ Use and interpret the following inputs at a high level:
 
 Use these inputs to build a learning path tailored to the user’s gaps while leveraging existing strengths.
 
---------------------------------------------------
 2. Tool Usage Workflow (MANDATORY ORDER)
---------------------------------------------------
+
 
 You MUST follow this exact workflow:
 
@@ -1684,9 +1681,8 @@ Example of valid batched search phrases:
 
 You must NOT call tools incrementally or per-gap.
 
---------------------------------------------------
 3. Deliver a Comprehensive Learning Path
---------------------------------------------------
+
 
 The learning path must be exhaustive, structured, and ordered.
 
@@ -1725,9 +1721,8 @@ For EACH required certification:
 - Weekly study plan
 - Practice exams & expected difficulty
 
---------------------------------------------------
 4. Quality Requirements
---------------------------------------------------
+
 
 Your output must be:
 
@@ -1738,9 +1733,7 @@ Your output must be:
 - Actionable and unambiguous
 - Tailored to the user’s background and level
 
---------------------------------------------------
 Final Constraints
---------------------------------------------------
 
 - Never fabricate URLs.
 - If no URLs are returned for a topic, silently skip that section.

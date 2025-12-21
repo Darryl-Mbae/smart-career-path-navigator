@@ -8,6 +8,7 @@ import docx;
 import requests;
 import json;
 import from firecrawl { FirecrawlApp }
+import from concurrent.futures { ThreadPoolExecutor, as_completed }
 
 # Tools
 # Job recommender tools
@@ -28,7 +29,7 @@ def is_valid_url(url: str) -> bool {
     }
     return True;
 }
-def search_job_urls(job_title: str, limit: int = 2) -> list {
+def search_job_urls(job_title: str, limit: int = 5) -> list {
     let url = 'https://google.serper.dev/search';
     let headers = {'X-API-KEY': SERPER_API_KEY, 'Content-Type': 'application/json'};
     let payload = {'q': f"{job_title}mandatory required in  demand  skills and certifications 2025"};
@@ -131,7 +132,7 @@ def fetch_careerjet_descriptions(job_title: str) -> str {
 
 
 
-def search_urls(search_phrase: str, limit: int = 2) -> list {
+def search_urls(search_phrase: str, limit: int = 5) -> list {
     let url = "https://google.serper.dev/search";
     let headers = {
         "X-API-KEY": SERPER_API_KEY,
@@ -173,7 +174,7 @@ def search_urls(search_phrase: str, limit: int = 2) -> list {
 }
 
 
-def extract_markdown(url: str, max_chars: int = 5000) -> dict {
+def extract_markdown(url: str, max_chars: int = 10000) -> dict {
     let doc = firecrawl.scrape(url, formats=["markdown"]);
 
     let md = getattr(doc, "markdown", "");
@@ -191,8 +192,6 @@ def extract_markdown(url: str, max_chars: int = 5000) -> dict {
     };
 }
 
-
-import from concurrent.futures { ThreadPoolExecutor, as_completed }
 
 def search_learning_resources(search_phrases: list[str]) -> str {
     results = [];
