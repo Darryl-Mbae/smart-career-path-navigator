@@ -50,35 +50,46 @@ Arise is an intelligent career development platform built with Jac/Jaseci that a
 ### 1\. Clone the Repository
 
 ```plaintext
-`git clone https://github.com/Darryl-Mbae/smart-career-path-navigator.git`
+git clone https://github.com/Darryl-Mbae/smart-career-path-navigator.git
 ```
 
 ### 2\. Create Jac Environment
 
 ```plaintext
 # Create a new Jac environment
-python -m venv jacenv
-
-# Activate the environment
-# On Linux/Mac:
-source jacenv/bin/activate
-# On Windows:
-# jacenv\Scripts\activate
+python3 -m venv jacenv
 ```
 
-### 3\. Install Jaseci
+# Then Activate the environment
+# On Linux/Mac:
+```
+source jacenv/bin/activate
+```
+
+### 3\. Install Node.js
 
 ```plaintext
-# Install Jaseci and Jac
-pip install jaseci
+For Linux users:
+
+Visit https://nodejs.org/en/download and follow the instructions to install Node.js using nvm (Node Version Manager) with npm.
+
+Select:
+
+Platform: Linux
+Package Manager: nvm
+Package: npm
+```
+# Verify Installation of Node
+```
+node -v
+npm -v
 ```
 
 ### 4\. Install Dependencies
 
 ```plaintext
-cd app
-
 # Install Python dependencies
+cd smart-career-path-navigator/app
 pip install -r requirements.txt
 
 # Install Node.js dependencies for client components
@@ -87,11 +98,12 @@ npm install
 
 ### 5\. Configure Environment Variables
 
-Create a `.env` file in the `app/` directory with the following API keys:
+Create two `.env` files; one in the `app/` directory and another in `app/backend/tools` directory with the following API keys:
 
 ```plaintext
+
 # Required API Keys
-GEMINI_API_KEY=your_mistral_api_key_here
+GEMINI_API_KEY=your_gemini_api_key_here
 SERPER_API_KEY=your_serper_search_api_key_here  
 FIRECRAWL_API_KEY=your_firecrawl_api_key_here
 ```
@@ -115,7 +127,6 @@ The application will be available at `http://localhost:8000/page/app`
 
 ### 1\. **Registration & Authentication**
 
-*   Visit the landing page at `/`
 *   Click "Get Started" to access the authentication page
 *   Sign up with email and password or log in to existing account
 
@@ -308,3 +319,4 @@ For issues and questions:
 *   [Graph-Native Programming Concepts](https://jaseci.org/docs)
 
 **Happy Career Mapping with Arise! 🚀**
+
