@@ -32,6 +32,65 @@ cl{
         let navigate = useNavigate();
         let devSkills = ["JavaScript", "Python", "React", "Node.js", "TypeScript", "HTML & CSS", "Django", "Flutter", "Git & GitHub", "SQL & Databases", "REST APIs", "GraphQL", "Docker", "Agile & Scrum"];
         let devRoles = ["Frontend Developer", "Backend Developer", "Fullstack Developer", "Mobile Developer", "DevOps Engineer", "UI/UX Designer", "Data Scientist", "Machine Learning Engineer"];
+        let loadingMessages = [
+            "Analyzing your CV…",
+            "Extracting skills and experience…",
+            "Identifying career patterns…",
+            "Mapping skills to target roles…",
+            "Detecting skill gaps…",
+            "This could take a few minutes…",
+        ];
+        let [loadingText, setLoadingText] = useState(loadingMessages[0] or "");
+        let [messageIndex, setMessageIndex] = useState(0);
+        let [typedText, setTypedText] = useState("");
+
+
+        useEffect(lambda -> None {
+        if (isLoading == false) {
+            setMessageIndex(0);
+            setLoadingText(loadingMessages[0]);
+            return;
+        }
+
+        let interval = setInterval(lambda -> None {
+            setMessageIndex(lambda prev:any -> any {
+            let next = (prev + 1) % loadingMessages.length;
+            setLoadingText(loadingMessages[next]);
+            return next;
+            });
+        }, 1800);
+
+        return lambda -> None { clearInterval(interval); };
+        }, [isLoading]);
+
+        useEffect(lambda -> None {
+            if (isLoading == false) {
+                setTypedText("");
+                return;
+            }
+
+            if (not loadingText or loadingText.length == 0) {
+                return;
+            }
+
+            setTypedText("");
+
+            let i = 0;
+            let current = loadingText;
+
+            let typing = setInterval(lambda -> None {
+                # Extra safety
+                if (i >= current.length) {
+                    clearInterval(typing);
+                    return;
+                }
+
+                setTypedText(lambda prev:any -> any { return prev + current[i]; });
+                i += 1;
+            }, 40);
+
+            return lambda -> None { clearInterval(typing); };
+        }, [loadingText, isLoading]);
 
         useEffect(lambda -> None {
             let percent = (currentStep / 4) * 100;
@@ -247,11 +306,11 @@ cl{
                         console.log(f"Skill Gaps for {currentRole.title}: ");
                         console.log(requirements_gap.reports[requirements_gap.reports.length - 4]);
                         
-                        learning_path = await root spawn recommend_learning_paths(
-                            role_title=currentRole.title
-                        );
-                        console.log(f"Learning Path for {currentRole.title}: ");
-                        console.log(learning_path.reports[learning_path.reports.length - 1]["body"]["learning_path"]);
+                        # learning_path = await root spawn recommend_learning_paths(
+                        #     role_title=currentRole.title
+                        # );
+                        # console.log(f"Learning Path for {currentRole.title}: ");
+                        # console.log(learning_path.reports[learning_path.reports.length - 1]["body"]["learning_path"]);
                     } else {
                         allSuccessful = False;
                         console.log(f"Failed to find skill gaps for {currentRole.title}");
@@ -489,8 +548,6 @@ cl{
             </div>;
         }
 
-
-
         return<div className="w-full bg-black h-screen grid grid-cols-[100%} md:grid-cols-[45%_55%] relative text-white">
             <div className="hidden w-full h-full md:flex justify-center items-center">
                 <div className="m-auto bg-[#0b0b0b] w-[95%] h-[90%] z-[9999] rounded-[10px] flex flex-col justify-center items-center overflow-hidden">
@@ -639,6 +696,11 @@ cl{
                         >   
                             { LoadingDots() if isLoading else ( "Get Started" if currentStep == 4 else "Next")}
                         </button>
+
+                        <p className="text-sm text-gray-400 animate-pulse transition-opacity duration-500">
+                            {loadingText if isLoading and currentStep == 3 else "" }
+                        </p> 
+
 
                     </div>
                 </div>

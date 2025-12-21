@@ -21,6 +21,52 @@ function Onboarding() {
   let navigate = useNavigate();
   let devSkills = ["JavaScript", "Python", "React", "Node.js", "TypeScript", "HTML & CSS", "Django", "Flutter", "Git & GitHub", "SQL & Databases", "REST APIs", "GraphQL", "Docker", "Agile & Scrum"];
   let devRoles = ["Frontend Developer", "Backend Developer", "Fullstack Developer", "Mobile Developer", "DevOps Engineer", "UI/UX Designer", "Data Scientist", "Machine Learning Engineer"];
+  let loadingMessages = ["Analyzing your CV\u2026", "Extracting skills and experience\u2026", "Identifying career patterns\u2026", "Mapping skills to target roles\u2026", "Detecting skill gaps\u2026", "This could take a few minutes\u2026"];
+  let [loadingText, setLoadingText] = useState(loadingMessages[0] || "");
+  let [messageIndex, setMessageIndex] = useState(0);
+  let [typedText, setTypedText] = useState("");
+  useEffect(() => {
+    if (isLoading === false) {
+      setMessageIndex(0);
+      setLoadingText(loadingMessages[0]);
+      return;
+    }
+    let interval = setInterval(() => {
+      setMessageIndex(prev => {
+        let next = prev + 1 % loadingMessages.length;
+        setLoadingText(loadingMessages[next]);
+        return next;
+      });
+    }, 1800);
+    return () => {
+      clearInterval(interval);
+    };
+  }, [isLoading]);
+  useEffect(() => {
+    if (isLoading === false) {
+      setTypedText("");
+      return;
+    }
+    if (!loadingText || loadingText.length === 0) {
+      return;
+    }
+    setTypedText("");
+    let i = 0;
+    let current = loadingText;
+    let typing = setInterval(() => {
+      if (i >= current.length) {
+        clearInterval(typing);
+        return;
+      }
+      setTypedText(prev => {
+        return prev + current[i];
+      });
+      i += 1;
+    }, 40);
+    return () => {
+      clearInterval(typing);
+    };
+  }, [loadingText, isLoading]);
   useEffect(() => {
     let percent = currentStep / 4 * 100;
     setProgress(percent + "%");
@@ -137,9 +183,6 @@ function Onboarding() {
         if (requirements_gap_status === "Success") {
           console.log(`Skill Gaps for ${currentRole.title}: `);
           console.log(requirements_gap.reports[requirements_gap.reports.length - 4]);
-          let learning_path = await __jacSpawn("recommend_learning_paths", "", {"role_title": currentRole.title});
-          console.log(`Learning Path for ${currentRole.title}: `);
-          console.log(learning_path.reports[learning_path.reports.length - 1]["body"]["learning_path"]);
         } else {
           allSuccessful = false;
           console.log(`Failed to find skill gaps for ${currentRole.title}`);
@@ -240,6 +283,6 @@ function Onboarding() {
     } else {
       navigate("/dashboard");
     }
-  }, "disabled": isLoading, "className": "w-[180px] bg-[#6e11b0] text-white border-none px-10 py-4 rounded-[5px] cursor-pointer text-base transition-transform duration-200 hover:translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"}, ["   ", isLoading ? LoadingDots() : currentStep === 4 ? "Get Started" : "Next"])])])])]);
+  }, "disabled": isLoading, "className": "w-[180px] bg-[#6e11b0] text-white border-none px-10 py-4 rounded-[5px] cursor-pointer text-base transition-transform duration-200 hover:translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"}, ["   ", isLoading ? LoadingDots() : currentStep === 4 ? "Get Started" : "Next"]), __jacJsx("p", {"className": "text-sm text-gray-400 animate-pulse transition-opacity duration-500"}, [isLoading && currentStep === 3 ? loadingText : ""]), " "])])])]);
 }
 export { Onboarding };
