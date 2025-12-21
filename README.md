@@ -22,7 +22,7 @@ Arise is an intelligent career development platform built with Jac/Jaseci that a
 │   ├── backend/                  # Backend logic modules
 │   │   ├── models/              # Data models (Skills, Roles, etc.)
 │   │   ├── relationships/       # Graph relationships
-│   │   ├── tools/               # Utility functions
+│   │   ├── tools/               # LLM Tools
 │   │   └── helpers/             # Helper functions
 │   ├── app.jac                  # Main application entry point
 │   ├── app.impl.jac            # Walker implementations
@@ -35,7 +35,7 @@ Arise is an intelligent career development platform built with Jac/Jaseci that a
 ## 🛠️ Technology Stack
 
 *   **Framework**: Jac/Jaseci (Full-stack graph-native framework)
-*   **AI/ML**: Mistral AI via BYLLM
+*   **AI/ML**: Gemini AI/ via BYLLM
 *   **APIs**: Firecrawl (web scraping), Serper (search)
 *   **File Processing**: PyPDF2, python-docx
 *   **Client**: React-like Jac client components
@@ -44,13 +44,13 @@ Arise is an intelligent career development platform built with Jac/Jaseci that a
 
 ### Prerequisites
 
-*   Python 3.8+
+*   Python 3.12+
 *   Jaseci framework
 
 ### 1\. Clone the Repository
 
 ```plaintext
-git clone <repository-url>
+`git clone https://github.com/Darryl-Mbae/smart-career-path-navigator.git`
 ```
 
 ### 2\. Create Jac Environment
@@ -91,14 +91,14 @@ Create a `.env` file in the `app/` directory with the following API keys:
 
 ```plaintext
 # Required API Keys
-MISTRAL_API_KEY=your_mistral_api_key_here
+GEMINI_API_KEY=your_mistral_api_key_here
 SERPER_API_KEY=your_serper_search_api_key_here  
 FIRECRAWL_API_KEY=your_firecrawl_api_key_here
 ```
 
 **Where to get API keys:**
 
-*   **Mistral AI**: Sign up at [mistral.ai](https://mistral.ai) for AI model access
+*   **GEMINI AI**: Sign up at [gemini](https://aistudio.google.com/app/api-keys) for AI model access
 *   **Serper**: Get your key at [serper.dev](https://serper.dev) for web search functionality
 *   **Firecrawl**: Register at [firecrawl.dev](https://firecrawl.dev) for web scraping capabilities
 
@@ -109,7 +109,7 @@ FIRECRAWL_API_KEY=your_firecrawl_api_key_here
 jac serve app.jac
 ```
 
-The application will be available at `http://localhost:8000`
+The application will be available at `http://localhost:8000/page/app`
 
 ## 📋 User Workflow
 
@@ -196,7 +196,7 @@ npm install <package_name>
 
 ### AI-Powered CV Analysis
 
-The system uses Mistral AI to extract:
+The system uses Gemini AI to extract:
 
 *   Technical and soft skills from resume text
 *   Work experience and roles
@@ -226,8 +226,8 @@ The system uses Mistral AI to extract:
 The application requires the following API keys in your `.env` file:
 
 ```plaintext
-# Mistral AI - for CV analysis and role suggestions
-MISTRAL_API_KEY=your_mistral_api_key_here
+# Gemini AI - for CV analysis and role suggestions
+GEMINI_API_KEY=your_mistral_api_key_here
 
 # Serper - for job market search functionality  
 SERPER_API_KEY=your_serper_search_api_key_here
