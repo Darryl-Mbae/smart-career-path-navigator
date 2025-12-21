@@ -168,7 +168,9 @@ cl {
                     { id: 1, name: "Darryl Mbae",image: Darryl },
                     { id: 2, name: "Denis Kiptui",image: Dennis },
                     { id: 3, name: "Mohamed Ibrahim",image: Moha},
-
+                    { id: 4, name: "Darryl Mbae", image: Darryl},
+                    { id: 5, name: "Denis Kiptui", image: Dennis },
+                    { id: 6, name: "Mohammed Ibrahim",image: Moha }
                 ];
 
                 return<div className="w-[80%] mx-auto py-20 grid grid-cols-1 lg:grid-cols-[40%_60%] gap-10 items-center">

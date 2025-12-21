@@ -183,6 +183,9 @@ function Onboarding() {
         if (requirements_gap_status === "Success") {
           console.log(`Skill Gaps for ${currentRole.title}: `);
           console.log(requirements_gap.reports[requirements_gap.reports.length - 4]);
+          let learning_path = await __jacSpawn("recommend_learning_paths", "", {"role_title": currentRole.title});
+          console.log(`Learning Path for ${currentRole.title}: `);
+          console.log(learning_path.reports[learning_path.reports.length - 1]["body"]["learning_path"]);
         } else {
           allSuccessful = false;
           console.log(`Failed to find skill gaps for ${currentRole.title}`);
