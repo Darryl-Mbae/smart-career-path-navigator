@@ -71,7 +71,8 @@ source jacenv/bin/activate
 ```plaintext
 For Linux users:
 
-Visit https://nodejs.org/en/download and follow the instructions to install Node.js using nvm (Node Version Manager) with npm.
+Visit https://nodejs.org/en/download and follow the instructions to install Node.js using
+ nvm (Node Version Manager) with npm.
 
 Select:
 
@@ -319,4 +320,5 @@ For issues and questions:
 *   [Graph-Native Programming Concepts](https://jaseci.org/docs)
 
 **Happy Career Mapping with Arise! 🚀**
+
 
