@@ -88,7 +88,7 @@ import from backend.tools.Tools {
 import from backend.helpers.Helpers { read_document_text }
 
 
-glob llm = Model(model_name="mistral/mistral-large-latest", verbose=True);
+glob llm = Model(model_name="gemini/gemini-2.5-flash", verbose=True);
 
 
 # Used by get_user_profile agent to aggregate user's skills. interests and certifications and report back to FE

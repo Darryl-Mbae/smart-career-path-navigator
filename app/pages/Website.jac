@@ -126,10 +126,10 @@ cl {
 
                 let teamMembers = [
                     { id: 1, name: "Darryl Mbae",image: Darryl },
-                    { id: 2, name: "Kiptanui Denis",image: Dennis },
+                    { id: 2, name: "Denis Kiptui",image: Dennis },
                     { id: 3, name: "Mohammed",image: Moha},
                     { id: 4, name: "Darryl Mbae", image: Darryl},
-                    { id: 5, name: "Kiptanui Denis", image: Dennis },
+                    { id: 5, name: "Denis Kiptui", image: Dennis },
                     { id: 6, name: "Mohammed",image: Moha }
                 ];
 

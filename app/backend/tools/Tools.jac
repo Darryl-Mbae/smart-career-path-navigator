@@ -28,7 +28,7 @@ def is_valid_url(url: str) -> bool {
     }
     return True;
 }
-def search_job_urls(job_title: str, limit: int = 3) -> list {
+def search_job_urls(job_title: str, limit: int = 2) -> list {
     let url = 'https://google.serper.dev/search';
     let headers = {'X-API-KEY': SERPER_API_KEY, 'Content-Type': 'application/json'};
     let payload = {'q': f"{job_title}mandatory required in  demand  skills and certifications 2025"};
@@ -131,7 +131,7 @@ def fetch_careerjet_descriptions(job_title: str) -> str {
 
 
 
-def search_urls(search_phrase: str, limit: int = 3) -> list {
+def search_urls(search_phrase: str, limit: int = 2) -> list {
     let url = "https://google.serper.dev/search";
     let headers = {
         "X-API-KEY": SERPER_API_KEY,
@@ -192,20 +192,68 @@ def extract_markdown(url: str, max_chars: int = 5000) -> dict {
 }
 
 
-def search_learning_resources(search_phrase: str) -> str {
-    let urls = search_urls(search_phrase);
-    let out = [];
+import from concurrent.futures { ThreadPoolExecutor, as_completed }
 
-    for url in urls {
+def search_learning_resources(search_phrases: list[str]) -> str {
+    results = [];
+
+    def scrape_phrase_safe(search_phrase: str) {
         try {
-            let md = extract_markdown(url);
-            out.append(md);
-        } except Exception as e {
+            urls = search_urls(search_phrase);
+            phrase_results = [];
+
+            def scrape_safe(url: Any) {
+                try {
+                    return extract_markdown(url);
+                } except Exception {
+                    return None;
+                }
+            }
+
+            with ThreadPoolExecutor(max_workers=5) as executor {
+                future_to_url = {
+                    executor.submit(scrape_safe, url): url
+                    for url in urls
+                };
+
+                for future in as_completed(future_to_url) {
+                    data = future.result();
+                    if data {
+                        phrase_results.append(data);
+                    }
+                }
+            }
+
+            return {
+                "search_phrase": search_phrase,
+                "results": phrase_results
+            };
+
+        } except Exception {
+            return None;
         }
     }
 
-    return json.dumps(out);
+    # Parallel execution for all search phrases
+    with ThreadPoolExecutor(max_workers=5) as executor {
+        futures = [
+            executor.submit(scrape_phrase_safe, phrase)
+            for phrase in search_phrases
+        ];
+
+        for future in as_completed(futures) {
+            data = future.result();
+            if data {
+                results.append(data);
+            }
+        }
+    }
+
+    return json.dumps(results);
 }
+
+
+
 
 # URL validity
 def is_learning_url(url: str) -> bool {
