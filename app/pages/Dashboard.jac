@@ -10,7 +10,7 @@ cl import from '@jac-client/utils' {
 cl import from ..fileutils { base64ToFileBytes }
 
 cl {
-    def Dashboard() -> any {
+    def Dashboard() -> any { 
         let [sidebarOpen, setSidebarOpen] = useState(false);
         let [profileOpen, setProfileOpen] = useState(false);
         let [activeLink, setActiveLink] = useState("dashboard"); 
@@ -24,6 +24,12 @@ cl {
         let [roadmapData, setRoadmapData] = useState([]);
         let [roadmapMarkdown, setRoadmapMarkdown] = useState("");
         let [selectedCertifications, setSelectedCertifications] = useState([]);
+        let [cvPreviewOpen, setCvPreviewOpen] = useState(false);
+        let [cvFileBase64, setCvFileBase64] = useState("");
+        let [cvFileName, setCvFileName] = useState("");
+        let [cvMimeType, setCvMimeType] = useState("");
+        let [cvPreviewUrl, setCvPreviewUrl] = useState("");
+
 
 
         
@@ -220,6 +226,93 @@ cl {
             saveCertifications();
         }
 
+        async def openResumePreview() -> None {
+            try {
+                let resume = await root spawn retrieve_resume();
+
+                if resume.reports.length > 0 {
+                    let reported = resume.reports[0];
+
+                    if reported.status == "Success" {
+                        let body = reported.body;
+
+                        console.log("CV mime:", body.mime);
+                        console.log("Base64 length:", body.file_base64.length);
+
+                        setCvFileBase64(body.file_base64);
+                        setCvFileName(body.name);
+                        setCvMimeType(body.mime);
+                        setCvPreviewOpen(true);
+                    } else {
+                        console.log("Resume retrieval failed");
+                    }
+                } else {
+                    console.log("No resume report returned");
+                }
+            } except Exception as err {
+                console.log(err);
+            }
+        }
+
+        useEffect(
+            lambda -> None {
+                if cvFileBase64 != "" {
+                    let dataUrl = "data:" + cvMimeType + ";base64," + cvFileBase64;
+
+                    fetch(dataUrl).then(
+                        lambda response:any -> any {
+                            return response.blob();
+                        }
+                    ).then(
+                        lambda blob:any -> None {
+                            let url = URL.createObjectURL(blob);
+                            setCvPreviewUrl(url);
+                        }
+                    );
+                }
+            },
+            [cvFileBase64]
+        );
+
+
+        def CvPreviewModal() -> any {
+            if cvPreviewOpen == false {
+                return "";
+            }
+
+            return (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+                    <div className="bg-[#0b0b0b] w-[80%] h-[80%] rounded-xl shadow-lg flex flex-col">
+                        
+                        <div className="flex items-center justify-between p-4 border-b border-gray-800">
+                            <div className="text-white font-medium">
+                                {cvFileName}
+                            </div>
+
+                            <button
+                                onClick={lambda -> None {
+                                    setCvPreviewOpen(false);
+                                    setCvPreviewUrl("");
+                                }}
+                                className="text-gray-400 hover:text-white cursor-pointer"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-hidden">
+                            <iframe
+                                src={cvPreviewUrl}
+                                className="w-full h-full border-none"
+                            ></iframe>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+
+
         def DashSideBar() -> any {
             return <div className="hidden md:flex md:w-64 bg-[#0b0b0b] h-screen flex-col border-r border-gray-800 fixed left-0 top-0">
                 <div className="p-6">
@@ -406,104 +499,121 @@ cl {
 
 
         console.log(userSkillgap[0]);
-
         def ProfilePanel() -> any {
-            return <div className="hidden lg:block lg:w-80 bg-[#0b0b0b] h-screen border-l border-gray-800 p-6">
-                
-                <div className="flex flex-col items-center mb-6">
-                    <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-white font-semibold text-2xl mb-4">
-                                                    { userDetails.full_name[0]  if userDetails.full_name else 'U'}
-                    </div>
-                    <div className="text-white font-medium">{userDetails.full_name if userDetails.full_name else "Guest"}</div>
-                    <div className="text-gray-400 text-sm">{userDetails.email if userDetails.email else ""}</div>
-                </div>
-                    {
-                    <div>
-                        {
-                            <>
-                                <h3 className="mt-4 text-base font-normal text-gray-300 mb-6">Skills Gap Analysis</h3>
-                                {userSkillgap[0].skills.slice(0, 3).map(
-                                    lambda skillgap:any -> any {
-                                        return <InsightContent 
-                                            key={skillgap.id}
-                                            skill={skillgap.name}/>;
-                                    }
-                                )}
-                            </>
-
-                            if userSkillgap[0].skills else ""
-                        }
-
-                        {
-                            <>
-                                <h3 className="mt-4 text-base font-normal text-gray-300 mb-6">
-                                    Certification recommendations
-                                </h3>
-
-                                {userSkillgap[0].certifications.slice(0, 2).map(
-                                    lambda cert:any -> any {
-                                        return (
-                                            <a
-                                                key={cert._jac_id}
-                                                href={cert.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="block"
-                                            >
-                                                <InsightContent 
-                                                    skill={cert.title}
-                                                />
-                                            </a>
-                                        );
-                                    }
-                                )}
-                            </>
-                            if userSkillgap[0].certifications else ""
-                        }
-
-
-                    </div>
-                    if userSkillgap.length > 0 else "" 
-                    }
-
-                 <div>
-                    <h3 className="mt-4 text-base font-normal text-gray-300 mb-4">My CV</h3>
-                    <div className="w-full flex flex-col gap-4">
-                        <div 
-                            onClick={lambda -> None { 
-                                # Add your view/open CV logic here
-                                console.log("Open CV clicked");
-                            }}
-                            className="flex items-start gap-3 p-3 bg-[black] rounded-lg hover:bg-[#1a1a1a] transition-colors cursor-pointer"
-                         >
-                            <div className="w-12 h-12 bg-red-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                </svg>
+            return (
+                <div className="hidden lg:flex lg:flex-col lg:w-80 bg-[#0b0b0b] h-screen border-l border-gray-800">
+                    
+                    # Fixed header section (no scroll)
+                    <div className="p-6">
+                        <div className="flex flex-col items-center mb-6">
+                            <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-white font-semibold text-2xl mb-4">
+                                { userDetails.full_name[0] if userDetails.full_name else "U" }
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <div className="text-white font-medium text-sm mb-1 truncate">
-                                    Ven_CV_25.pdf
-                                </div>
-                                <div className="text-gray-500 text-xs">
-                                    Last updated: Dec 10, 2025
+                            <div className="text-white font-medium">
+                                { userDetails.full_name if userDetails.full_name else "Guest" }
+                            </div>
+                            <div className="text-gray-400 text-sm">
+                                { userDetails.email if userDetails.email else "" }
+                            </div>
+                        </div>
+                    </div>
+
+                    # Scrollable content section
+                    <div className="flex-1 overflow-y-auto px-6 pb-6">
+                        {
+                            <div>
+                                {
+                                    <>
+                                        <h3 className="mt-4 text-base font-normal text-gray-300 mb-6">
+                                            Skills Gap Analysis
+                                        </h3>
+
+                                        {userSkillgap[0].skills.slice(0, 3).map(
+                                            lambda skillgap:any -> any {
+                                                return (
+                                                    <InsightContent
+                                                        key={skillgap.id}
+                                                        skill={skillgap.name}
+                                                    />
+                                                );
+                                            }
+                                        )}
+                                    </>
+                                    if userSkillgap[0].skills else ""
+                                }
+
+                                {
+                                    <>
+                                        <h3 className="mt-6 text-base font-normal text-gray-300 mb-6">
+                                            Certification recommendations
+                                        </h3>
+
+                                        {userSkillgap[0].certifications.slice(0, 2).map(
+                                            lambda cert:any -> any {
+                                                return (
+                                                    <a
+                                                        key={cert._jac_id}
+                                                        href={cert.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="block"
+                                                    >
+                                                        <InsightContent skill={cert.title} />
+                                                    </a>
+                                                );
+                                            }
+                                        )}
+                                    </>
+                                    if userSkillgap[0].certifications else ""
+                                }
+                            </div>
+                            if userSkillgap.length > 0 else ""
+                        }
+
+                        <div className="mt-6">
+                            <h3 className="text-base font-normal text-gray-300 mb-4">
+                                My CV
+                            </h3>
+
+                            <div className="w-full flex flex-col gap-4">
+                                <div
+                                    onClick={lambda -> None {
+                                        openResumePreview();
+                                    }}
+                                    className="flex items-start gap-3 p-3 bg-[black] rounded-lg hover:bg-[#1a1a1a] transition-colors cursor-pointer"
+                                >
+                                    <div className="w-12 h-12 bg-red-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <svg
+                                            className="w-6 h-6 text-red-500"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                                            />
+                                        </svg>
+                                    </div>
+
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-white font-medium text-sm mb-1 truncate">
+                                            Ven_CV_25.pdf
+                                        </div>
+                                        <div className="text-gray-500 text-xs">
+                                            Last updated: Dec 10, 2025
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        
-                        # <button 
-                        #     onClick={lambda -> None { 
-                        #         # Add your update CV logic here
-                        #         console.log("Update CV clicked");
-                        #     }}
-                        #     className="w-full px-4 py-4 bg-primary text-white rounded-lg hover:bg-opacity-80 transition-all border-none cursor-pointer font-medium text-sm mt-auto"
-                        # >
-                        #     Update CV
-                        # </button>
                     </div>
                 </div>
-            </div>;
+            );
         }
+
 
         def MobileProfilePanel() -> any {
             let baseClasses = "fixed top-0 right-0 bg-[#0b0b0b] h-screen w-[80%] max-w-[300px] transform transition-transform duration-300 ease-in-out z-[100000] border-l border-gray-800 p-6 overflow-y-auto";
@@ -1251,6 +1361,7 @@ cl {
                 <ProfilePanel />
             </div>
             <MobileProfilePanel />
+            <CvPreviewModal />
         </div>;
     }
 }

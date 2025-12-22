@@ -19,6 +19,11 @@ function Dashboard() {
   let [roadmapData, setRoadmapData] = useState([]);
   let [roadmapMarkdown, setRoadmapMarkdown] = useState("");
   let [selectedCertifications, setSelectedCertifications] = useState([]);
+  let [cvPreviewOpen, setCvPreviewOpen] = useState(false);
+  let [cvFileBase64, setCvFileBase64] = useState("");
+  let [cvFileName, setCvFileName] = useState("");
+  let [cvMimeType, setCvMimeType] = useState("");
+  let [cvPreviewUrl, setCvPreviewUrl] = useState("");
   let [notifications, setNotifications] = useState([{id: 1, "key": "message", titFle: "New message from Jane", description: "Hey, just wanted to follow up on our meeting yesterday.", time: "2 hours ago", read: false}, {id: 2, "key": "event", title: "Upcoming event", description: "Team meeting scheduled for Friday at 2pm.", time: "1 day ago", read: false}, {id: 3, "key": "success", title: "Task completed", description: "You completed the \"Update website content\" task.", time: "3 days ago", read: true}, {id: 4, "key": "warning", title: "Account suspended", description: "Your account has been suspended due to a billing issue.", time: "1 week ago", read: true}]);
   let [selectedNotification, setSelectedNotification] = useState(null);
   let unreadCount = notifications.filter(n => {
@@ -125,6 +130,49 @@ function Dashboard() {
   function handleSaveCertifications() {
     saveCertifications();
   }
+  async function openResumePreview() {
+    try {
+      let resume = await __jacSpawn("retrieve_resume", "", {});
+      if (resume.reports.length > 0) {
+        let reported = resume.reports[0];
+        if (reported.status === "Success") {
+          let body = reported.body;
+          console.log("CV mime:", body.mime);
+          console.log("Base64 length:", body.file_base64.length);
+          setCvFileBase64(body.file_base64);
+          setCvFileName(body.name);
+          setCvMimeType(body.mime);
+          setCvPreviewOpen(true);
+        } else {
+          console.log("Resume retrieval failed");
+        }
+      } else {
+        console.log("No resume report returned");
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  }
+  useEffect(() => {
+    if (cvFileBase64 !== "") {
+      let dataUrl = "data:" + cvMimeType + ";base64," + cvFileBase64;
+      fetch(dataUrl).then(response => {
+        return response.blob();
+      }).then(blob => {
+        let url = URL.createObjectURL(blob);
+        setCvPreviewUrl(url);
+      });
+    }
+  }, [cvFileBase64]);
+  function CvPreviewModal() {
+    if (cvPreviewOpen === false) {
+      return "";
+    }
+    return __jacJsx("div", {"className": "fixed inset-0 bg-black/70 flex items-center justify-center z-50"}, [__jacJsx("div", {"className": "bg-[#0b0b0b] w-[80%] h-[80%] rounded-xl shadow-lg flex flex-col"}, [__jacJsx("div", {"className": "flex items-center justify-between p-4 border-b border-gray-800"}, [__jacJsx("div", {"className": "text-white font-medium"}, [cvFileName]), __jacJsx("button", {"onClick": () => {
+      setCvPreviewOpen(false);
+      setCvPreviewUrl("");
+    }, "className": "text-gray-400 hover:text-white cursor-pointer"}, ["✕"])]), __jacJsx("div", {"className": "flex-1 overflow-hidden"}, [__jacJsx("iframe", {"src": cvPreviewUrl, "className": "w-full h-full border-none"}, [])])])]);
+  }
   function DashSideBar() {
     return __jacJsx("div", {"className": "hidden md:flex md:w-64 bg-[#0b0b0b] h-screen flex-col border-r border-gray-800 fixed left-0 top-0"}, [__jacJsx("div", {"className": "p-6"}, [__jacJsx("div", {"className": "text-xl font-semibold text-white"}, ["Arise"])]), __jacJsx("nav", {"className": "flex-1 p-4 overflow-y-auto"}, [__jacJsx("div", {"className": "mb-6"}, [__jacJsx("div", {"className": "text-gray-500 text-xs uppercase font-semibold my-2 px-4 mb-4"}, ["Main"]), __jacJsx("ul", {"className": "list-none p-0 m-0 ml-[8px]"}, [__jacJsx("li", {"className": "mb-[6px]"}, [__jacJsx("div", {"onClick": e => {
       setActiveLink("dashboard");
@@ -169,13 +217,13 @@ function Dashboard() {
   }
   console.log(userSkillgap[0]);
   function ProfilePanel() {
-    return __jacJsx("div", {"className": "hidden lg:block lg:w-80 bg-[#0b0b0b] h-screen border-l border-gray-800 p-6"}, [__jacJsx("div", {"className": "flex flex-col items-center mb-6"}, [__jacJsx("div", {"className": "w-20 h-20 rounded-full bg-primary flex items-center justify-center text-white font-semibold text-2xl mb-4"}, [userDetails.full_name ? userDetails.full_name[0] : "U"]), __jacJsx("div", {"className": "text-white font-medium"}, [userDetails.full_name ? userDetails.full_name : "Guest"]), __jacJsx("div", {"className": "text-gray-400 text-sm"}, [userDetails.email ? userDetails.email : ""])]), userSkillgap.length > 0 ? __jacJsx("div", {}, [userSkillgap[0].skills ? __jacJsx(null, {}, [__jacJsx("h3", {"className": "mt-4 text-base font-normal text-gray-300 mb-6"}, ["Skills Gap Analysis"]), userSkillgap[0].skills.slice(0, 3).map(skillgap => {
+    return __jacJsx("div", {"className": "hidden lg:flex lg:flex-col lg:w-80 bg-[#0b0b0b] h-screen border-l border-gray-800"}, [__jacJsx("div", {"className": "p-6"}, [__jacJsx("div", {"className": "flex flex-col items-center mb-6"}, [__jacJsx("div", {"className": "w-20 h-20 rounded-full bg-primary flex items-center justify-center text-white font-semibold text-2xl mb-4"}, [userDetails.full_name ? userDetails.full_name[0] : "U"]), __jacJsx("div", {"className": "text-white font-medium"}, [userDetails.full_name ? userDetails.full_name : "Guest"]), __jacJsx("div", {"className": "text-gray-400 text-sm"}, [userDetails.email ? userDetails.email : ""])])]), __jacJsx("div", {"className": "flex-1 overflow-y-auto px-6 pb-6"}, [userSkillgap.length > 0 ? __jacJsx("div", {}, [userSkillgap[0].skills ? __jacJsx(null, {}, [__jacJsx("h3", {"className": "mt-4 text-base font-normal text-gray-300 mb-6"}, ["Skills Gap Analysis"]), userSkillgap[0].skills.slice(0, 3).map(skillgap => {
       return __jacJsx(InsightContent, {"key": skillgap.id, "skill": skillgap.name}, []);
-    })]) : "", userSkillgap[0].certifications ? __jacJsx(null, {}, [__jacJsx("h3", {"className": "mt-4 text-base font-normal text-gray-300 mb-6"}, ["Certification recommendations"]), userSkillgap[0].certifications.slice(0, 2).map(cert => {
+    })]) : "", userSkillgap[0].certifications ? __jacJsx(null, {}, [__jacJsx("h3", {"className": "mt-6 text-base font-normal text-gray-300 mb-6"}, ["Certification recommendations"]), userSkillgap[0].certifications.slice(0, 2).map(cert => {
       return __jacJsx("a", {"key": cert._jac_id, "href": cert.url, "target": "_blank", "rel": "noopener noreferrer", "className": "block"}, [__jacJsx(InsightContent, {"skill": cert.title}, [])]);
-    })]) : ""]) : "", __jacJsx("div", {}, [__jacJsx("h3", {"className": "mt-4 text-base font-normal text-gray-300 mb-4"}, ["My CV"]), __jacJsx("div", {"className": "w-full flex flex-col gap-4"}, [__jacJsx("div", {"onClick": () => {
-      console.log("Open CV clicked");
-    }, "className": "flex items-start gap-3 p-3 bg-[black] rounded-lg hover:bg-[#1a1a1a] transition-colors cursor-pointer"}, [__jacJsx("div", {"className": "w-12 h-12 bg-red-500/10 rounded-lg flex items-center justify-center flex-shrink-0"}, [__jacJsx("svg", {"className": "w-6 h-6 text-red-500", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"}, [])])]), __jacJsx("div", {"className": "flex-1 min-w-0"}, [__jacJsx("div", {"className": "text-white font-medium text-sm mb-1 truncate"}, ["Ven_CV_25.pdf"]), __jacJsx("div", {"className": "text-gray-500 text-xs"}, ["Last updated: Dec 10, 2025"])])])])])]);
+    })]) : ""]) : "", __jacJsx("div", {"className": "mt-6"}, [__jacJsx("h3", {"className": "text-base font-normal text-gray-300 mb-4"}, ["My CV"]), __jacJsx("div", {"className": "w-full flex flex-col gap-4"}, [__jacJsx("div", {"onClick": () => {
+      openResumePreview();
+    }, "className": "flex items-start gap-3 p-3 bg-[black] rounded-lg hover:bg-[#1a1a1a] transition-colors cursor-pointer"}, [__jacJsx("div", {"className": "w-12 h-12 bg-red-500/10 rounded-lg flex items-center justify-center flex-shrink-0"}, [__jacJsx("svg", {"className": "w-6 h-6 text-red-500", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"}, [])])]), __jacJsx("div", {"className": "flex-1 min-w-0"}, [__jacJsx("div", {"className": "text-white font-medium text-sm mb-1 truncate"}, ["Ven_CV_25.pdf"]), __jacJsx("div", {"className": "text-gray-500 text-xs"}, ["Last updated: Dec 10, 2025"])])])])])])]);
   }
   function MobileProfilePanel() {
     let baseClasses = "fixed top-0 right-0 bg-[#0b0b0b] h-screen w-[80%] max-w-[300px] transform transition-transform duration-300 ease-in-out z-[100000] border-l border-gray-800 p-6 overflow-y-auto";
@@ -372,6 +420,6 @@ function Dashboard() {
     setSidebarOpen(false);
   }, "className": "fixed inset-0 bg-black bg-opacity-50 z-[99999] lg:hidden"}, []), profileOpen && __jacJsx("div", {"onClick": e => {
     setProfileOpen(false);
-  }, "className": "fixed inset-0 bg-black bg-opacity-50 z-[99999] lg:hidden"}, []), __jacJsx(DashSideBar, {}, []), __jacJsx(MobileDashSideBar, {}, []), __jacJsx("div", {"className": "md:ml-64 lg:mr-80 min-h-screen"}, [__jacJsx(DashHeader, {}, []), __jacJsx("div", {"className": "pt-16 lg:pt-0"}, [__jacJsx(DashContent, {}, [])])]), __jacJsx("div", {"className": "hidden lg:block fixed top-0 right-0"}, [__jacJsx(ProfilePanel, {}, [])]), __jacJsx(MobileProfilePanel, {}, [])]);
+  }, "className": "fixed inset-0 bg-black bg-opacity-50 z-[99999] lg:hidden"}, []), __jacJsx(DashSideBar, {}, []), __jacJsx(MobileDashSideBar, {}, []), __jacJsx("div", {"className": "md:ml-64 lg:mr-80 min-h-screen"}, [__jacJsx(DashHeader, {}, []), __jacJsx("div", {"className": "pt-16 lg:pt-0"}, [__jacJsx(DashContent, {}, [])])]), __jacJsx("div", {"className": "hidden lg:block fixed top-0 right-0"}, [__jacJsx(ProfilePanel, {}, [])]), __jacJsx(MobileProfilePanel, {}, []), __jacJsx(CvPreviewModal, {}, [])]);
 }
 export { Dashboard };
