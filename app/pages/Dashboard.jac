@@ -4,7 +4,8 @@ cl import from 'lucide-react' { Mail,Bubbles, LogOut,  Puzzle, Briefcase, Map, S
 cl import from "@jac-client/assets/images/jaseci.webp" { default as jaseciImg }
 cl import from '@jac-client/utils' {
     useNavigate,
-    jacIsLoggedIn
+    jacIsLoggedIn,
+    jacLogout
 }
 
 cl import from ..fileutils { base64ToFileBytes }
@@ -217,21 +218,6 @@ cl {
 
         let unreadCount = notifications.filter(lambda n:any -> bool { return n.read == false; }).length;
 
-        useEffect(lambda -> any {
-            fetchLiveNotifications(true);
-
-            notifPollRef.current = setInterval(
-                lambda -> None { fetchLiveNotifications(false); },
-                pollSeconds * 1000
-            );
-
-            return lambda -> None {
-                if notifPollRef.current != null {
-                    clearInterval(notifPollRef.current);
-                    notifPollRef.current = null;
-                }
-            };
-        }, []);
 
         let unreadCount = notifications.filter(lambda n:any -> bool { return n.read == false; }).length;
         let navigate = useNavigate();
@@ -295,7 +281,7 @@ cl {
             }
         }
 
-       async def getSkillGap() -> None {
+        async def getSkillGap() -> None {
             try {
                 let data = await root spawn get_user_target_roles();
                 let roles = data.reports[0].body.roles;
@@ -347,11 +333,14 @@ cl {
             }
         }
 
-
-       useEffect(lambda -> any {
+        useEffect(lambda -> any {
                 getUserDetails();
                 getSkillGap();
                 fetchResume(false); 
+        },[]);
+
+        useEffect(lambda -> any {
+               
                 # def ProtectedPage() -> any {
                             #     if not jacIsLoggedIn() {
                             #         navigate("/auth");
@@ -362,7 +351,7 @@ cl {
 
                 notifPollRef.current = setInterval(lambda -> None {
                     fetchLiveNotifications(false);
-                }, 120000);
+                }, 1200000);
 
                 return lambda -> None {
                     if notifPollRef.current != null {
@@ -370,7 +359,15 @@ cl {
                         notifPollRef.current = null;
                     }
                 };
-            }, []);
+        }, []);
+
+        
+
+        def handleLogout() -> None {
+            jacLogout();
+            navigate("/login");
+        }
+
         def normalizeNotif(raw:any) -> any {
             let n_id = raw.id if raw and raw.id else ("n_" + ("" + window.performance.now()));
             let n_type = raw.type if raw and raw.type else "event";
@@ -475,7 +472,6 @@ cl {
             saveSkills();
         }
 
-
         async def saveSkills() -> None {
             setIsLoading(true);
             try{
@@ -519,7 +515,6 @@ cl {
             await fetchResume(true);
         }
 
-
         async def fetchResume(openPreview: bool = false) -> None {
             try {
                 let resume = await root spawn retrieve_resume();
@@ -544,7 +539,6 @@ cl {
             }
         }
 
-
         useEffect(
             lambda -> None {
                 if cvFileBase64 != "" {
@@ -564,7 +558,6 @@ cl {
             },
             [cvFileBase64]
         );
-
 
         def CvPreviewModal() -> any {
             if cvPreviewOpen == false {
@@ -601,8 +594,6 @@ cl {
                 </div>
             );
         }
-
-
 
         def DashSideBar() -> any {
             return <div className="hidden md:flex md:w-64 bg-[#0b0b0b] h-screen flex-col border-r border-gray-800 fixed left-0 top-0">
@@ -685,7 +676,7 @@ cl {
                 </nav>
 
                 <div className="p-4 ">
-                    <div className="flex items-center gap-3 px-4 py-3 text-red-400">
+                    <div className="flex items-center gap-3 px-4 py-3 text-red-400" onClick={handleLogout}>
                         <LogOut />
                         <div className="text-sm text-red-400 font-medium">Logout</div>
                     </div>
@@ -770,29 +761,29 @@ cl {
                                     <span>Roles</span>
                                 </div>
                             </li>
+                             <li className="mb-[6px]">
+                                <div 
+                                    onClick={lambda e:any -> None { setActiveLink("certifications"); }}
+                                    className={baseLinkClasses + certificationsClasses}>
+                                    <span>Certifications</span>
+                                </div>
+                            </li>
                         </ul>
                     </div>
                 </nav>
 
-                <div className="p-4 border-t border-gray-800">
-                    <div className="flex items-center gap-3 px-4 py-3">
-                        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-semibold">
-                            { userDetails.full_name[0]  if userDetails.full_name else 'U'}
-                        </div>
-                        <div className="flex-1">
-                            <div className="text-white text-sm font-medium">{userDetails.full_name if userDetails.full_name else "Guest"}</div>
-                            <div className="text-gray-400 text-xs">{userDetails.email if userDetails.email else ""}</div>
-                        </div>
+                <div className="p-4 ">
+                    <div className="flex items-center gap-3 px-4 py-3 text-red-400" onClick={handleLogout}>
+                        <LogOut />
+                        <div className="text-sm text-red-400 font-medium">Logout</div>
                     </div>
                 </div>
             </div>;
         }
 
-
-        console.log(userSkillgap[0]);
         def ProfilePanel() -> any {
             return (
-                <div className="hidden lg:flex lg:flex-col lg:w-80 bg-[#0b0b0b] h-screen border-l border-gray-800">
+                <div className="hidden lg:flex lg:flex-col lg:w-72 bg-[#0b0b0b] h-screen border-l border-gray-800">
             
                     <div className="p-6">
                         <div className="flex flex-col items-center mb-6">
@@ -808,8 +799,7 @@ cl {
                         </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto px-6 pb-6">
-                        {
+                    <div className="flex-1 overflow-y-auto px-6 pb-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">                        {
                             <div>
                                 {
                                     <>
@@ -904,7 +894,6 @@ cl {
             );
         }
 
-
         def MobileProfilePanel() -> any {
             let baseClasses = "fixed top-0 right-0 bg-[#0b0b0b] h-screen w-[80%] max-w-[300px] transform transition-transform duration-300 ease-in-out z-[100000] border-l border-gray-800 p-6 overflow-y-auto";
             let positionClass = "translate-x-0" if profileOpen else "translate-x-full";
@@ -921,13 +910,113 @@ cl {
                     </button>
                 </div>
 
-                <div className="flex flex-col items-center mb-6">
-                    <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-white font-semibold text-2xl mb-4">
-                        U
-                    </div>
-                    <div className="text-white font-medium">User Name</div>
-                    <div className="text-gray-400 text-sm">user@email.com</div>
+                <div className="p-6">
+                        <div className="flex flex-col items-center mb-6">
+                            <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-white font-semibold text-2xl mb-4">
+                                { userDetails.full_name[0] if userDetails.full_name else "U" }
+                            </div>
+                            <div className="text-white font-medium">
+                                { userDetails.full_name if userDetails.full_name else "Guest" }
+                            </div>
+                            <div className="text-gray-400 text-sm">
+                                { userDetails.email if userDetails.email else "" }
+                            </div>
+                        </div>
                 </div>
+
+                    <div className="flex-1 overflow-y-auto px-2 pb-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">                        {
+                            <div>
+                                {
+                                    <>
+                                        <h3 className="mt-4 text-base font-normal text-gray-300 mb-6">
+                                            Skills Gap Analysis
+                                        </h3>
+
+                                        {userSkillgap[0].skills.slice(0, 3).map(
+                                            lambda skillgap:any -> any {
+                                                return (
+                                                    <InsightContent
+                                                        key={skillgap.id}
+                                                        skill={skillgap.name}
+                                                    />
+                                                );
+                                            }
+                                        )}
+                                    </>
+                                    if userSkillgap[0].skills else ""
+                                }
+
+                                {
+                                    <>
+                                        <h3 className="mt-6 text-base font-normal text-gray-300 mb-6">
+                                            Certification recommendations
+                                        </h3>
+
+                                        {userSkillgap[0].certifications.slice(0, 2).map(
+                                            lambda cert:any -> any {
+                                                return (
+                                                    <a
+                                                        key={cert._jac_id}
+                                                        href={cert.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="block"
+                                                    >
+                                                        <InsightContent skill={cert.title} />
+                                                    </a>
+                                                );
+                                            }
+                                        )}
+                                    </>
+                                    if userSkillgap[0].certifications else ""
+                                }
+                            </div>
+                            if userSkillgap.length > 0 else ""
+                        }
+
+                        <div className="mt-6">
+                            <h3 className="text-base font-normal text-gray-300 mb-4">
+                                My CV
+                            </h3>
+
+                            <div className="w-full flex flex-col gap-4">
+                                <div
+                                    onClick={lambda -> None {
+                                        openResumePreview();
+                                    }}
+                                    className="flex items-start gap-3 p-3 bg-[black] rounded-lg hover:bg-[#1a1a1a] transition-colors cursor-pointer"
+                                >
+                                    <div className="w-12 h-12 bg-red-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <svg
+                                            className="w-6 h-6 text-red-500"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                                            />
+                                        </svg>
+                                    </div>
+
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-white font-medium text-sm mb-1 truncate">
+                                            {cvFileName if cvFileName else "No CV uploaded"}
+                                        </div>
+
+                                        <div className="text-gray-500 text-xs">
+                                            Last updated: Dec 10, 2025
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
 
             </div>;
         }
@@ -1094,9 +1183,9 @@ cl {
             
             return <div className="flex-1 p-6 md:p-8">
                 {activeLink == "dashboard" && (
-                    <div>
+                    <div className="[&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                         <h1 className="text-2xl md:text-3xl font-bold text-white mb-6">Welcome Back!</h1>
-                        <div className="grid grid-cols-1 md:grid-cols-[72%_28%] gap-4 md:gap-1">
+                        <div className="grid grid-cols-1 md:grid-cols-[72%_28%] gap-4 md:gap-1 ">
                            <div className="w-[98%] h-[35vh] bg-gradient-to-br from-purple-600 to-blue-500 rounded-2xl p-8 flex flex-col justify-between relative overflow-hidden">
                                 <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl"></div>
                                 <div className="absolute bottom-0 right-20 w-40 h-40 bg-white opacity-5 rounded-full blur-2xl"></div>
@@ -1133,7 +1222,7 @@ cl {
                                 />
                                 <div className="relative z-10 flex h-full w-full">
                                     <div className="absolute text-xs top-[10px] right-[10px] rounded-md bg-orange-500 text-white px-3 py-2">
-                                        Built With Jaseci
+                                        Trending
                                     </div>
                                     <button 
                                         onClick={lambda -> None { window.open('https://docs.jaseci.org/learn/tour/', '_blank'); }}
@@ -1430,7 +1519,7 @@ cl {
                             </button>
 
                             <div className="rounded-lg p-8">
-                               <div className="max-w-4xl mx-auto px-6 py-8 text-white">
+                               <div className="max-w-4xl mx-auto px-2 lg:px-6 py-8 text-white">
                                 <ReactMarkdown
                                     components={{
                                     h1: lambda props:any -> any { return <h1 className="text-4xl font-bold mb-6 pb-2 border-b border-gray-700">{props.children}</h1>; },
@@ -1597,7 +1686,7 @@ cl {
 
             def TypingIndicator() -> any {
                 return (
-                    <div className="flex justify-start mb-10">
+                    <div className="flex justify-start mb-10 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                         <div className="flex items-end gap-4">
                             <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
                                 <span className="text-white text-sm font-semibold">AI</span>
@@ -1774,7 +1863,7 @@ cl {
             <DashSideBar />
             <MobileDashSideBar />
 
-            <div className="md:ml-64 lg:mr-80 min-h-screen">
+            <div className="md:ml-64 lg:mr-72 min-h-screen">
                 <DashHeader />
                 <div className="pt-16 lg:pt-0">
                     <DashContent />

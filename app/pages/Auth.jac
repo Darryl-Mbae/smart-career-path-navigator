@@ -148,8 +148,7 @@ cl{
                             autoComplete="new-email" 
 
                         />
-                        <input/>
-                        <div className="w-full relative">
+                        <div className="w-full relative mb-[16px]">
                         <input
                             type={"text" if showPassword else "password"}
                             placeholder="Password"
@@ -159,7 +158,6 @@ cl{
                             autoComplete="new-password" 
  
                         />
-                        <input/>
                           { PasswordToggleIcon({showPassword: showPassword, setShowPassword: setShowPassword}) }
                         </div>
                         {error && <p className="text-[#dc2626] mb-4 text-sm">{error}</p>}
