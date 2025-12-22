@@ -98,6 +98,7 @@ function Dashboard() {
   useEffect(() => {
     getUserDetails();
     getSkillGap();
+    fetchResume(false);
   }, []);
   function LoadingDots() {
     return __jacJsx("div", {"style": {"display": "flex", "justifyContent": "center", "alignItems": "center", "gap": "6px", "height": "20px"}}, [__jacJsx("span", {"className": "loading-dot"}, []), __jacJsx("span", {"className": "loading-dot"}, []), __jacJsx("span", {"className": "loading-dot"}, [])]);
@@ -131,23 +132,22 @@ function Dashboard() {
     saveCertifications();
   }
   async function openResumePreview() {
+    await fetchResume(true);
+  }
+  async function fetchResume(openPreview) {
     try {
       let resume = await __jacSpawn("retrieve_resume", "", {});
       if (resume.reports.length > 0) {
         let reported = resume.reports[0];
         if (reported.status === "Success") {
           let body = reported.body;
-          console.log("CV mime:", body.mime);
-          console.log("Base64 length:", body.file_base64.length);
           setCvFileBase64(body.file_base64);
           setCvFileName(body.name);
           setCvMimeType(body.mime);
-          setCvPreviewOpen(true);
-        } else {
-          console.log("Resume retrieval failed");
+          if (openPreview) {
+            setCvPreviewOpen(true);
+          }
         }
-      } else {
-        console.log("No resume report returned");
       }
     } catch (err) {
       console.log(err);
@@ -223,7 +223,7 @@ function Dashboard() {
       return __jacJsx("a", {"key": cert._jac_id, "href": cert.url, "target": "_blank", "rel": "noopener noreferrer", "className": "block"}, [__jacJsx(InsightContent, {"skill": cert.title}, [])]);
     })]) : ""]) : "", __jacJsx("div", {"className": "mt-6"}, [__jacJsx("h3", {"className": "text-base font-normal text-gray-300 mb-4"}, ["My CV"]), __jacJsx("div", {"className": "w-full flex flex-col gap-4"}, [__jacJsx("div", {"onClick": () => {
       openResumePreview();
-    }, "className": "flex items-start gap-3 p-3 bg-[black] rounded-lg hover:bg-[#1a1a1a] transition-colors cursor-pointer"}, [__jacJsx("div", {"className": "w-12 h-12 bg-red-500/10 rounded-lg flex items-center justify-center flex-shrink-0"}, [__jacJsx("svg", {"className": "w-6 h-6 text-red-500", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"}, [])])]), __jacJsx("div", {"className": "flex-1 min-w-0"}, [__jacJsx("div", {"className": "text-white font-medium text-sm mb-1 truncate"}, ["Ven_CV_25.pdf"]), __jacJsx("div", {"className": "text-gray-500 text-xs"}, ["Last updated: Dec 10, 2025"])])])])])])]);
+    }, "className": "flex items-start gap-3 p-3 bg-[black] rounded-lg hover:bg-[#1a1a1a] transition-colors cursor-pointer"}, [__jacJsx("div", {"className": "w-12 h-12 bg-red-500/10 rounded-lg flex items-center justify-center flex-shrink-0"}, [__jacJsx("svg", {"className": "w-6 h-6 text-red-500", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"}, [])])]), __jacJsx("div", {"className": "flex-1 min-w-0"}, [__jacJsx("div", {"className": "text-white font-medium text-sm mb-1 truncate"}, [cvFileName ? cvFileName : "No CV uploaded"]), __jacJsx("div", {"className": "text-gray-500 text-xs"}, ["Last updated: Dec 10, 2025"])])])])])])]);
   }
   function MobileProfilePanel() {
     let baseClasses = "fixed top-0 right-0 bg-[#0b0b0b] h-screen w-[80%] max-w-[300px] transform transition-transform duration-300 ease-in-out z-[100000] border-l border-gray-800 p-6 overflow-y-auto";

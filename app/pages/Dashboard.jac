@@ -166,6 +166,7 @@ cl {
 
             getUserDetails();
             getSkillGap();
+            fetchResume(false); 
         }, []);
 
         def LoadingDots() -> any {
@@ -227,6 +228,11 @@ cl {
         }
 
         async def openResumePreview() -> None {
+            await fetchResume(true);
+        }
+
+
+        async def fetchResume(openPreview: bool = false) -> None {
             try {
                 let resume = await root spawn retrieve_resume();
 
@@ -236,23 +242,20 @@ cl {
                     if reported.status == "Success" {
                         let body = reported.body;
 
-                        console.log("CV mime:", body.mime);
-                        console.log("Base64 length:", body.file_base64.length);
-
                         setCvFileBase64(body.file_base64);
                         setCvFileName(body.name);
                         setCvMimeType(body.mime);
-                        setCvPreviewOpen(true);
-                    } else {
-                        console.log("Resume retrieval failed");
+
+                        if openPreview {
+                            setCvPreviewOpen(true);
+                        }
                     }
-                } else {
-                    console.log("No resume report returned");
                 }
             } except Exception as err {
                 console.log(err);
             }
         }
+
 
         useEffect(
             lambda -> None {
@@ -600,8 +603,9 @@ cl {
 
                                     <div className="flex-1 min-w-0">
                                         <div className="text-white font-medium text-sm mb-1 truncate">
-                                            Ven_CV_25.pdf
+                                            {cvFileName if cvFileName else "No CV uploaded"}
                                         </div>
+
                                         <div className="text-gray-500 text-xs">
                                             Last updated: Dec 10, 2025
                                         </div>
