@@ -56,7 +56,6 @@ git clone https://github.com/Darryl-Mbae/smart-career-path-navigator.git
 ### 2\. Create Jac Environment
 
 ```plaintext
-# Create a new Jac environment
 python3 -m venv jacenv
 ```
 
@@ -89,21 +88,16 @@ npm -v
 ### 4\. Install Dependencies
 
 ```plaintext
-# Install Python dependencies
 cd smart-career-path-navigator/app
 pip install -r requirements.txt
-
-# Install Node.js dependencies for client components
 npm install
 ```
 
 ### 5\. Configure Environment Variables
 
-Create two `.env` files; one in the `app/` directory and another in `app/backend/tools` directory with the following API keys:
+Create two `.env` files; one in the `app/` directory (where `app.jac` resides) and another in `app/backend/tools` directory with the following API keys:
 
 ```plaintext
-
-# Required API Keys
 GEMINI_API_KEY=your_gemini_api_key_here
 SERPER_API_KEY=your_serper_search_api_key_here  
 FIRECRAWL_API_KEY=your_firecrawl_api_key_here
@@ -111,7 +105,7 @@ FIRECRAWL_API_KEY=your_firecrawl_api_key_here
 
 **Where to get API keys:**
 
-*   **GEMINI AI**: Sign up at [gemini](https://aistudio.google.com/app/api-keys) for AI model access
+*   **Gemini AI**: Sign up at [gemini](https://aistudio.google.com/app/api-keys) for AI model access
 *   **Serper**: Get your key at [serper.dev](https://serper.dev) for web search functionality
 *   **Firecrawl**: Register at [firecrawl.dev](https://firecrawl.dev) for web scraping capabilities
 
@@ -320,5 +314,6 @@ For issues and questions:
 *   [Graph-Native Programming Concepts](https://jaseci.org/docs)
 
 **Happy Career Mapping with Arise! 🚀**
+
 
 
