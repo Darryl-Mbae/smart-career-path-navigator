@@ -112,7 +112,6 @@ FIRECRAWL_API_KEY=your_firecrawl_api_key_here
 ### 6\. Start the Application
 
 ```plaintext
-# Start the Jac application
 jac serve app.jac
 ```
 
@@ -314,6 +313,7 @@ For issues and questions:
 *   [Graph-Native Programming Concepts](https://jaseci.org/docs)
 
 **Happy Career Mapping with Arise! 🚀**
+
 
 
 
