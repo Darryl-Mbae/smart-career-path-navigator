@@ -31,16 +31,208 @@ cl {
         let [cvPreviewUrl, setCvPreviewUrl] = useState("");
 
 
+        let [notifications, setNotifications] = useState([]);
+        let [selectedNotification, setSelectedNotification] = useState(null);
+        let [notifError, setNotifError] = useState("");
+        let [isLoadingNotifications, setIsLoadingNotifications] = useState(true);
 
-        
-        let [notifications, setNotifications] = useState([
-            {id: 1, type: "message", titFle: "New message from Jane", description: "Hey, just wanted to follow up on our meeting yesterday.", time: "2 hours ago", read: false},
-            {id: 2, type: "event", title: "Upcoming event", description: "Team meeting scheduled for Friday at 2pm.", time: "1 day ago", read: false},
-            {id: 3, type: "success", title: "Task completed", description:'You completed the "Update website content" task.', time: "3 days ago", read: true},
-            {id: 4, type: "warning", title: "Account suspended", description: "Your account has been suspended due to a billing issue.", time: "1 week ago", read: true}
-        ]);
+        let notifPollRef = useRef(null);
+        let fetchingRef = useRef(false);
 
-        let [selectedNotification, setSelectedNotification] = useState(null);        
+        let pollSeconds = 120;  
+
+        def safeStr(x:any) -> any {
+            if x == null { return ""; }
+            return "" + x;
+        }
+
+        def safeArr(x:any) -> any {
+            if x == null { return []; }
+            return x;
+        }
+
+        def safeTypeFromBackend(t:any) -> any {
+            let tt = safeStr(t).toLowerCase();
+            if tt == "message" { return "message"; }
+            if tt == "event" { return "event"; }
+            if tt == "warning" { return "warning"; }
+            return "success";
+        }
+
+        def pickReport(data:any) -> any {
+            if data == null { return null; }
+            if ("reports" in data) == false { return null; }
+
+            let reps = data["reports"];
+            if reps == null or len(reps) == 0 { return null; }
+
+            let i = 0;
+            while i < len(reps) {
+                let r = reps[i];
+                if r != null and ("status" in r) and safeStr(r["status"]).toLowerCase() == "success" {
+                    return r;
+                }
+                i = i + 1;
+            }
+
+            return reps[0];
+        }
+
+        async def safeParseJSON(res:any) -> any {
+            try {
+                return await res.json();
+            } except Exception as e {
+                try {
+                    let t = await res.text();
+                    return JSON.parse(t);
+                } except Exception as e2 {
+                    return null;
+                }
+            }
+        }
+
+        def mergeReadFlags(prev:any, incoming:any) -> any {
+            let out = [];
+            let i = 0;
+
+            while i < len(incoming) {
+                let n = incoming[i];
+                if n == null { i = i + 1; continue; }
+
+                let nid = safeStr(n.id);
+                let wasRead = false;
+
+                let j = 0;
+                while j < len(prev) {
+                    let p = prev[j];
+                    if p != null and safeStr(p.id) == nid {
+                        wasRead = (p.read == true);
+                        break;
+                    }
+                    j = j + 1;
+                }
+
+                if wasRead == true { n.read = true; }
+                out.append(n);
+                i = i + 1;
+            }
+
+            return out;
+        }
+
+        async def fetchLiveNotifications(showSpinner:any=false) -> None {
+            if fetchingRef.current == true { return; }
+            fetchingRef.current = true;
+
+            if showSpinner == true {
+                setIsLoadingNotifications(true);
+            }
+
+            setNotifError("");
+
+            try {
+                let payload = {
+                    "location": "worldwide",
+                    "focus": "all",
+                    "max_jobs_per_source": 25,
+                    "max_notifications": 12
+                };
+
+                let res = await fetch(
+                    "http://localhost:8000/walker/live_job_market_trends_notifications",
+                    {
+                        "method": "POST",
+                        "headers": { "Content-Type": "application/json" },
+                        "body": JSON.stringify(payload)
+                    }
+                );
+
+                let data = await safeParseJSON(res);
+
+                if res.ok != true or data == null {
+                    setNotifError("Failed to fetch live notifications.");
+                    setIsLoadingNotifications(false);
+                    fetchingRef.current = false;
+                    return;
+                }
+
+                let rep = pickReport(data);
+                if rep == null {
+                    setNotifError("No report returned from server.");
+                    setIsLoadingNotifications(false);
+                    fetchingRef.current = false;
+                    return;
+                }
+
+                if ("status" in rep) and safeStr(rep.status).toLowerCase() != "success" {
+                    let msg = safeStr(rep.message);
+                    if msg == "" { msg = "Server returned Fail."; }
+                    setNotifError(msg);
+                }
+
+                let body = rep.body if ("body" in rep) else rep;
+
+                let nots = body.notifications if ("notifications" in body) else [];
+                nots = safeArr(nots);
+
+                let mapped = nots.map(
+                    lambda n:any -> any {
+                        let nid = safeStr(n.id);
+                        let t = safeTypeFromBackend(n.type);
+
+                        let title = safeStr(n.title);
+                        let desc = safeStr(n.description);
+
+                        let timeText =
+                            safeStr(n.local_time)
+                            if ("local_time" in n) and safeStr(n.local_time) != ""
+                            else safeStr(n.time);
+
+                        let urlVal = safeStr(n.url);
+
+                        return {
+                            id: nid,
+                            type: t,
+                            title: title,
+                            description: desc,
+                            time: timeText,
+                            url: urlVal,
+                            read: false
+                        };
+                    }
+                );
+
+                setNotifications(lambda prev:any -> any {
+                    return mergeReadFlags(prev, mapped);
+                });
+
+            } except Exception as err {
+                console.log(err);
+                setNotifError("Live notification error.");
+            }
+
+            setIsLoadingNotifications(false);
+            fetchingRef.current = false;
+        }
+
+        let unreadCount = notifications.filter(lambda n:any -> bool { return n.read == false; }).length;
+
+        useEffect(lambda -> any {
+            fetchLiveNotifications(true);
+
+            notifPollRef.current = setInterval(
+                lambda -> None { fetchLiveNotifications(false); },
+                pollSeconds * 1000
+            );
+
+            return lambda -> None {
+                if notifPollRef.current != null {
+                    clearInterval(notifPollRef.current);
+                    notifPollRef.current = null;
+                }
+            };
+        }, []);
+
         let unreadCount = notifications.filter(lambda n:any -> bool { return n.read == false; }).length;
         let navigate = useNavigate();
 
@@ -156,18 +348,114 @@ cl {
         }
 
 
-        useEffect(lambda -> None {
-            # def ProtectedPage() -> any {
-            #     if not jacIsLoggedIn() {
-            #         navigate("/auth");
-                    
-            #     }
-            # }
+       useEffect(lambda -> any {
+                getUserDetails();
+                getSkillGap();
+                fetchResume(false); 
+                # def ProtectedPage() -> any {
+                            #     if not jacIsLoggedIn() {
+                            #         navigate("/auth");
+                                    
+                            #     }
+                            # }
+                fetchLiveNotifications(true);
 
-            getUserDetails();
-            getSkillGap();
-            fetchResume(false); 
-        }, []);
+                notifPollRef.current = setInterval(lambda -> None {
+                    fetchLiveNotifications(false);
+                }, 120000);
+
+                return lambda -> None {
+                    if notifPollRef.current != null {
+                        clearInterval(notifPollRef.current);
+                        notifPollRef.current = null;
+                    }
+                };
+            }, []);
+        def normalizeNotif(raw:any) -> any {
+            let n_id = raw.id if raw and raw.id else ("n_" + ("" + window.performance.now()));
+            let n_type = raw.type if raw and raw.type else "event";
+            let n_title = raw.title if raw and raw.title else "Notification";
+            let n_desc = raw.description if raw and raw.description else "";
+            let n_time = raw.local_time if raw and raw.local_time else (raw.time if raw and raw.time else "");
+            let n_url = raw.url if raw and raw.url else "";
+
+            let n_read = false;
+            if raw and raw.read == true {
+                n_read = true;
+            }
+
+            return {
+                id: n_id,
+                type: n_type,
+                title: n_title,
+                description: n_desc,
+                time: n_time,
+                url: n_url,
+                read: n_read
+            };
+        }
+
+        def mergeNotifs(prev:any, incoming:any) -> any {
+            let merged = prev;
+
+            for inc in incoming {
+                let idx = merged.findIndex(lambda p:any -> bool { return p.id == inc.id; });
+
+                if idx == -1 {
+                    merged = [inc].concat(merged);
+                } else {
+                    let old = merged[idx];
+                    merged[idx] = {
+                        id: inc.id,
+                        type: inc.type,
+                        title: inc.title,
+                        description: inc.description,
+                        time: inc.time,
+                        url: inc.url,
+                        read: old.read
+                    };
+                }
+            }
+            return merged.slice(0, 80);
+        }
+
+        async def fetchLiveNotifications() -> None {
+            try {
+                setNotifError("");
+
+                let res = await fetch(
+                    "http://localhost:8000/walker/live_job_market_trends_notifications",
+                    {
+                        "method": "POST",
+                        "headers": { "Content-Type": "application/json" },
+                        "body": JSON.stringify({})
+                    }
+                );
+                let data = await res.json();
+                let body = null;
+                if data and data.reports and data.reports.length > 0 {
+                    body = data.reports[0].body;
+                }
+
+                let rawNotifs = [];
+                if body and body.notifications and body.notifications.length > 0 {
+                    rawNotifs = body.notifications;
+                }
+
+                let incoming = rawNotifs.map(lambda x:any -> any { return normalizeNotif(x); });
+
+                setNotifications(lambda prev:any -> any {
+                    return mergeNotifs(prev, incoming);
+                });
+
+                setIsLoadingNotifications(false);
+
+            } except Exception as err {
+                console.log(err);
+                setIsLoadingNotifications(false);
+                setNotifError("Live notification error.");
+            }
+        }
 
         def LoadingDots() -> any {
             return <div style={{
@@ -505,8 +793,7 @@ cl {
         def ProfilePanel() -> any {
             return (
                 <div className="hidden lg:flex lg:flex-col lg:w-80 bg-[#0b0b0b] h-screen border-l border-gray-800">
-                    
-                    # Fixed header section (no scroll)
+            
                     <div className="p-6">
                         <div className="flex flex-col items-center mb-6">
                             <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-white font-semibold text-2xl mb-4">
@@ -521,7 +808,6 @@ cl {
                         </div>
                     </div>
 
-                    # Scrollable content section
                     <div className="flex-1 overflow-y-auto px-6 pb-6">
                         {
                             <div>
@@ -971,6 +1257,14 @@ cl {
                                             className="px-6 py-3 bg-transparent text-red-400 border border-red-400 rounded-lg hover:bg-red-400 hover:text-white transition-all cursor-pointer font-semibold">
                                             Delete
                                         </button>
+                                        {selectedNotification.url and safeStr(selectedNotification.url) != "" and (
+                                            <button
+                                                onClick={lambda e:any -> None { window.open(selectedNotification.url, "_blank"); }}
+                                                className="px-6 py-3 bg-[#101010ff] text-white rounded-lg hover:bg-[#1a1a1a] transition-all border border-gray-700 cursor-pointer font-semibold"
+                                            >
+                                                Open Link
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             </div>)
@@ -1171,147 +1465,274 @@ cl {
         
         def ChatBot() -> any {
 
+            def safeStr(x:any) -> str {
+                if x == null { return ""; }
+                return ("" + x);
+            }
+
+            def trimStr(x:any) -> str {
+                let s = safeStr(x);
+                return s.trim();
+            }
+
+            def getUserName() -> str {
+                let nm = "";
+                try {
+                    if userDetails != null and ("full_name" in userDetails) and userDetails["full_name"] != null {
+                        nm = trimStr(userDetails["full_name"]);
+                    }
+                } except Exception as e { }
+                if nm == "" { nm = "You"; }
+                return nm;
+            }
+
+            def getUserInitial() -> str {
+                let nm = getUserName();
+                if nm == "" { return "U"; }
+                return ("" + nm[0]).toUpperCase();
+            }
+
+            def getTimeNowLabel() -> str {
+                return "Now";
+            }
+
             let [messages, setMessages] = useState([
                 {
-                id: 1,
-                type: 'bot',
-                content: 'Hello! I\'m Arise AI. How can I help you with your learning journey today?',
-                timestamp: "12:00"
+                    "id": "greet",
+                    "type": "bot",
+                    "content": "Hello! I'm Arise AI. How can I help you with your learning journey today?",
+                    "timestamp": "12:00"
                 }
             ]);
-            let [inputValue, setInputValue] = useState('');
+
+            let [inputValue, setInputValue] = useState("");
             let [isTyping, setIsTyping] = useState(false);
             let messagesEndRef = useRef(null);
 
             def scrollToBottom() -> None {
-                messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+                try {
+                    if messagesEndRef.current != null {
+                        messagesEndRef.current.scrollIntoView({ "behavior": "smooth" });
+                    }
+                } except Exception as e { }
             }
 
-            useEffect(lambda -> None {
-                scrollToBottom();
-            }, [messages, isTyping]);
+            useEffect(lambda -> None { scrollToBottom(); }, [messages, isTyping]);
 
-            def handleSendMessage() -> None {
-                if (inputValue.trim() == '') {
-                    return;
+            def extractReply(result:any) -> str {
+                if result != null and ("reply" in result) and result["reply"] != null {
+                    return safeStr(result["reply"]);
                 }
 
+                if result != null and ("reports" in result) and result["reports"] != null and result["reports"].length > 0 {
+                    let r0 = result["reports"][0];
+
+                    if r0 != null and ("reply" in r0) and r0["reply"] != null {
+                        return safeStr(r0["reply"]);
+                    }
+
+                    if r0 != null and ("body" in r0) and r0["body"] != null and ("reply" in r0["body"]) and r0["body"]["reply"] != null {
+                        return safeStr(r0["body"]["reply"]);
+                    }
+                }
+
+                return "Sorry — I couldn’t generate a reply right now. Please try again.";
+            }
+
+            async def handleSendMessage() -> None {
+                if inputValue.trim() == "" or isTyping == true { return; }
+
+                let trimmed = inputValue.trim();
                 let userMessage = {
-                    id: messages.length + 1,
-                    type: 'user',
-                    content: inputValue,
-                    timestamp: "12:14"
+                    "id": "u_" + ("" + window.performance.now()),
+                    "type": "user",
+                    "content": trimmed,
+                    "timestamp": getTimeNowLabel()
                 };
 
                 setMessages(lambda prev:any -> any { return prev.concat([userMessage]); });
-                setInputValue('');
+                setInputValue("");
                 setIsTyping(true);
 
-                setTimeout(lambda -> None {
-                    let botResponses = [
-                        "That's a great question! Let me help you with that.",
-                        "I understand. Here's what I can tell you about that topic.",
-                        "Interesting! Based on your skills, I'd recommend focusing on...",
-                        "Let me break that down for you step by step.",
-                        "That's an excellent area to explore. Here are some resources..."
-                    ];
+                let replyText = "Sorry — I couldn’t generate a reply right now. Please try again.";
 
-                    let botMessage = {
-                        id: messages.length + 2,
-                        type: 'bot',
-                        content: botResponses[Math.floor(Math.random() * botResponses.length)],
-                        timestamp: "12:65"
-                    };
+                try {
+                    let uid = "local-user";
 
-                    setMessages(lambda prev:any -> any { return prev.concat([botMessage]); });                     
-                    setIsTyping(false);
-                }, 2000);
+                    try {
+                        if userDetails != null {
+                            if ("email" in userDetails) and userDetails["email"] != null and trimStr(userDetails["email"]) != "" {
+                                uid = safeStr(userDetails["email"]);
+                            } else {
+                                uid = getUserName();
+                            }
+                        } else {
+                            uid = getUserName();
+                        }
+                    } except Exception as e_uid { }
+
+                    let result = await root spawn career_chat(
+                        user_id=uid,
+                        message=trimmed,
+                        focus_area="General guidance"
+                    );
+
+                    replyText = extractReply(result);
+
+                } except Exception as e {
+                    console.log(e);
+                    replyText = "Sorry — I had trouble reaching Arise AI backend. Please try again.";
+                }
+
+                let botMessage = {
+                    "id": "b_" + ("" + window.performance.now()),
+                    "type": "bot",
+                    "content": replyText,
+                    "timestamp": getTimeNowLabel()
+                };
+
+                setMessages(lambda prev:any -> any { return prev.concat([botMessage]); });
+                setIsTyping(false);
             }
-
 
             def TypingIndicator() -> any {
-                return <div className="flex items-start gap-3 mb-4">
-                    <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
-                        <span className="text-white text-sm font-semibold">AI</span>
-                    </div>
-                    <div className="bg-[#1a1a1a] rounded-2xl rounded-tl-sm px-6 py-3 max-w-[80%]">
-                        <div style={{
-                            "display": "flex",
-                            "justifyContent": "center",
-                            "alignItems": "center",
-                            "gap": "6px",
-                            "height": "20px"
-                        }}>
-                            <span className="loading-dot"></span>
-                            <span className="loading-dot"></span>
-                            <span className="loading-dot"></span>
+                return (
+                    <div className="flex justify-start mb-10">
+                        <div className="flex items-end gap-4">
+                            <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
+                                <span className="text-white text-sm font-semibold">AI</span>
+                            </div>
+
+                            <div className="flex flex-col items-start">
+                                <div className="text-white font-bold text-sm mb-2">Arise AI</div>
+
+                                <div className="bg-[#1a1a1a] text-white rounded-2xl px-5 py-3 max-w-[560px]">
+                                    <div style={{
+                                        "display": "flex",
+                                        "justifyContent": "center",
+                                        "alignItems": "center",
+                                        "gap": "6px",
+                                        "height": "20px"
+                                    }}>
+                                        <span className="loading-dot"></span>
+                                        <span className="loading-dot"></span>
+                                        <span className="loading-dot"></span>
+                                    </div>
+                                </div>
+
+                                <div className="text-xs text-gray-500 mt-2">...</div>
+                            </div>
                         </div>
                     </div>
-                </div>;
+                );
             }
 
+            return (
+                <div className="flex flex-col h-[calc(100vh-3rem)]">
+                    <div className="mb-8"></div>
 
-            return <div className="flex flex-col h-[calc(100vh-3rem)]">
-                <div className="mb-12">
-                    
-                </div>
-                <div className="flex-1 overflow-y-auto mb-4 pr-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
-                    {messages.map(lambda message:any -> any {
-                        let messageBase = "flex items-start gap-3 mb-4";
-                        let messageAlign = 'flex-row-reverse' if message.key == 'user' else '';
-                        
-                        let avatarBase = "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0";
-                        let avatarColor = 'bg-purple-600' if message.key == 'user' else 'bg-purple-600';
-                        
-                        let bubbleBase = "rounded-2xl px-4 py-3";
-                        let bubbleStyle = 'bg-purple-600 text-white rounded-tr-sm' if message.key == 'user' else 'bg-[#1a1a1a] text-gray-100 rounded-tl-sm';
-                        
-                        let timestampBase = "text-xs text-gray-500 mt-1";
-                        let timestampAlign = 'text-right' if message.key == 'user' else 'text-left';
-                        
-                        return <div key={message.id} className={messageBase + " " + messageAlign}>
-                            <div className={avatarBase + " " + avatarColor}>
-                                <span className="text-white text-sm font-semibold">
-                                    {'U' if message.key == 'user' else 'AI'}
-                                </span>
-                            </div>
-                            <div className="flex flex-col max-w-[80%]">
-                                <div className={bubbleBase + " " + bubbleStyle}>
-                                    <p className="text-sm leading-relaxed">{message.content}</p>
-                                </div>
-                                <span className={timestampBase + " " + timestampAlign}>
-                                    {message.timestamp}
-                                </span>
-                            </div>
-                        </div>;
-                    })}
-                    {TypingIndicator() if isTyping else ""}
-                    <div ref={messagesEndRef} />
-                </div>
-                <div className="border-t border-gray-800 pt-4">
-                    <div className="relative flex items-center gap-2">
-                        <input
-                            type="text"
-                            value={inputValue}
-                            onChange={lambda e:any -> None { setInputValue(e.target.value); }}
-                            onKeyPress={lambda e:any -> None {
-                                if (e.key == 'Enter' and not e.shiftKey) {
-                                    e.preventDefault();
-                                    handleSendMessage();
+                    <div className="flex-1 overflow-y-auto pr-2">
+
+                        {messages.map(lambda m:any -> any {
+
+                            let t = "bot";
+                            try {
+                                if m != null and ("type" in m) and m["type"] != null {
+                                    t = ("" + m["type"]).toLowerCase();
                                 }
-                            }}
-                            placeholder="Type your message..."
-                            className="flex-1  border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-purple-600 transition-colors"
-                        />
-                        <button
-                            onClick={lambda e:any -> None { handleSendMessage(); }}
-                            disabled={inputValue.trim() == ''}
-                            className="bg-purple-600 text-white p-3 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
-                            <Send className="w-5 h-5" />
-                        </button>
+                            } except Exception as e { t = "bot"; }
+
+                            let isUser = (t == "user");
+
+                            let mid = "m_" + ("" + window.performance.now());
+                            try { if m != null and ("id" in m) and m["id"] != null { mid = safeStr(m["id"]); } } except Exception as e2 { }
+
+                            let content = "";
+                            try { if m != null and ("content" in m) and m["content"] != null { content = safeStr(m["content"]); } } except Exception as e3 { }
+
+                            let ts = "Now";
+                            try { if m != null and ("timestamp" in m) and m["timestamp"] != null { ts = safeStr(m["timestamp"]); } } except Exception as e4 { }
+
+                            if isUser {
+                                return (
+                                    <div key={mid} className="flex justify-end mb-10">
+                                        <div className="flex items-end gap-4">
+
+                                            <div className="flex flex-col items-end">
+                                                <div className="text-white font-bold text-sm mb-2">{getUserName()}</div>
+
+                                                <div className="bg-purple-600 text-white rounded-2xl px-5 py-3 text-sm leading-relaxed max-w-[560px]">
+                                                    {content}
+                                                </div>
+
+                                                <div className="text-xs text-gray-500 mt-2 text-right">
+                                                    {ts}
+                                                </div>
+                                            </div>
+
+                                            <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
+                                                <span className="text-white text-sm font-semibold">{getUserInitial()}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            return (
+                                <div key={mid} className="flex justify-start mb-10">
+                                    <div className="flex items-end gap-4">
+                                        <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0">
+                                            <span className="text-white text-sm font-semibold">AI</span>
+                                        </div>
+
+                                        <div className="flex flex-col items-start">
+                                            <div className="text-white font-bold text-sm mb-2">Arise AI</div>
+
+                                            <div className="bg-[#1a1a1a] text-white rounded-2xl px-5 py-3 text-sm leading-relaxed max-w-[560px]">
+                                                {content}
+                                            </div>
+
+                                            <div className="text-xs text-gray-500 mt-2 text-left">
+                                                {ts}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+
+                        {TypingIndicator() if isTyping else ""}
+
+                        <div ref={messagesEndRef} />
+                    </div>
+
+                    <div className="border-t border-gray-800 pt-4">
+                        <div className="relative flex items-center gap-2">
+                            <input
+                                type="text"
+                                value={inputValue}
+                                onChange={lambda e:any -> None { setInputValue(e.target.value); }}
+                                onKeyPress={lambda e:any -> None {
+                                    if e.key == "Enter" and not e.shiftKey {
+                                        e.preventDefault();
+                                        handleSendMessage();
+                                    }
+                                }}
+                                placeholder="Type your message..."
+                                className="flex-1 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-purple-600 transition-colors bg-transparent"
+                            />
+
+                            <button
+                                onClick={lambda e:any -> None { handleSendMessage(); }}
+                                disabled={inputValue.trim() == "" or isTyping == true}
+                                className="bg-purple-600 text-white p-3 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                            >
+                                <Send className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>;
+            );
         }
 
         def RoadmapContent(props:any) -> any {
@@ -1324,7 +1745,6 @@ cl {
                 <Map className="w-6 h-6 text-[#6e11b0]" />
                 <div className="text-white mt-3 capitalize">{props.roadmap}</div>
                 <div className="text-gray-400 text-sm mt-1 cursor-pointer flex flex-row items-center">View More</div>
-                # <div className="border w-[70%] flex justify-center align-middle border-[#d1d5dc33] mt-3 text-white p-2 rounded-md pointer">View Roadmap</div>
             </div>
             </div>;
         }

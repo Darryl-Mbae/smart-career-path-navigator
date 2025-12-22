@@ -24,9 +24,170 @@ function Dashboard() {
   let [cvFileName, setCvFileName] = useState("");
   let [cvMimeType, setCvMimeType] = useState("");
   let [cvPreviewUrl, setCvPreviewUrl] = useState("");
-  let [notifications, setNotifications] = useState([{id: 1, "key": "message", titFle: "New message from Jane", description: "Hey, just wanted to follow up on our meeting yesterday.", time: "2 hours ago", read: false}, {id: 2, "key": "event", title: "Upcoming event", description: "Team meeting scheduled for Friday at 2pm.", time: "1 day ago", read: false}, {id: 3, "key": "success", title: "Task completed", description: "You completed the \"Update website content\" task.", time: "3 days ago", read: true}, {id: 4, "key": "warning", title: "Account suspended", description: "Your account has been suspended due to a billing issue.", time: "1 week ago", read: true}]);
+  let [notifications, setNotifications] = useState([]);
   let [selectedNotification, setSelectedNotification] = useState(null);
+  let [notifError, setNotifError] = useState("");
+  let [isLoadingNotifications, setIsLoadingNotifications] = useState(true);
+  let notifPollRef = useRef(null);
+  let fetchingRef = useRef(false);
+  let pollSeconds = 120;
+  function safeStr(x) {
+    if (x === null) {
+      return "";
+    }
+    return "" + x;
+  }
+  function safeArr(x) {
+    if (x === null) {
+      return [];
+    }
+    return x;
+  }
+  function safeTypeFromBackend(t) {
+    let tt = safeStr(t).toLowerCase();
+    if (tt === "message") {
+      return "message";
+    }
+    if (tt === "event") {
+      return "event";
+    }
+    if (tt === "warning") {
+      return "warning";
+    }
+    return "success";
+  }
+  function pickReport(data) {
+    if (data === null) {
+      return null;
+    }
+    if ("reports" in data === false) {
+      return null;
+    }
+    let reps = data["reports"];
+    if (reps === null || len(reps) === 0) {
+      return null;
+    }
+    let i = 0;
+    while (i < len(reps)) {
+      let r = reps[i];
+      if (r !== null && "status" in r && safeStr(r["status"]).toLowerCase() === "success") {
+        return r;
+      }
+      i = i + 1;
+    }
+    return reps[0];
+  }
+  async function safeParseJSON(res) {
+    try {
+      return await res.json();
+    } catch (e) {
+      try {
+        let t = await res.text();
+        return JSON.parse(t);
+      } catch (e2) {
+        return null;
+      }
+    }
+  }
+  function mergeReadFlags(prev, incoming) {
+    let out = [];
+    let i = 0;
+    while (i < len(incoming)) {
+      let n = incoming[i];
+      if (n === null) {
+        i = i + 1;
+        continue;
+      }
+      let nid = safeStr(n.id);
+      let wasRead = false;
+      let j = 0;
+      while (j < len(prev)) {
+        let p = prev[j];
+        if (p !== null && safeStr(p.id) === nid) {
+          wasRead = p.read === true;
+          break;
+        }
+        j = j + 1;
+      }
+      if (wasRead === true) {
+        n.read = true;
+      }
+      out.append(n);
+      i = i + 1;
+    }
+    return out;
+  }
+  async function fetchLiveNotifications(showSpinner) {
+    if (fetchingRef.current === true) {
+      return;
+    }
+    fetchingRef.current = true;
+    if (showSpinner === true) {
+      setIsLoadingNotifications(true);
+    }
+    setNotifError("");
+    try {
+      let payload = {"location": "worldwide", "focus": "all", "max_jobs_per_source": 25, "max_notifications": 12};
+      let res = await fetch("http://localhost:8000/walker/live_job_market_trends_notifications", {"method": "POST", "headers": {"Content-Type": "application/json"}, "body": JSON.stringify(payload)});
+      let data = await safeParseJSON(res);
+      if (res.ok !== true || data === null) {
+        setNotifError("Failed to fetch live notifications.");
+        setIsLoadingNotifications(false);
+        fetchingRef.current = false;
+        return;
+      }
+      let rep = pickReport(data);
+      if (rep === null) {
+        setNotifError("No report returned from server.");
+        setIsLoadingNotifications(false);
+        fetchingRef.current = false;
+        return;
+      }
+      if ("status" in rep && safeStr(rep.status).toLowerCase() !== "success") {
+        let msg = safeStr(rep.message);
+        if (msg === "") {
+          msg = "Server returned Fail.";
+        }
+        setNotifError(msg);
+      }
+      let body = "body" in rep ? rep.body : rep;
+      let nots = "notifications" in body ? body.notifications : [];
+      nots = safeArr(nots);
+      let mapped = nots.map(n => {
+        let nid = safeStr(n.id);
+        let t = safeTypeFromBackend(n.type);
+        let title = safeStr(n.title);
+        let desc = safeStr(n.description);
+        let timeText = "local_time" in n && safeStr(n.local_time) !== "" ? safeStr(n.local_time) : safeStr(n.time);
+        let urlVal = safeStr(n.url);
+        return {id: nid, "key": t, title: title, description: desc, time: timeText, url: urlVal, read: false};
+      });
+      setNotifications(prev => {
+        return mergeReadFlags(prev, mapped);
+      });
+    } catch (err) {
+      console.log(err);
+      setNotifError("Live notification error.");
+    }
+    setIsLoadingNotifications(false);
+    fetchingRef.current = false;
+  }
   let unreadCount = notifications.filter(n => {
+    return n.read === false;
+  }).length;
+  useEffect(() => {
+    fetchLiveNotifications(true);
+    notifPollRef.current = setInterval(() => {
+      fetchLiveNotifications(false);
+    }, pollSeconds * 1000);
+    return () => {
+      if (notifPollRef.current !== null) {
+        clearInterval(notifPollRef.current);
+        notifPollRef.current = null;
+      }
+    };
+  }, []);
+  unreadCount = notifications.filter(n => {
     return n.read === false;
   }).length;
   let navigate = useNavigate();
@@ -99,7 +260,71 @@ function Dashboard() {
     getUserDetails();
     getSkillGap();
     fetchResume(false);
+    fetchLiveNotifications(true);
+    notifPollRef.current = setInterval(() => {
+      fetchLiveNotifications(false);
+    }, 120000);
+    return () => {
+      if (notifPollRef.current !== null) {
+        clearInterval(notifPollRef.current);
+        notifPollRef.current = null;
+      }
+    };
   }, []);
+  function normalizeNotif(raw) {
+    let n_id = raw && raw.id ? raw.id : "n_" + "" + window.performance.now();
+    let n_type = raw && raw.type ? raw.type : "event";
+    let n_title = raw && raw.title ? raw.title : "Notification";
+    let n_desc = raw && raw.description ? raw.description : "";
+    let n_time = raw && raw.local_time ? raw.local_time : raw && raw.time ? raw.time : "";
+    let n_url = raw && raw.url ? raw.url : "";
+    let n_read = false;
+    if (raw && raw.read === true) {
+      n_read = true;
+    }
+    return {id: n_id, "key": n_type, title: n_title, description: n_desc, time: n_time, url: n_url, read: n_read};
+  }
+  function mergeNotifs(prev, incoming) {
+    let merged = prev;
+    for (const inc of incoming) {
+      let idx = merged.findIndex(p => {
+        return p.id === inc.id;
+      });
+      if (idx === -1) {
+        merged = [inc].concat(merged);
+      } else {
+        let old = merged[idx];
+        merged[idx] = {id: inc.id, "key": inc.type, title: inc.title, description: inc.description, time: inc.time, url: inc.url, read: old.read};
+      }
+    }
+    return merged.slice(0, 80);
+  }
+  async function fetchLiveNotifications() {
+    try {
+      setNotifError("");
+      let res = await fetch("http://localhost:8000/walker/live_job_market_trends_notifications", {"method": "POST", "headers": {"Content-Type": "application/json"}, "body": JSON.stringify({})});
+      let data = await res.json();
+      let body = null;
+      if (data && data.reports && data.reports.length > 0) {
+        body = data.reports[0].body;
+      }
+      let rawNotifs = [];
+      if (body && body.notifications && body.notifications.length > 0) {
+        rawNotifs = body.notifications;
+      }
+      let incoming = rawNotifs.map(x => {
+        return normalizeNotif(x);
+      });
+      setNotifications(prev => {
+        return mergeNotifs(prev, incoming);
+      });
+      setIsLoadingNotifications(false);
+    } catch (err) {
+      console.log(err);
+      setIsLoadingNotifications(false);
+      setNotifError("Live notification error.");
+    }
+  }
   function LoadingDots() {
     return __jacJsx("div", {"style": {"display": "flex", "justifyContent": "center", "alignItems": "center", "gap": "6px", "height": "20px"}}, [__jacJsx("span", {"className": "loading-dot"}, []), __jacJsx("span", {"className": "loading-dot"}, []), __jacJsx("span", {"className": "loading-dot"}, [])]);
   }
@@ -299,7 +524,9 @@ function Dashboard() {
       });
       setNotifications(updatedNotifications);
       setSelectedNotification(null);
-    }, "className": "px-6 py-3 bg-transparent text-red-400 border border-red-400 rounded-lg hover:bg-red-400 hover:text-white transition-all cursor-pointer font-semibold"}, ["Delete"])])])]) : __jacJsx("div", {}, [__jacJsx("div", {"className": "flex items-center justify-between mb-6"}, [__jacJsx("div", {}, [__jacJsx("h1", {"className": "text-2xl md:text-3xl font-bold text-white mb-2"}, ["Notifications"]), __jacJsx("p", {"className": "text-gray-400"}, ["You have ", unreadCount, " new notifications."])]), unreadCount > 0 && __jacJsx("button", {"onClick": e => {
+    }, "className": "px-6 py-3 bg-transparent text-red-400 border border-red-400 rounded-lg hover:bg-red-400 hover:text-white transition-all cursor-pointer font-semibold"}, ["Delete"]), selectedNotification.url && safeStr(selectedNotification.url) !== "" && __jacJsx("button", {"onClick": e => {
+      window.open(selectedNotification.url, "_blank");
+    }, "className": "px-6 py-3 bg-[#101010ff] text-white rounded-lg hover:bg-[#1a1a1a] transition-all border border-gray-700 cursor-pointer font-semibold"}, ["Open Link"])])])]) : __jacJsx("div", {}, [__jacJsx("div", {"className": "flex items-center justify-between mb-6"}, [__jacJsx("div", {}, [__jacJsx("h1", {"className": "text-2xl md:text-3xl font-bold text-white mb-2"}, ["Notifications"]), __jacJsx("p", {"className": "text-gray-400"}, ["You have ", unreadCount, " new notifications."])]), unreadCount > 0 && __jacJsx("button", {"onClick": e => {
       let updatedNotifications = notifications.map(n => {
         return {id: n.id, "key": n.type, title: n.title, description: n.description, time: n.time, read: true};
       });
@@ -354,48 +581,139 @@ function Dashboard() {
     }}}, [roadmapMarkdown])])])]), activeLink === "ariseai" && __jacJsx(ChatBot, {}, [])]);
   }
   function ChatBot() {
-    let [messages, setMessages] = useState([{id: 1, "key": "bot", content: "Hello! I\\'m Arise AI. How can I help you with your learning journey today?", timestamp: "12:00"}]);
+    function safeStr(x) {
+      if (x === null) {
+        return "";
+      }
+      return "" + x;
+    }
+    function trimStr(x) {
+      let s = safeStr(x);
+      return s.trim();
+    }
+    function getUserName() {
+      let nm = "";
+      try {
+        if (userDetails !== null && "full_name" in userDetails && userDetails["full_name"] !== null) {
+          nm = trimStr(userDetails["full_name"]);
+        }
+      } catch (e) {}
+      if (nm === "") {
+        nm = "You";
+      }
+      return nm;
+    }
+    function getUserInitial() {
+      let nm = getUserName();
+      if (nm === "") {
+        return "U";
+      }
+      return "" + nm[0].toUpperCase();
+    }
+    function getTimeNowLabel() {
+      return "Now";
+    }
+    let [messages, setMessages] = useState([{"id": "greet", "type": "bot", "content": "Hello! I'm Arise AI. How can I help you with your learning journey today?", "timestamp": "12:00"}]);
     let [inputValue, setInputValue] = useState("");
     let [isTyping, setIsTyping] = useState(false);
     let messagesEndRef = useRef(null);
     function scrollToBottom() {
-      messagesEndRef.current.scrollIntoView({behavior: "smooth"});
+      try {
+        if (messagesEndRef.current !== null) {
+          messagesEndRef.current.scrollIntoView({"behavior": "smooth"});
+        }
+      } catch (e) {}
     }
     useEffect(() => {
       scrollToBottom();
     }, [messages, isTyping]);
-    function handleSendMessage() {
-      if (inputValue.trim() === "") {
+    function extractReply(result) {
+      if (result !== null && "reply" in result && result["reply"] !== null) {
+        return safeStr(result["reply"]);
+      }
+      if (result !== null && "reports" in result && result["reports"] !== null && result["reports"].length > 0) {
+        let r0 = result["reports"][0];
+        if (r0 !== null && "reply" in r0 && r0["reply"] !== null) {
+          return safeStr(r0["reply"]);
+        }
+        if (r0 !== null && "body" in r0 && r0["body"] !== null && "reply" in r0["body"] && r0["body"]["reply"] !== null) {
+          return safeStr(r0["body"]["reply"]);
+        }
+      }
+      return "Sorry \u2014 I couldn\u2019t generate a reply right now. Please try again.";
+    }
+    async function handleSendMessage() {
+      if (inputValue.trim() === "" || isTyping === true) {
         return;
       }
-      let userMessage = {id: messages.length + 1, "key": "user", content: inputValue, timestamp: "12:14"};
+      let trimmed = inputValue.trim();
+      let userMessage = {"id": "u_" + "" + window.performance.now(), "type": "user", "content": trimmed, "timestamp": getTimeNowLabel()};
       setMessages(prev => {
         return prev.concat([userMessage]);
       });
       setInputValue("");
       setIsTyping(true);
-      setTimeout(() => {
-        let botResponses = ["That's a great question! Let me help you with that.", "I understand. Here's what I can tell you about that topic.", "Interesting! Based on your skills, I'd recommend focusing on...", "Let me break that down for you step by step.", "That's an excellent area to explore. Here are some resources..."];
-        let botMessage = {id: messages.length + 2, "key": "bot", content: botResponses[Math.floor(Math.random() * botResponses.length)], timestamp: "12:65"};
-        setMessages(prev => {
-          return prev.concat([botMessage]);
-        });
-        setIsTyping(false);
-      }, 2000);
+      let replyText = "Sorry \u2014 I couldn\u2019t generate a reply right now. Please try again.";
+      try {
+        let uid = "local-user";
+        try {
+          if (userDetails !== null) {
+            if ("email" in userDetails && userDetails["email"] !== null && trimStr(userDetails["email"]) !== "") {
+              uid = safeStr(userDetails["email"]);
+            } else {
+              uid = getUserName();
+            }
+          } else {
+            uid = getUserName();
+          }
+        } catch (e_uid) {}
+        let result = await __jacSpawn("career_chat", "", {"user_id": uid, "message": trimmed, "focus_area": "General guidance"});
+        replyText = extractReply(result);
+      } catch (e) {
+        console.log(e);
+        replyText = "Sorry \u2014 I had trouble reaching Arise AI backend. Please try again.";
+      }
+      let botMessage = {"id": "b_" + "" + window.performance.now(), "type": "bot", "content": replyText, "timestamp": getTimeNowLabel()};
+      setMessages(prev => {
+        return prev.concat([botMessage]);
+      });
+      setIsTyping(false);
     }
     function TypingIndicator() {
-      return __jacJsx("div", {"className": "flex items-start gap-3 mb-4"}, [__jacJsx("div", {"className": "w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0"}, [__jacJsx("span", {"className": "text-white text-sm font-semibold"}, ["AI"])]), __jacJsx("div", {"className": "bg-[#1a1a1a] rounded-2xl rounded-tl-sm px-6 py-3 max-w-[80%]"}, [__jacJsx("div", {"style": {"display": "flex", "justifyContent": "center", "alignItems": "center", "gap": "6px", "height": "20px"}}, [__jacJsx("span", {"className": "loading-dot"}, []), __jacJsx("span", {"className": "loading-dot"}, []), __jacJsx("span", {"className": "loading-dot"}, [])])])]);
+      return __jacJsx("div", {"className": "flex justify-start mb-10"}, [__jacJsx("div", {"className": "flex items-end gap-4"}, [__jacJsx("div", {"className": "w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0"}, [__jacJsx("span", {"className": "text-white text-sm font-semibold"}, ["AI"])]), __jacJsx("div", {"className": "flex flex-col items-start"}, [__jacJsx("div", {"className": "text-white font-bold text-sm mb-2"}, ["Arise AI"]), __jacJsx("div", {"className": "bg-[#1a1a1a] text-white rounded-2xl px-5 py-3 max-w-[560px]"}, [__jacJsx("div", {"style": {"display": "flex", "justifyContent": "center", "alignItems": "center", "gap": "6px", "height": "20px"}}, [__jacJsx("span", {"className": "loading-dot"}, []), __jacJsx("span", {"className": "loading-dot"}, []), __jacJsx("span", {"className": "loading-dot"}, [])])]), __jacJsx("div", {"className": "text-xs text-gray-500 mt-2"}, ["..."])])])]);
     }
-    return __jacJsx("div", {"className": "flex flex-col h-[calc(100vh-3rem)]"}, [__jacJsx("div", {"className": "mb-12"}, []), __jacJsx("div", {"className": "flex-1 overflow-y-auto mb-4 pr-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent"}, [messages.map(message => {
-      let messageBase = "flex items-start gap-3 mb-4";
-      let messageAlign = message.key === "user" ? "flex-row-reverse" : "";
-      let avatarBase = "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0";
-      let avatarColor = message.key === "user" ? "bg-purple-600" : "bg-purple-600";
-      let bubbleBase = "rounded-2xl px-4 py-3";
-      let bubbleStyle = message.key === "user" ? "bg-purple-600 text-white rounded-tr-sm" : "bg-[#1a1a1a] text-gray-100 rounded-tl-sm";
-      let timestampBase = "text-xs text-gray-500 mt-1";
-      let timestampAlign = message.key === "user" ? "text-right" : "text-left";
-      return __jacJsx("div", {"key": message.id, "className": messageBase + " " + messageAlign}, [__jacJsx("div", {"className": avatarBase + " " + avatarColor}, [__jacJsx("span", {"className": "text-white text-sm font-semibold"}, [message.key === "user" ? "U" : "AI"])]), __jacJsx("div", {"className": "flex flex-col max-w-[80%]"}, [__jacJsx("div", {"className": bubbleBase + " " + bubbleStyle}, [__jacJsx("p", {"className": "text-sm leading-relaxed"}, [message.content])]), __jacJsx("span", {"className": timestampBase + " " + timestampAlign}, [message.timestamp])])]);
+    return __jacJsx("div", {"className": "flex flex-col h-[calc(100vh-3rem)]"}, [__jacJsx("div", {"className": "mb-8"}, []), __jacJsx("div", {"className": "flex-1 overflow-y-auto pr-2"}, [messages.map(m => {
+      let t = "bot";
+      try {
+        if (m !== null && "type" in m && m["type"] !== null) {
+          t = "" + m["type"].toLowerCase();
+        }
+      } catch (e) {
+        t = "bot";
+      }
+      let isUser = t === "user";
+      let mid = "m_" + "" + window.performance.now();
+      try {
+        if (m !== null && "id" in m && m["id"] !== null) {
+          mid = safeStr(m["id"]);
+        }
+      } catch (e2) {}
+      let content = "";
+      try {
+        if (m !== null && "content" in m && m["content"] !== null) {
+          content = safeStr(m["content"]);
+        }
+      } catch (e3) {}
+      let ts = "Now";
+      try {
+        if (m !== null && "timestamp" in m && m["timestamp"] !== null) {
+          ts = safeStr(m["timestamp"]);
+        }
+      } catch (e4) {}
+      if (isUser) {
+        return __jacJsx("div", {"key": mid, "className": "flex justify-end mb-10"}, [__jacJsx("div", {"className": "flex items-end gap-4"}, [__jacJsx("div", {"className": "flex flex-col items-end"}, [__jacJsx("div", {"className": "text-white font-bold text-sm mb-2"}, [getUserName()]), __jacJsx("div", {"className": "bg-purple-600 text-white rounded-2xl px-5 py-3 text-sm leading-relaxed max-w-[560px]"}, [content]), __jacJsx("div", {"className": "text-xs text-gray-500 mt-2 text-right"}, [ts])]), __jacJsx("div", {"className": "w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0"}, [__jacJsx("span", {"className": "text-white text-sm font-semibold"}, [getUserInitial()])])])]);
+      }
+      return __jacJsx("div", {"key": mid, "className": "flex justify-start mb-10"}, [__jacJsx("div", {"className": "flex items-end gap-4"}, [__jacJsx("div", {"className": "w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0"}, [__jacJsx("span", {"className": "text-white text-sm font-semibold"}, ["AI"])]), __jacJsx("div", {"className": "flex flex-col items-start"}, [__jacJsx("div", {"className": "text-white font-bold text-sm mb-2"}, ["Arise AI"]), __jacJsx("div", {"className": "bg-[#1a1a1a] text-white rounded-2xl px-5 py-3 text-sm leading-relaxed max-w-[560px]"}, [content]), __jacJsx("div", {"className": "text-xs text-gray-500 mt-2 text-left"}, [ts])])])]);
     }), isTyping ? TypingIndicator() : "", __jacJsx("div", {"ref": messagesEndRef}, [])]), __jacJsx("div", {"className": "border-t border-gray-800 pt-4"}, [__jacJsx("div", {"className": "relative flex items-center gap-2"}, [__jacJsx("input", {"type": "text", "value": inputValue, "onChange": e => {
       setInputValue(e.target.value);
     }, "onKeyPress": e => {
@@ -403,9 +721,9 @@ function Dashboard() {
         e.preventDefault();
         handleSendMessage();
       }
-    }, "placeholder": "Type your message...", "className": "flex-1  border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-purple-600 transition-colors"}, []), __jacJsx("button", {"onClick": e => {
+    }, "placeholder": "Type your message...", "className": "flex-1 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-purple-600 transition-colors bg-transparent"}, []), __jacJsx("button", {"onClick": e => {
       handleSendMessage();
-    }, "disabled": inputValue.trim() === "", "className": "bg-purple-600 text-white p-3 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"}, [__jacJsx(Send, {"className": "w-5 h-5"}, [])])])])]);
+    }, "disabled": inputValue.trim() === "" || isTyping === true, "className": "bg-purple-600 text-white p-3 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"}, [__jacJsx(Send, {"className": "w-5 h-5"}, [])])])])]);
   }
   function RoadmapContent(props) {
     return __jacJsx("div", {"onClick": e => {
