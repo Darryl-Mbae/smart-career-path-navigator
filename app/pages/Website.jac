@@ -139,7 +139,7 @@ cl {
                     }
                 };
 
-                return<div className="w-full h-[102vh] mt-1 rounded-[50px] bg-primary flex">
+                return<div id="demo" className="w-full h-[102vh] mt-1 rounded-[50px] bg-primary flex">
                     <div className="w-[80%] mx-auto grid grid-cols-1 lg:grid-cols-[45%_55%]">
                         <div className="flex flex-col justify-center w-[90%]">
                             <Video  className="w-10 h-10 mb-4 text-white" />
@@ -474,7 +474,7 @@ cl {
 
                 let footerSections = [
                     {title: "Company", links: [
-                        {label: "Demo", href: "DEMO"},
+                        {label: "Demo", href: "demo"},
                         {label: "Features", href: "FEATURES"},
                         {label: "Team", href: "TEAM"}
                     ]},
