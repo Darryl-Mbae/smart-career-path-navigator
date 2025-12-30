@@ -293,51 +293,6 @@ function Dashboard() {
     }
     return merged.slice(0, 80);
   }
-  async function fetchLiveNotifications() {
-    try {
-      let result = await __jacSpawn("live_job_market_trends_notifications", "", {"location": "worldwide", "focus": "all", "max_jobs_per_source": 25, "max_notifications": 5});
-      if (result === null || result.reports === null || result.reports.length === 0) {
-        setNotifError("No report returned from server.");
-        setIsLoadingNotifications(false);
-        fetchingRef.current = false;
-        return;
-      }
-      let rep = result.reports[0];
-      let i = 0;
-      while (i < result.reports.length) {
-        if (result.reports[i].status === "Success") {
-          rep = result.reports[i];
-          break;
-        }
-        i = i + 1;
-      }
-      if (rep.status !== "Success") {
-        let msg = safeStr(rep.message);
-        if (msg === "") {
-          msg = "Server returned Fail.";
-        }
-        setNotifError(msg);
-      }
-      let body = "body" in rep ? rep.body : rep;
-      let nots = "notifications" in body ? body.notifications : [];
-      nots = safeArr(nots);
-      let mapped = nots.map(n => {
-        let nid = safeStr(n.id);
-        let t = safeTypeFromBackend(n.type);
-        let title = safeStr(n.title);
-        let desc = safeStr(n.description);
-        let timeText = "local_time" in n && safeStr(n.local_time) !== "" ? safeStr(n.local_time) : safeStr(n.time);
-        let urlVal = safeStr(n.url);
-        return {id: nid, "key": t, title: title, description: desc, time: timeText, url: urlVal, read: false};
-      });
-      setNotifications(prev => {
-        return mergeReadFlags(prev, mapped);
-      });
-    } catch (err) {
-      console.log(err);
-      setNotifError("Live notification error.");
-    }
-  }
   function LoadingDots() {
     return __jacJsx("div", {"style": {"display": "flex", "justifyContent": "center", "alignItems": "center", "gap": "6px", "height": "20px"}}, [__jacJsx("span", {"className": "loading-dot"}, []), __jacJsx("span", {"className": "loading-dot"}, []), __jacJsx("span", {"className": "loading-dot"}, [])]);
   }
