@@ -2,7 +2,7 @@ import {__jacJsx, __jacSpawn} from "@jac-client/utils";
 import { useState, useEffect, useRef } from "react";
 import { renderAsync } from "docx-preview";
 import ReactMarkdown from "react-markdown";
-import { Mail, Bubbles, LogOut, Puzzle, Briefcase, Map, Send } from "lucide-react";
+import { Mail, Bubbles, LogOut, Puzzle, Briefcase, Map, Send, Loader2 } from "lucide-react";
 import jaseciImg from "@jac-client/assets/images/jaseci.webp";
 import { useNavigate, jacIsLoggedIn, jacLogout } from "@jac-client/utils";
 import { base64ToFileBytes } from "../fileutils.js";
@@ -389,7 +389,7 @@ function Dashboard() {
       setActiveLink("ariseai");
     }, "className": baseLinkClasses + ariseaiClasses}, [__jacJsx("span", {}, ["Arise AI"])])]), " ", __jacJsx("li", {"className": "mb-[6px]"}, [__jacJsx("div", {"onClick": e => {
       setActiveLink("notifications");
-    }, "className": baseLinkClasses + notificationsClasses}, [__jacJsx("span", {"className": "flex items-center justify-between w-full"}, [__jacJsx("span", {}, ["Notifications"]), unreadCount > 0 && __jacJsx("span", {"className": "ml-auto bg-primary text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"}, [unreadCount])])])])])]), __jacJsx("div", {}, [__jacJsx("div", {"className": "text-gray-500 text-xs uppercase font-semibold m-y2 px-4 mb-4"}, ["Actions"]), __jacJsx("ul", {"className": "list-none p-0 m-0 ml-[8px]"}, [__jacJsx("li", {"className": "mb-[6px]"}, [__jacJsx("div", {"onClick": e => {
+    }, "className": baseLinkClasses + notificationsClasses}, [__jacJsx("span", {"className": "flex items-center justify-between w-full"}, [__jacJsx("span", {}, ["Notifications"]), isLoadingNotifications ? __jacJsx("span", {"className": "ml-auto"}, [__jacJsx(Loader2, {"className": "w-4 h-4 animate-spin text-gray-500"}, [])]) : unreadCount > 0 ? __jacJsx("span", {"className": "ml-auto bg-primary text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"}, [unreadCount]) : ""])])])])]), __jacJsx("div", {}, [__jacJsx("div", {"className": "text-gray-500 text-xs uppercase font-semibold m-y2 px-4 mb-4"}, ["Actions"]), __jacJsx("ul", {"className": "list-none p-0 m-0 ml-[8px]"}, [__jacJsx("li", {"className": "mb-[6px]"}, [__jacJsx("div", {"onClick": e => {
       setActiveLink("skills");
     }, "className": baseLinkClasses + skillsClasses}, [__jacJsx("span", {}, ["Skills"])])]), __jacJsx("li", {"className": "mb-[6px]"}, [__jacJsx("div", {"onClick": e => {
       setActiveLink("roles");

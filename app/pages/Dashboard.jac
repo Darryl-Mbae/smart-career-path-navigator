@@ -1,7 +1,7 @@
 cl import from react { useState ,useEffect, useRef}
 cl import from 'docx-preview' { renderAsync }
 cl import from 'react-markdown' { default as ReactMarkdown }
-cl import from 'lucide-react' { Mail,Bubbles, LogOut,  Puzzle, Briefcase, Map, Send }
+cl import from 'lucide-react' { Mail,Bubbles, LogOut,  Puzzle, Briefcase, Map, Send, Loader2 }
 cl import from "@jac-client/assets/images/jaseci.webp" { default as jaseciImg }
 cl import from '@jac-client/utils' {
     useNavigate,
@@ -621,11 +621,21 @@ cl {
                                     className={baseLinkClasses + notificationsClasses}>
                                     <span className="flex items-center justify-between w-full">
                                         <span>Notifications</span>
-                                        {unreadCount > 0 && (
-                                            <span className="ml-auto bg-primary text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                                                {unreadCount}
+                                        {
+                                            <span className="ml-auto">
+                                                <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
                                             </span>
-                                        )}
+                                            if isLoadingNotifications
+                                            else
+                                            (
+                                                <span className="ml-auto bg-primary text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                                                    {unreadCount}
+                                                </span>
+                                                if unreadCount > 0
+                                                else
+                                                ""
+                                            )
+                                        }
                                     </span>
                                 </div>
                             </li>
