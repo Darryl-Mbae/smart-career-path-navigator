@@ -1,5 +1,6 @@
 import {__jacJsx, __jacSpawn} from "@jac-client/utils";
 import { useState, useEffect, useRef } from "react";
+import { renderAsync } from "docx-preview";
 import ReactMarkdown from "react-markdown";
 import { Mail, Bubbles, LogOut, Puzzle, Briefcase, Map, Send } from "lucide-react";
 import jaseciImg from "@jac-client/assets/images/jaseci.webp";
@@ -30,6 +31,7 @@ function Dashboard() {
   let [isLoadingNotifications, setIsLoadingNotifications] = useState(true);
   let notifPollRef = useRef(null);
   let fetchingRef = useRef(false);
+  let docxContainerRef = useRef(null);
   let pollSeconds = 120;
   function safeStr(x) {
     if (x === null) {
@@ -357,13 +359,24 @@ function Dashboard() {
       });
     }
   }, [cvFileBase64]);
+  useEffect(() => {
+    if (cvPreviewOpen && cvPreviewUrl !== "" && cvMimeType.includes("wordprocessingml")) {
+      fetch(cvPreviewUrl).then(response => {
+        return response.blob();
+      }).then(blob => {
+        if (docxContainerRef.current) {
+          renderAsync(blob, docxContainerRef.current, null, {"inWrapper": false, "ignoreWidth": false, "ignoreHeight": false});
+        }
+      });
+    }
+  }, [cvPreviewOpen, cvPreviewUrl, cvMimeType]);
   function CvPreviewModal() {
     if (cvPreviewOpen === false) {
       return "";
     }
     return __jacJsx("div", {"className": "fixed inset-0 bg-black/70 flex items-center justify-center z-50"}, [__jacJsx("div", {"className": "bg-[#0b0b0b] w-[80%] h-[80%] rounded-xl shadow-lg flex flex-col"}, [__jacJsx("div", {"className": "flex items-center justify-between p-4 border-b border-gray-800"}, [__jacJsx("div", {"className": "text-white font-medium"}, [cvFileName]), __jacJsx("button", {"onClick": () => {
       setCvPreviewOpen(false);
-    }, "className": "text-gray-400 hover:text-white cursor-pointer"}, ["✕"])]), __jacJsx("div", {"className": "flex-1 overflow-hidden"}, [__jacJsx("iframe", {"src": cvPreviewUrl, "className": "w-full h-full border-none"}, [])])])]);
+    }, "className": "text-gray-400 hover:text-white cursor-pointer"}, ["✕"])]), __jacJsx("div", {"className": "flex-1 overflow-auto bg-white p-4", "style": {"display": "flex", "flexDirection": "column"}}, [cvMimeType.includes("wordprocessingml") ? __jacJsx("div", {"ref": docxContainerRef, "style": {"width": "100%", "minHeight": "500px"}}, []) : __jacJsx("iframe", {"src": cvPreviewUrl, "className": "w-full h-full border-none"}, [])])])]);
   }
   function DashSideBar() {
     return __jacJsx("div", {"className": "hidden md:flex md:w-64 bg-[#0b0b0b] h-screen flex-col border-r border-gray-800 fixed left-0 top-0"}, [__jacJsx("div", {"className": "p-6"}, [__jacJsx("div", {"className": "text-xl font-semibold text-white"}, ["Arise"])]), __jacJsx("nav", {"className": "flex-1 p-4 overflow-y-auto"}, [__jacJsx("div", {"className": "mb-6"}, [__jacJsx("div", {"className": "text-gray-500 text-xs uppercase font-semibold my-2 px-4 mb-4"}, ["Main"]), __jacJsx("ul", {"className": "list-none p-0 m-0 ml-[8px]"}, [__jacJsx("li", {"className": "mb-[6px]"}, [__jacJsx("div", {"onClick": e => {

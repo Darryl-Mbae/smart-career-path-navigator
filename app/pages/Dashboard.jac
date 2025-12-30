@@ -1,4 +1,5 @@
 cl import from react { useState ,useEffect, useRef}
+cl import from 'docx-preview' { renderAsync }
 cl import from 'react-markdown' { default as ReactMarkdown }
 cl import from 'lucide-react' { Mail,Bubbles, LogOut,  Puzzle, Briefcase, Map, Send }
 cl import from "@jac-client/assets/images/jaseci.webp" { default as jaseciImg }
@@ -39,6 +40,7 @@ cl {
 
         let notifPollRef = useRef(None);
         let fetchingRef = useRef(false);
+        let docxContainerRef = useRef(None);
 
         let pollSeconds = 120;  
 
@@ -517,6 +519,27 @@ cl {
             [cvFileBase64]
         );
 
+        useEffect(
+            lambda -> None {
+                if cvPreviewOpen and cvPreviewUrl != "" and cvMimeType.includes("wordprocessingml") {
+                    fetch(cvPreviewUrl).then(
+                        lambda response:any -> any { return response.blob(); }
+                    ).then(
+                        lambda blob:any -> None {
+                            if docxContainerRef.current {
+                                renderAsync(blob, docxContainerRef.current, None, {
+                                    "inWrapper": false, 
+                                    "ignoreWidth": false, 
+                                    "ignoreHeight": false 
+                                });
+                            }
+                        }
+                    );
+                }
+            },
+            [cvPreviewOpen, cvPreviewUrl, cvMimeType]
+        );
+
         def CvPreviewModal() -> any {
             if cvPreviewOpen == false {
                 return "";
@@ -541,11 +564,16 @@ cl {
                             </button>
                         </div>
 
-                        <div className="flex-1 overflow-hidden">
-                            <iframe
-                                src={cvPreviewUrl}
-                                className="w-full h-full border-none"
-                            ></iframe>
+                        <div className="flex-1 overflow-auto bg-white p-4" style={{"display": "flex", "flexDirection": "column"}}>
+                         {   
+                                <div ref={docxContainerRef} style={{"width": "100%", "minHeight": "500px"}}></div>
+                                if (cvMimeType.includes("wordprocessingml"))
+                                else
+                                <iframe
+                                    src={cvPreviewUrl}
+                                    className="w-full h-full border-none"
+                                ></iframe>
+                         }
                         </div>
                     </div>
                 </div>
