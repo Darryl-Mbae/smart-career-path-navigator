@@ -534,7 +534,6 @@ cl {
                             <button
                                 onClick={lambda -> None {
                                     setCvPreviewOpen(false);
-                                    setCvPreviewUrl("");
                                 }}
                                 className="text-gray-400 hover:text-white cursor-pointer"
                             >

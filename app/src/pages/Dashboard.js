@@ -363,7 +363,6 @@ function Dashboard() {
     }
     return __jacJsx("div", {"className": "fixed inset-0 bg-black/70 flex items-center justify-center z-50"}, [__jacJsx("div", {"className": "bg-[#0b0b0b] w-[80%] h-[80%] rounded-xl shadow-lg flex flex-col"}, [__jacJsx("div", {"className": "flex items-center justify-between p-4 border-b border-gray-800"}, [__jacJsx("div", {"className": "text-white font-medium"}, [cvFileName]), __jacJsx("button", {"onClick": () => {
       setCvPreviewOpen(false);
-      setCvPreviewUrl("");
     }, "className": "text-gray-400 hover:text-white cursor-pointer"}, ["✕"])]), __jacJsx("div", {"className": "flex-1 overflow-hidden"}, [__jacJsx("iframe", {"src": cvPreviewUrl, "className": "w-full h-full border-none"}, [])])])]);
   }
   function DashSideBar() {
