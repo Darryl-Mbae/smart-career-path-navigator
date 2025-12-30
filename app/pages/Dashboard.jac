@@ -33,22 +33,22 @@ cl {
 
 
         let [notifications, setNotifications] = useState([]);
-        let [selectedNotification, setSelectedNotification] = useState(null);
+        let [selectedNotification, setSelectedNotification] = useState(None);
         let [notifError, setNotifError] = useState("");
-        let [isLoadingNotifications, setIsLoadingNotifications] = useState(true);
+        let [isLoadingNotifications, setIsLoadingNotifications] = useState(True);
 
-        let notifPollRef = useRef(null);
+        let notifPollRef = useRef(None);
         let fetchingRef = useRef(false);
 
         let pollSeconds = 120;  
 
         def safeStr(x:any) -> any {
-            if x == null { return ""; }
+            if x == None { return ""; }
             return "" + x;
         }
 
         def safeArr(x:any) -> any {
-            if x == null { return []; }
+            if x == None { return []; }
             return x;
         }
 
@@ -61,16 +61,16 @@ cl {
         }
 
         def pickReport(data:any) -> any {
-            if data == null { return null; }
-            if ("reports" in data) == false { return null; }
+            if data == None { return None; }
+            if ("reports" in data) == false { return None; }
 
             let reps = data["reports"];
-            if reps == null or len(reps) == 0 { return null; }
+            if reps == None or reps.length == 0 { return None; }
 
             let i = 0;
-            while i < len(reps) {
+            while i < reps.length {
                 let r = reps[i];
-                if r != null and ("status" in r) and safeStr(r["status"]).toLowerCase() == "success" {
+                if r != None and ("status" in r) and safeStr(r["status"]).toLowerCase() == "success" {
                     return r;
                 }
                 i = i + 1;
@@ -87,7 +87,7 @@ cl {
                     let t = await res.text();
                     return JSON.parse(t);
                 } except Exception as e2 {
-                    return null;
+                    return None;
                 }
             }
         }
@@ -96,25 +96,25 @@ cl {
             let out = [];
             let i = 0;
 
-            while i < len(incoming) {
+            while i < incoming.length {
                 let n = incoming[i];
-                if n == null { i = i + 1; continue; }
+                if n == None { i = i + 1; continue; }
 
                 let nid = safeStr(n.id);
                 let wasRead = false;
 
                 let j = 0;
-                while j < len(prev) {
+                while j < prev.length {
                     let p = prev[j];
-                    if p != null and safeStr(p.id) == nid {
-                        wasRead = (p.read == true);
+                    if p != None and safeStr(p.id) == nid {
+                        wasRead = (p.read == True);
                         break;
                     }
                     j = j + 1;
                 }
 
-                if wasRead == true { n.read = true; }
-                out.append(n);
+                if wasRead == True { n.read = True; }
+                out.push(n);
                 i = i + 1;
             }
 
@@ -122,11 +122,11 @@ cl {
         }
 
         async def fetchLiveNotifications(showSpinner:any=false) -> None {
-            if fetchingRef.current == true { return; }
-            fetchingRef.current = true;
+            if fetchingRef.current == True { return; }
+            fetchingRef.current = True;
 
-            if showSpinner == true {
-                setIsLoadingNotifications(true);
+            if showSpinner == True {
+                setIsLoadingNotifications(True);
             }
 
             setNotifError("");
@@ -136,10 +136,10 @@ cl {
                     location="worldwide",
                     focus="all",
                     max_jobs_per_source=25,
-                    max_notifications=12
+                    max_notifications=5
                 );
 
-                if result == null or result.reports == null or len(result.reports) == 0 {
+                if result == None or result.reports == None or result.reports.length == 0 {
                     setNotifError("No report returned from server.");
                     setIsLoadingNotifications(false);
                     fetchingRef.current = false;
@@ -152,7 +152,7 @@ cl {
                 # But typically spawn returns the reports for that walker. 
                 # Re-implementing a simple check:
                 let i = 0;
-                while i < len(result.reports) {
+                while i < result.reports.length {
                    if result.reports[i].status == "Success" {
                        rep = result.reports[i];
                        break;
@@ -341,16 +341,16 @@ cl {
                                     
                             #     }
                             # }
-                fetchLiveNotifications(true);
+                fetchLiveNotifications(True);
 
                 notifPollRef.current = setInterval(lambda -> None {
                     fetchLiveNotifications(false);
                 }, 1200000);
 
                 return lambda -> None {
-                    if notifPollRef.current != null {
+                    if notifPollRef.current != None {
                         clearInterval(notifPollRef.current);
-                        notifPollRef.current = null;
+                        notifPollRef.current = None;
                     }
                 };
         }, []);
@@ -371,8 +371,8 @@ cl {
             let n_url = raw.url if raw and raw.url else "";
 
             let n_read = false;
-            if raw and raw.read == true {
-                n_read = true;
+            if raw and raw.read == True {
+                n_read = True;
             }
 
             return {
@@ -412,38 +412,77 @@ cl {
 
         async def fetchLiveNotifications() -> None {
             try {
-                setNotifError("");
+                let result = await root spawn live_job_market_trends_notifications(
+                    location="worldwide",
+                    focus="all",
+                    max_jobs_per_source=25,
+                    max_notifications=5
+                );
 
-                let res = await fetch(
-                    "http://localhost:8000/walker/live_job_market_trends_notifications",
-                    {
-                        "method": "POST",
-                        "headers": { "Content-Type": "application/json" },
-                        "body": JSON.stringify({})
+                if result == None or result.reports == None or result.reports.length == 0 {
+                    setNotifError("No report returned from server.");
+                    setIsLoadingNotifications(false);
+                    fetchingRef.current = false;
+                    return;
+                }
+
+                let rep = result.reports[0]; 
+                
+                # Check for other successful reports if the first one isn't the one we want (similar to pickReport logic)
+                # But typically spawn returns the reports for that walker. 
+                # Re-implementing a simple check:
+                let i = 0;
+                while i < result.reports.length {
+                   if result.reports[i].status == "Success" {
+                       rep = result.reports[i];
+                       break;
+                   }
+                   i = i + 1;
+                }
+
+                if rep.status != "Success" {
+                    let msg = safeStr(rep.message);
+                    if msg == "" { msg = "Server returned Fail."; }
+                    setNotifError(msg);
+                }
+
+                let body = rep.body if ("body" in rep) else rep;
+                let nots = body.notifications if ("notifications" in body) else [];
+                nots = safeArr(nots);
+
+                let mapped = nots.map(
+                    lambda n:any -> any {
+                        let nid = safeStr(n.id);
+                        let t = safeTypeFromBackend(n.type);
+
+                        let title = safeStr(n.title);
+                        let desc = safeStr(n.description);
+
+                        let timeText =
+                            safeStr(n.local_time)
+                            if ("local_time" in n) and safeStr(n.local_time) != ""
+                            else safeStr(n.time);
+
+                        let urlVal = safeStr(n.url);
+
+                        return {
+                            id: nid,
+                            type: t,
+                            title: title,
+                            description: desc,
+                            time: timeText,
+                            url: urlVal,
+                            read: false
+                        };
                     }
                 );
-                let data = await res.json();
-                let body = null;
-                if data and data.reports and data.reports.length > 0 {
-                    body = data.reports[0].body;
-                }
-
-                let rawNotifs = [];
-                if body and body.notifications and body.notifications.length > 0 {
-                    rawNotifs = body.notifications;
-                }
-
-                let incoming = rawNotifs.map(lambda x:any -> any { return normalizeNotif(x); });
 
                 setNotifications(lambda prev:any -> any {
-                    return mergeNotifs(prev, incoming);
+                    return mergeReadFlags(prev, mapped);
                 });
-
-                setIsLoadingNotifications(false);
 
             } except Exception as err {
                 console.log(err);
-                setIsLoadingNotifications(false);
                 setNotifError("Live notification error.");
             }
         }
@@ -467,7 +506,7 @@ cl {
         }
 
         async def saveSkills() -> None {
-            setIsLoading(true);
+            setIsLoading(True);
             try{
                 let result = await root spawn update_user_profile(
                     updated_skills=selectedSkills,
@@ -485,7 +524,7 @@ cl {
         }
 
         async def saveCertifications() -> None {
-            setIsLoading(true);
+            setIsLoading(True);
             try {
                 let result = await root spawn update_user_profile(
                     updated_certifications=selectedCertifications,
@@ -506,7 +545,7 @@ cl {
         }
 
         async def openResumePreview() -> None {
-            await fetchResume(true);
+            await fetchResume(True);
         }
 
         async def fetchResume(openPreview: bool = false) -> None {
@@ -524,7 +563,7 @@ cl {
                         setCvMimeType(body.mime);
 
                         if openPreview {
-                            setCvPreviewOpen(true);
+                            setCvPreviewOpen(True);
                         }
                     }
                 }
@@ -1018,7 +1057,7 @@ cl {
         def DashHeader() -> any {
             return <div className="lg:hidden fixed top-0 left-0 right-0 bg-[#0b0b0b] border-b border-gray-800 p-4 flex items-center justify-between z-[1000]">
                 <button 
-                    onClick={lambda e:any -> None { setSidebarOpen(true); }}
+                    onClick={lambda e:any -> None { setSidebarOpen(True); }}
                     className="text-white bg-transparent border-none cursor-pointer">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -1026,7 +1065,7 @@ cl {
                 </button>
                 <div className="text-xl font-semibold text-white">Arise</div>
                 <button 
-                    onClick={lambda e:any -> None { setProfileOpen(true); }}
+                    onClick={lambda e:any -> None { setProfileOpen(True); }}
                     className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-semibold text-sm border-none cursor-pointer">
                     U
                 </button>
@@ -1131,7 +1170,7 @@ cl {
                                             {item}
                                         </div>;
                                     }
-                                    return null;
+                                    return None;
                                 }
                             )}
                         </div>
@@ -1277,7 +1316,7 @@ cl {
                         { 
                             (<div>
                                 <button 
-                                    onClick={lambda e:any -> None { setSelectedNotification(null); }}
+                                    onClick={lambda e:any -> None { setSelectedNotification(None); }}
                                     className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-6 bg-transparent border-none cursor-pointer">
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -1335,7 +1374,7 @@ cl {
                                             onClick={lambda e:any -> None {
                                                 let updatedNotifications = notifications.filter(lambda n:any -> bool { return n.id != selectedNotification.id; });
                                                 setNotifications(updatedNotifications);
-                                                setSelectedNotification(null);
+                                                setSelectedNotification(None);
                                             }}
                                             className="px-6 py-3 bg-transparent text-red-400 border border-red-400 rounded-lg hover:bg-red-400 hover:text-white transition-all cursor-pointer font-semibold">
                                             Delete
@@ -1362,7 +1401,7 @@ cl {
                                         <button 
                                             onClick={lambda e:any -> None {
                                                 let updatedNotifications = notifications.map(lambda n:any -> any {
-                                                    return {id: n.id, type: n.type, title: n.title, description: n.description, time: n.time, read: true};
+                                                    return {id: n.id, type: n.type, title: n.title, description: n.description, time: n.time, read: True};
                                                 });
                                                 setNotifications(updatedNotifications);
                                             }}
@@ -1386,7 +1425,7 @@ cl {
                                                 if (isUnread) {
                                                     let updatedNotifications = notifications.map(lambda n:any -> any {
                                                         if (n.id == notification.id) {
-                                                            return {id: n.id, type: n.type, title: n.title, description: n.description, time: n.time, read: true};
+                                                            return {id: n.id, type: n.type, title: n.title, description: n.description, time: n.time, read: True};
                                                         }
                                                         return n;
                                                     });
@@ -1549,7 +1588,7 @@ cl {
         def ChatBot() -> any {
 
             def safeStr(x:any) -> str {
-                if x == null { return ""; }
+                if x == None { return ""; }
                 return ("" + x);
             }
 
@@ -1561,7 +1600,7 @@ cl {
             def getUserName() -> str {
                 let nm = "";
                 try {
-                    if userDetails != null and ("full_name" in userDetails) and userDetails["full_name"] != null {
+                    if userDetails != None and ("full_name" in userDetails) and userDetails["full_name"] != None {
                         nm = trimStr(userDetails["full_name"]);
                     }
                 } except Exception as e { }
@@ -1590,11 +1629,11 @@ cl {
 
             let [inputValue, setInputValue] = useState("");
             let [isTyping, setIsTyping] = useState(false);
-            let messagesEndRef = useRef(null);
+            let messagesEndRef = useRef(None);
 
             def scrollToBottom() -> None {
                 try {
-                    if messagesEndRef.current != null {
+                    if messagesEndRef.current != None {
                         messagesEndRef.current.scrollIntoView({ "behavior": "smooth" });
                     }
                 } except Exception as e { }
@@ -1603,18 +1642,18 @@ cl {
             useEffect(lambda -> None { scrollToBottom(); }, [messages, isTyping]);
 
             def extractReply(result:any) -> str {
-                if result != null and ("reply" in result) and result["reply"] != null {
+                if result != None and ("reply" in result) and result["reply"] != None {
                     return safeStr(result["reply"]);
                 }
 
-                if result != null and ("reports" in result) and result["reports"] != null and result["reports"].length > 0 {
+                if result != None and ("reports" in result) and result["reports"] != None and result["reports"].length > 0 {
                     let r0 = result["reports"][0];
 
-                    if r0 != null and ("reply" in r0) and r0["reply"] != null {
+                    if r0 != None and ("reply" in r0) and r0["reply"] != None {
                         return safeStr(r0["reply"]);
                     }
 
-                    if r0 != null and ("body" in r0) and r0["body"] != null and ("reply" in r0["body"]) and r0["body"]["reply"] != null {
+                    if r0 != None and ("body" in r0) and r0["body"] != None and ("reply" in r0["body"]) and r0["body"]["reply"] != None {
                         return safeStr(r0["body"]["reply"]);
                     }
                 }
@@ -1623,7 +1662,7 @@ cl {
             }
 
             async def handleSendMessage() -> None {
-                if inputValue.trim() == "" or isTyping == true { return; }
+                if inputValue.trim() == "" or isTyping == True { return; }
 
                 let trimmed = inputValue.trim();
                 let userMessage = {
@@ -1635,7 +1674,7 @@ cl {
 
                 setMessages(lambda prev:any -> any { return prev.concat([userMessage]); });
                 setInputValue("");
-                setIsTyping(true);
+                setIsTyping(True);
 
                 let replyText = "Sorry — I couldn’t generate a reply right now. Please try again.";
 
@@ -1643,8 +1682,8 @@ cl {
                     let uid = "local-user";
 
                     try {
-                        if userDetails != null {
-                            if ("email" in userDetails) and userDetails["email"] != null and trimStr(userDetails["email"]) != "" {
+                        if userDetails != None {
+                            if ("email" in userDetails) and userDetails["email"] != None and trimStr(userDetails["email"]) != "" {
                                 uid = safeStr(userDetails["email"]);
                             } else {
                                 uid = getUserName();
@@ -1720,7 +1759,7 @@ cl {
 
                             let t = "bot";
                             try {
-                                if m != null and ("type" in m) and m["type"] != null {
+                                if m != None and ("type" in m) and m["type"] != None {
                                     t = ("" + m["type"]).toLowerCase();
                                 }
                             } except Exception as e { t = "bot"; }
@@ -1728,13 +1767,13 @@ cl {
                             let isUser = (t == "user");
 
                             let mid = "m_" + ("" + window.performance.now());
-                            try { if m != null and ("id" in m) and m["id"] != null { mid = safeStr(m["id"]); } } except Exception as e2 { }
+                            try { if m != None and ("id" in m) and m["id"] != None { mid = safeStr(m["id"]); } } except Exception as e2 { }
 
                             let content = "";
-                            try { if m != null and ("content" in m) and m["content"] != null { content = safeStr(m["content"]); } } except Exception as e3 { }
+                            try { if m != None and ("content" in m) and m["content"] != None { content = safeStr(m["content"]); } } except Exception as e3 { }
 
                             let ts = "Now";
-                            try { if m != null and ("timestamp" in m) and m["timestamp"] != null { ts = safeStr(m["timestamp"]); } } except Exception as e4 { }
+                            try { if m != None and ("timestamp" in m) and m["timestamp"] != None { ts = safeStr(m["timestamp"]); } } except Exception as e4 { }
 
                             if isUser {
                                 return (
@@ -1807,7 +1846,7 @@ cl {
 
                             <button
                                 onClick={lambda e:any -> None { handleSendMessage(); }}
-                                disabled={inputValue.trim() == "" or isTyping == true}
+                                disabled={inputValue.trim() == "" or isTyping == True}
                                 className="bg-purple-600 text-white p-3 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                             >
                                 <Send className="w-5 h-5" />

@@ -64,11 +64,11 @@ function Dashboard() {
       return null;
     }
     let reps = data["reports"];
-    if (reps === null || len(reps) === 0) {
+    if (reps === null || reps.length === 0) {
       return null;
     }
     let i = 0;
-    while (i < len(reps)) {
+    while (i < reps.length) {
       let r = reps[i];
       if (r !== null && "status" in r && safeStr(r["status"]).toLowerCase() === "success") {
         return r;
@@ -92,7 +92,7 @@ function Dashboard() {
   function mergeReadFlags(prev, incoming) {
     let out = [];
     let i = 0;
-    while (i < len(incoming)) {
+    while (i < incoming.length) {
       let n = incoming[i];
       if (n === null) {
         i = i + 1;
@@ -101,7 +101,7 @@ function Dashboard() {
       let nid = safeStr(n.id);
       let wasRead = false;
       let j = 0;
-      while (j < len(prev)) {
+      while (j < prev.length) {
         let p = prev[j];
         if (p !== null && safeStr(p.id) === nid) {
           wasRead = p.read === true;
@@ -112,7 +112,7 @@ function Dashboard() {
       if (wasRead === true) {
         n.read = true;
       }
-      out.append(n);
+      out.push(n);
       i = i + 1;
     }
     return out;
@@ -127,8 +127,8 @@ function Dashboard() {
     }
     setNotifError("");
     try {
-      let result = await __jacSpawn("live_job_market_trends_notifications", "", {"location": "worldwide", "focus": "all", "max_jobs_per_source": 25, "max_notifications": 12});
-      if (result === null || result.reports === null || len(result.reports) === 0) {
+      let result = await __jacSpawn("live_job_market_trends_notifications", "", {"location": "worldwide", "focus": "all", "max_jobs_per_source": 25, "max_notifications": 5});
+      if (result === null || result.reports === null || result.reports.length === 0) {
         setNotifError("No report returned from server.");
         setIsLoadingNotifications(false);
         fetchingRef.current = false;
@@ -136,7 +136,7 @@ function Dashboard() {
       }
       let rep = result.reports[0];
       let i = 0;
-      while (i < len(result.reports)) {
+      while (i < result.reports.length) {
         if (result.reports[i].status === "Success") {
           rep = result.reports[i];
           break;
@@ -295,27 +295,46 @@ function Dashboard() {
   }
   async function fetchLiveNotifications() {
     try {
-      setNotifError("");
-      let res = await fetch("http://localhost:8000/walker/live_job_market_trends_notifications", {"method": "POST", "headers": {"Content-Type": "application/json"}, "body": JSON.stringify({})});
-      let data = await res.json();
-      let body = null;
-      if (data && data.reports && data.reports.length > 0) {
-        body = data.reports[0].body;
+      let result = await __jacSpawn("live_job_market_trends_notifications", "", {"location": "worldwide", "focus": "all", "max_jobs_per_source": 25, "max_notifications": 5});
+      if (result === null || result.reports === null || result.reports.length === 0) {
+        setNotifError("No report returned from server.");
+        setIsLoadingNotifications(false);
+        fetchingRef.current = false;
+        return;
       }
-      let rawNotifs = [];
-      if (body && body.notifications && body.notifications.length > 0) {
-        rawNotifs = body.notifications;
+      let rep = result.reports[0];
+      let i = 0;
+      while (i < result.reports.length) {
+        if (result.reports[i].status === "Success") {
+          rep = result.reports[i];
+          break;
+        }
+        i = i + 1;
       }
-      let incoming = rawNotifs.map(x => {
-        return normalizeNotif(x);
+      if (rep.status !== "Success") {
+        let msg = safeStr(rep.message);
+        if (msg === "") {
+          msg = "Server returned Fail.";
+        }
+        setNotifError(msg);
+      }
+      let body = "body" in rep ? rep.body : rep;
+      let nots = "notifications" in body ? body.notifications : [];
+      nots = safeArr(nots);
+      let mapped = nots.map(n => {
+        let nid = safeStr(n.id);
+        let t = safeTypeFromBackend(n.type);
+        let title = safeStr(n.title);
+        let desc = safeStr(n.description);
+        let timeText = "local_time" in n && safeStr(n.local_time) !== "" ? safeStr(n.local_time) : safeStr(n.time);
+        let urlVal = safeStr(n.url);
+        return {id: nid, "key": t, title: title, description: desc, time: timeText, url: urlVal, read: false};
       });
       setNotifications(prev => {
-        return mergeNotifs(prev, incoming);
+        return mergeReadFlags(prev, mapped);
       });
-      setIsLoadingNotifications(false);
     } catch (err) {
       console.log(err);
-      setIsLoadingNotifications(false);
       setNotifError("Live notification error.");
     }
   }
