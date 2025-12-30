@@ -127,23 +127,23 @@ function Dashboard() {
     }
     setNotifError("");
     try {
-      let payload = {"location": "worldwide", "focus": "all", "max_jobs_per_source": 25, "max_notifications": 12};
-      let res = await fetch("http://localhost:8000/walker/live_job_market_trends_notifications", {"method": "POST", "headers": {"Content-Type": "application/json"}, "body": JSON.stringify(payload)});
-      let data = await safeParseJSON(res);
-      if (res.ok !== true || data === null) {
-        setNotifError("Failed to fetch live notifications.");
-        setIsLoadingNotifications(false);
-        fetchingRef.current = false;
-        return;
-      }
-      let rep = pickReport(data);
-      if (rep === null) {
+      let result = await __jacSpawn("live_job_market_trends_notifications", "", {"location": "worldwide", "focus": "all", "max_jobs_per_source": 25, "max_notifications": 12});
+      if (result === null || result.reports === null || len(result.reports) === 0) {
         setNotifError("No report returned from server.");
         setIsLoadingNotifications(false);
         fetchingRef.current = false;
         return;
       }
-      if ("status" in rep && safeStr(rep.status).toLowerCase() !== "success") {
+      let rep = result.reports[0];
+      let i = 0;
+      while (i < len(result.reports)) {
+        if (result.reports[i].status === "Success") {
+          rep = result.reports[i];
+          break;
+        }
+        i = i + 1;
+      }
+      if (rep.status !== "Success") {
         let msg = safeStr(rep.message);
         if (msg === "") {
           msg = "Server returned Fail.";

@@ -132,47 +132,41 @@ cl {
             setNotifError("");
 
             try {
-                let payload = {
-                    "location": "worldwide",
-                    "focus": "all",
-                    "max_jobs_per_source": 25,
-                    "max_notifications": 12
-                };
-
-                let res = await fetch(
-                    "http://localhost:8000/walker/live_job_market_trends_notifications",
-                    {
-                        "method": "POST",
-                        "headers": { "Content-Type": "application/json" },
-                        "body": JSON.stringify(payload)
-                    }
+                let result = await root spawn live_job_market_trends_notifications(
+                    location="worldwide",
+                    focus="all",
+                    max_jobs_per_source=25,
+                    max_notifications=12
                 );
 
-                let data = await safeParseJSON(res);
-
-                if res.ok != true or data == null {
-                    setNotifError("Failed to fetch live notifications.");
-                    setIsLoadingNotifications(false);
-                    fetchingRef.current = false;
-                    return;
-                }
-
-                let rep = pickReport(data);
-                if rep == null {
+                if result == null or result.reports == null or len(result.reports) == 0 {
                     setNotifError("No report returned from server.");
                     setIsLoadingNotifications(false);
                     fetchingRef.current = false;
                     return;
                 }
 
-                if ("status" in rep) and safeStr(rep.status).toLowerCase() != "success" {
+                let rep = result.reports[0]; 
+                
+                # Check for other successful reports if the first one isn't the one we want (similar to pickReport logic)
+                # But typically spawn returns the reports for that walker. 
+                # Re-implementing a simple check:
+                let i = 0;
+                while i < len(result.reports) {
+                   if result.reports[i].status == "Success" {
+                       rep = result.reports[i];
+                       break;
+                   }
+                   i = i + 1;
+                }
+
+                if rep.status != "Success" {
                     let msg = safeStr(rep.message);
                     if msg == "" { msg = "Server returned Fail."; }
                     setNotifError(msg);
                 }
 
                 let body = rep.body if ("body" in rep) else rep;
-
                 let nots = body.notifications if ("notifications" in body) else [];
                 nots = safeArr(nots);
 
