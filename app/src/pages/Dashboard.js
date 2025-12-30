@@ -252,7 +252,9 @@ function Dashboard() {
     fetchResume(false);
   }, []);
   useEffect(() => {
-    fetchLiveNotifications(true);
+    setTimeout(() => {
+      fetchLiveNotifications(true);
+    }, 2000);
     notifPollRef.current = setInterval(() => {
       fetchLiveNotifications(false);
     }, 1200000);

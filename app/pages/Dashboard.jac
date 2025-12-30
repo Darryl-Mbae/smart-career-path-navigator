@@ -343,7 +343,9 @@ cl {
                                     
                             #     }
                             # }
-                fetchLiveNotifications(True);
+                setTimeout(lambda -> None {
+                    fetchLiveNotifications(True);
+                }, 2000);
 
                 notifPollRef.current = setInterval(lambda -> None {
                     fetchLiveNotifications(false);
