@@ -1,4 +1,4 @@
-cl import from react { useState ,useEffect, useRef}
+﻿cl import from react { useState ,useEffect, useRef}
 cl import from 'docx-preview' { renderAsync }
 cl import from 'react-markdown' { default as ReactMarkdown }
 cl import from 'lucide-react' { Mail,Bubbles, LogOut,  Puzzle, Briefcase, Map, Send, Loader2 }
@@ -363,7 +363,7 @@ cl {
 
         def handleLogout() -> None {
             jacLogout();
-            navigate("/login");
+            navigate("/");
         }
 
         def normalizeNotif(raw:any) -> any {

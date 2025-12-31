@@ -29,6 +29,16 @@ cl{
 
         
 
+        let [showErrorPopup, setShowErrorPopup] = useState(False);
+        let [errorMessage, setErrorMessage] = useState("");
+
+        def showError(msg: str) -> None {
+            setErrorMessage(msg);
+            setShowErrorPopup(True);
+            setTimeout(lambda -> None {
+                setShowErrorPopup(False);
+            }, 3000);
+        }
         let navigate = useNavigate();
         let devSkills = ["JavaScript", "Python", "React", "Node.js", "TypeScript", "HTML & CSS", "Django", "Flutter", "Git & GitHub", "SQL & Databases", "REST APIs", "GraphQL", "Docker", "Agile & Scrum"];
         let devRoles = ["Frontend Developer", "Backend Developer", "Fullstack Developer", "Mobile Developer", "DevOps Engineer", "UI/UX Designer", "Data Scientist", "Machine Learning Engineer"];
@@ -201,7 +211,7 @@ cl{
                 }
 
                 if user_skills.reports[0]["status"] != "Success" {
-                    console.log("Failed");                   
+                    showError("Failed to process your CV. Please try again or use a different file.");                   
                     return;
                 }
 
@@ -534,6 +544,18 @@ cl{
             </div>;
         }
 
+        def ErrorPopup() -> any {
+            if not showErrorPopup {
+                return null;
+            }
+            return <div className="fixed top-10 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-6 py-4 rounded-lg shadow-xl z-[10000] flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="font-medium">{errorMessage}</span>
+            </div>;
+        }
+
         def LoadingDots() -> any {
             return <div style={{
                 "display": "flex",
@@ -549,6 +571,7 @@ cl{
         }
 
         return<div className="w-full bg-black h-screen grid grid-cols-[100%} md:grid-cols-[45%_55%] relative text-white">
+            <ErrorPopup />
             <div className="hidden w-full h-full md:flex justify-center items-center">
                 <div className="m-auto bg-[#0b0b0b] w-[95%] h-[90%] z-[9999] rounded-[10px] flex flex-col justify-center items-center overflow-hidden">
                     {steps.map(

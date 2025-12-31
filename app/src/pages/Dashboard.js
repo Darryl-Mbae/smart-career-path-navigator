@@ -267,7 +267,7 @@ function Dashboard() {
   }, []);
   function handleLogout() {
     jacLogout();
-    navigate("/login");
+    navigate("/");
   }
   function normalizeNotif(raw) {
     let n_id = raw && raw.id ? raw.id : "n_" + "" + window.performance.now();

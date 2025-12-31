@@ -112,6 +112,7 @@ node End {
     def extract_user_skills_from_cv(resume_text: str) -> UserProfile | None by llm(
         method="Reason"
     );
+
     can visit_resume with `root entry;
     can extract_user_skills with Resume entry;
 }
@@ -140,6 +141,7 @@ node End {
     def suggest_roles_based_on_profile(user_profile: UserProfile) -> list[Role] by llm(
         method="Reason"
     );
+
     # Fetch Profile
      can fetch_user_profile with `root entry;
     # Suggest Roles

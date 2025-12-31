@@ -18,6 +18,15 @@ function Onboarding() {
   let [error, setError] = useState("");
   let [canProceed, setCanProceed] = useState(false);
   let [isLoading, setIsLoading] = useState(false);
+  let [showErrorPopup, setShowErrorPopup] = useState(false);
+  let [errorMessage, setErrorMessage] = useState("");
+  function showError(msg) {
+    setErrorMessage(msg);
+    setShowErrorPopup(true);
+    setTimeout(() => {
+      setShowErrorPopup(false);
+    }, 3000);
+  }
   let navigate = useNavigate();
   let devSkills = ["JavaScript", "Python", "React", "Node.js", "TypeScript", "HTML & CSS", "Django", "Flutter", "Git & GitHub", "SQL & Databases", "REST APIs", "GraphQL", "Docker", "Agile & Scrum"];
   let devRoles = ["Frontend Developer", "Backend Developer", "Fullstack Developer", "Mobile Developer", "DevOps Engineer", "UI/UX Designer", "Data Scientist", "Machine Learning Engineer"];
@@ -121,7 +130,7 @@ function Onboarding() {
         return;
       }
       if (user_skills.reports[0]["status"] !== "Success") {
-        console.log("Failed");
+        showError("Failed to process your CV. Please try again or use a different file.");
         return;
       }
       try {
@@ -266,10 +275,16 @@ function Onboarding() {
       return null;
     })])])]);
   }
+  function ErrorPopup() {
+    if (!showErrorPopup) {
+      return null;
+    }
+    return __jacJsx("div", {"className": "fixed top-10 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-6 py-4 rounded-lg shadow-xl z-[10000] flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300"}, [__jacJsx("svg", {"className": "w-6 h-6", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"}, [])]), __jacJsx("span", {"className": "font-medium"}, [errorMessage])]);
+  }
   function LoadingDots() {
     return __jacJsx("div", {"style": {"display": "flex", "justifyContent": "center", "alignItems": "center", "gap": "6px", "height": "20px"}}, [__jacJsx("span", {"className": "loading-dot"}, []), __jacJsx("span", {"className": "loading-dot"}, []), __jacJsx("span", {"className": "loading-dot"}, [])]);
   }
-  return __jacJsx("div", {"className": "w-full bg-black h-screen grid grid-cols-[100%} md:grid-cols-[45%_55%] relative text-white"}, [__jacJsx("div", {"className": "hidden w-full h-full md:flex justify-center items-center"}, [__jacJsx("div", {"className": "m-auto bg-[#0b0b0b] w-[95%] h-[90%] z-[9999] rounded-[10px] flex flex-col justify-center items-center overflow-hidden"}, [steps.map(step => {
+  return __jacJsx("div", {"className": "w-full bg-black h-screen grid grid-cols-[100%} md:grid-cols-[45%_55%] relative text-white"}, [__jacJsx(ErrorPopup, {}, []), __jacJsx("div", {"className": "hidden w-full h-full md:flex justify-center items-center"}, [__jacJsx("div", {"className": "m-auto bg-[#0b0b0b] w-[95%] h-[90%] z-[9999] rounded-[10px] flex flex-col justify-center items-center overflow-hidden"}, [steps.map(step => {
     return __jacJsx(Step, {"key": step.id, "step": step, "isActive": currentStep === step.id}, []);
   }), "   "])]), __jacJsx("div", {"className": "w-full h-[95%] my-auto flex justify-center items-center"}, [__jacJsx("div", {"className": "w-[90%] h-[90%] flex flex-col justify-center"}, [__jacJsx("div", {"className": "text-gray-500 uppercase"}, ["Step ", currentStep, " of 4"]), __jacJsx("div", {"className": "w-full md:w-[80%] h-[11px] rounded-[20px] bg-[#0b0b0b] overflow-hidden my-5"}, [__jacJsx("div", {"style": {"height": "100%", "width": progress, "backgroundColor": "#6e11b0", "transition": "0.3s ease", "borderRadius": "20px"}}, [])]), currentStep === 1 && __jacJsx("div", {"className": "h-[60vh]"}, [__jacJsx("div", {"className": "mb-0 font-semibold text-white text-[1.15rem]"}, ["Upload your CV"]), __jacJsx("p", {"className": "text-gray-500 my-0 mt-[10px]"}, ["Let us start by understanding your background"]), __jacJsx("div", {"onDragOver": handleDragOver, "onDragLeave": handleDragLeave, "onDrop": handleDrop, "className": "my-[30px] h-[40vh] w-full md:w-[80%] rounded-[15px] flex flex-col justify-center items-center border-2 border-dashed border-gray-500 bg-[#0b0b0b] md:bg-[#101010ff] hover:border-[#6e11b0] hover:bg-[#0b0b0b] transition-all duration-200"}, [__jacJsx("div", {"className": "w-[55px] aspect-square rounded-full bg-black flex items-center justify-center mb-[15px]"}, [__jacJsx(CloudUpload, {"className": "text-[0.75rem] text-[#6e11b0]"}, [])]), __jacJsx("p", {"className": "text-gray-500 my-0 my-5 text-[.9em]"}, ["Supported formats: PDF, DOC, DOCX (Max 5MB)"]), __jacJsx("div", {}, []), __jacJsx("input", {"type": "file", "accept": ".pdf,.doc,.docx", "onChange": handleFileSelect, "className": "hidden", "id": "resumeInput"}, []), __jacJsx("label", {"for": "resumeInput", "className": "w-auto px-6 py-4 border-none rounded-lg bg-[#6e11b0] text-white font-semibold text-sm cursor-pointer transition-all duration-200 mt-[10px] shadow-[0_0_20px_rgba(110,17,176,0.2)]"}, ["Upload from Computer"]), fileName && __jacJsx("p", {"className": "mt-5 text-sm text-white font-medium"}, ["Uploaded: ", fileName])])]), currentStep === 2 && __jacJsx(Skills, {"interests": devSkills, "selectedInterests": selectedInterests, "setSelectedInterests": setSelectedInterests}, []), currentStep === 3 && __jacJsx(Roles, {"suggestedRoles": suggestedRoles, "selectedRoles": selectedRoles, "setSelectedRoles": setSelectedRoles}, []), currentStep === 4 && __jacJsx("div", {"className": "h-[60vh] flex flex-col justify-center items-center text-center"}, [__jacJsx("div", {"className": "mb-0 font-semibold text-white text-[2rem] mb-4"}, ["You're All Set! 🎉"]), __jacJsx("p", {"className": "text-gray-400 text-lg max-w-[500px] mb-8"}, ["Your personalized career roadmap is ready. We've analyzed your skills, mapped them to your target roles, and created a custom learning path just for you."]), __jacJsx("div", {"className": "flex flex-col gap-4 mb-8"}, [__jacJsx("div", {"className": "flex items-center gap-3 text-gray-300"}, [__jacJsx("div", {"className": "w-6 h-6 rounded-full bg-[#6e11b0] flex items-center justify-center"}, [__jacJsx("svg", {"className": "w-4 h-4 text-white", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M5 13l4 4L19 7"}, [])])]), __jacJsx("span", {}, ["Skills analyzed and mapped"])]), __jacJsx("div", {"className": "flex items-center gap-3 text-gray-300"}, [__jacJsx("div", {"className": "w-6 h-6 rounded-full bg-[#6e11b0] flex items-center justify-center"}, [__jacJsx("svg", {"className": "w-4 h-4 text-white", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M5 13l4 4L19 7"}, [])])]), __jacJsx("span", {}, ["Career goals identified"])]), __jacJsx("div", {"className": "flex items-center gap-3 text-gray-300"}, [__jacJsx("div", {"className": "w-6 h-6 rounded-full bg-[#6e11b0] flex items-center justify-center"}, [__jacJsx("svg", {"className": "w-4 h-4 text-white", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M5 13l4 4L19 7"}, [])])]), __jacJsx("span", {}, ["Personalized roadmap generated"])])]), __jacJsx("p", {"className": "text-gray-500 text-sm mt-6"}, ["Ready to start your career transformation?"])]), __jacJsx("div", {"className": "flex flex-row gap-[25px] items-center"}, [currentStep > 1 && __jacJsx("div", {"onClick": e => {
     setCurrentStep(currentStep - 1);
