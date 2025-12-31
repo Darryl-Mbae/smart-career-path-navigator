@@ -23,10 +23,17 @@ function Onboarding() {
   function showError(msg) {
     setErrorMessage(msg);
     setShowErrorPopup(true);
-    setTimeout(() => {
-      setShowErrorPopup(false);
-    }, 3000);
   }
+  useEffect(() => {
+    if (showErrorPopup) {
+      let timer = setTimeout(() => {
+        setShowErrorPopup(false);
+      }, 3000);
+      return () => {
+        clearTimeout(timer);
+      };
+    }
+  }, [showErrorPopup]);
   let navigate = useNavigate();
   let devSkills = ["JavaScript", "Python", "React", "Node.js", "TypeScript", "HTML & CSS", "Django", "Flutter", "Git & GitHub", "SQL & Databases", "REST APIs", "GraphQL", "Docker", "Agile & Scrum"];
   let devRoles = ["Frontend Developer", "Backend Developer", "Fullstack Developer", "Mobile Developer", "DevOps Engineer", "UI/UX Designer", "Data Scientist", "Machine Learning Engineer"];
@@ -157,15 +164,15 @@ function Onboarding() {
         let latestReport = rolesReport.reports[rolesReport.reports.length - 1];
         if (latestReport.status === "Success") {
           setSuggestedRoles(latestReport.body);
+          setCurrentStep(3);
         } else {
-          console.log("Failed to generate role suggestions: " + latestReport.message || "Unknown error");
+          showError("Failed to generate role suggestions: " + latestReport.message || "Unknown error");
         }
-        setCurrentStep(3);
       } else {
-        console.log("Failed to save profile. Please try again.");
+        showError("Failed to save profile. Please try again.");
       }
     } catch (err) {
-      console.log(err);
+      showError("An unexpected error occurred: " + err);
     } finally {
       setIsLoading(false);
     }
