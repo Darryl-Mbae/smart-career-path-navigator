@@ -281,6 +281,8 @@ cl{
         async def handleStep3Next() -> None {
             # If user has NOT selected any roles AND has NOT chosen a custom role
             if (selectedRoles == None or selectedRoles.length == 0) {
+                showError("Please select at least one role to continue.");
+                setIsLoading(False);
                 return;
             }
             

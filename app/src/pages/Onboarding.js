@@ -179,6 +179,8 @@ function Onboarding() {
   }
   async function handleStep3Next() {
     if (selectedRoles === null || selectedRoles.length === 0) {
+      showError("Please select at least one role to continue.");
+      setIsLoading(false);
       return;
     }
     let finalRoles = [];
