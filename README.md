@@ -1,3 +1,6 @@
+[![Arise Demo Video](https://img.youtube.com/vi/qgMuM2eGI00/maxresdefault.jpg)](https://www.youtube.com/watch?v=qgMuM2eGI00)
+
+
 ## Arise - AI-Powered Career Mapping Platform
 
 Arise is an intelligent career development platform built with Jac/Jaseci that analyzes your skills, identifies career opportunities, and creates personalized learning roadmaps to help you achieve your professional goals.
@@ -313,6 +316,7 @@ For issues and questions:
 *   [Graph-Native Programming Concepts](https://jaseci.org/docs)
 
 **Happy Career Mapping with Arise! 🚀**
+
 
 
 
