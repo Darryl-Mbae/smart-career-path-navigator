@@ -178,48 +178,52 @@ function Onboarding() {
     }
   }
   async function handleStep3Next() {
-    if (selectedRoles === null || selectedRoles.length === 0) {
-      showError("Please select at least one role to continue.");
-      setIsLoading(false);
-      return;
-    }
-    let finalRoles = [];
-    for (const roleTitle of selectedRoles) {
-      finalRoles = finalRoles.concat({"title": roleTitle, "description": ""});
-    }
-    let allSuccessful = true;
-    let roleIndex = 0;
-    for (const currentRole of finalRoles) {
-      roleIndex += 1;
-      console.log(`Processing Role ${roleIndex}/${finalRoles.length}:`, currentRole);
-      let result = await __jacSpawn("collect_role_requirements", "", {"role_title": currentRole.title});
-      console.log("Role requirements collected:");
-      console.log(result.reports[0]);
-      if (result.reports[0]["status"] === "Success") {
-        let requirements_gap = await __jacSpawn("find_skill_and_certification_gaps", "", {"role_title": currentRole.title});
-        let requirements_gap_status = requirements_gap.reports[requirements_gap.reports.length - 1]["status"];
-        if (requirements_gap_status === "Success") {
-          console.log(`Skill Gaps for ${currentRole.title}: `);
-          console.log(requirements_gap.reports[requirements_gap.reports.length - 4]);
-          let learning_path = await __jacSpawn("recommend_learning_paths", "", {"role_title": currentRole.title});
-          console.log(`Learning Path for ${currentRole.title}: `);
-          console.log(learning_path.reports[learning_path.reports.length - 1]["body"]["learning_path"]);
+    try {
+      if (selectedRoles === null || selectedRoles.length === 0) {
+        showError("Please select at least one role to continue.");
+        return;
+      }
+      let finalRoles = [];
+      for (const roleTitle of selectedRoles) {
+        finalRoles = finalRoles.concat({"title": roleTitle, "description": ""});
+      }
+      let allSuccessful = true;
+      let roleIndex = 0;
+      for (const currentRole of finalRoles) {
+        roleIndex += 1;
+        console.log(`Processing Role ${roleIndex}/${finalRoles.length}:`, currentRole);
+        let result = await __jacSpawn("collect_role_requirements", "", {"role_title": currentRole.title});
+        if (result.reports[0]["status"] === "Success") {
+          let requirements_gap = await __jacSpawn("find_skill_and_certification_gaps", "", {"role_title": currentRole.title});
+          let requirements_gap_status = requirements_gap.reports[requirements_gap.reports.length - 1]["status"];
+          if (requirements_gap_status === "Success") {
+            let learning_path = await __jacSpawn("recommend_learning_paths", "", {"role_title": currentRole.title});
+            let lp_report = learning_path.reports[learning_path.reports.length - 1];
+            if (lp_report["status"] === "Success") {
+              console.log(`Learning Path for ${currentRole.title} Success`);
+            } else {
+              allSuccessful = false;
+              showError(`Failed to generate roadmap for ${currentRole.title}. Please try again.`);
+              break;
+            }
+          } else {
+            allSuccessful = false;
+            showError(`Failed to analyze skill gaps for ${currentRole.title}.`);
+            break;
+          }
         } else {
           allSuccessful = false;
-          console.log(`Failed to find skill gaps for ${currentRole.title}`);
+          showError(`Failed to fetch requirements for ${currentRole.title}.`);
+          break;
         }
-      } else {
-        allSuccessful = false;
-        console.log(`Failed to collect requirements for ${currentRole.title}`);
-        setIsLoading(false);
       }
-    }
-    if (allSuccessful) {
-      setCurrentStep(4);
-      setIsLoading(false);
-    } else {
-      console.log("Error");
-      return;
+      if (allSuccessful) {
+        setCurrentStep(4);
+      }
+    } catch (err) {
+      console.log(err);
+      showError("An unexpected error occurred. Please try again.");
+    } finally {
       setIsLoading(false);
     }
   }
