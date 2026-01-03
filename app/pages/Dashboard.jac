@@ -1611,14 +1611,14 @@ cl {
                 }
 
                 if result != None and ("reports" in result) and result["reports"] != None and result["reports"].length > 0 {
-                    let r0 = result["reports"][0];
+                    for r in result["reports"] {
+                        if r != None and ("reply" in r) and r["reply"] != None {
+                            return safeStr(r["reply"]);
+                        }
 
-                    if r0 != None and ("reply" in r0) and r0["reply"] != None {
-                        return safeStr(r0["reply"]);
-                    }
-
-                    if r0 != None and ("body" in r0) and r0["body"] != None and ("reply" in r0["body"]) and r0["body"]["reply"] != None {
-                        return safeStr(r0["body"]["reply"]);
+                        if r != None and ("body" in r) and r["body"] != None and ("reply" in r["body"]) and r["body"]["reply"] != None {
+                            return safeStr(r["body"]["reply"]);
+                        }
                     }
                 }
 
@@ -1775,7 +1775,20 @@ cl {
                                             <div className="text-white font-bold text-sm mb-2">Arise AI</div>
 
                                             <div className="bg-[#1a1a1a] text-white rounded-2xl px-5 py-3 text-sm leading-relaxed max-w-[560px]">
-                                                {content}
+                                                <ReactMarkdown
+                                                    components={{
+                                                        p: lambda props:any -> any { return <p className="mb-2 last:mb-0">{props.children}</p>; },
+                                                        ul: lambda props:any -> any { return <ul className="list-disc ml-4 mb-2">{props.children}</ul>; },
+                                                        ol: lambda props:any -> any { return <ol className="list-decimal ml-4 mb-2">{props.children}</ol>; },
+                                                        li: lambda props:any -> any { return <li className="mb-1">{props.children}</li>; },
+                                                        strong: lambda props:any -> any { return <strong className="font-bold text-white">{props.children}</strong>; },
+                                                        h1: lambda props:any -> any { return <h1 className="text-lg font-bold mb-2">{props.children}</h1>; },
+                                                        h2: lambda props:any -> any { return <h2 className="text-md font-bold mb-2">{props.children}</h2>; },
+                                                        h3: lambda props:any -> any { return <h3 className="text-sm font-bold mb-1">{props.children}</h3>; }
+                                                    }}
+                                                >
+                                                    {content}
+                                                </ReactMarkdown>
                                             </div>
 
                                             <div className="text-xs text-gray-500 mt-2 text-left">

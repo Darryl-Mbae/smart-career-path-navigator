@@ -621,12 +621,13 @@ function Dashboard() {
         return safeStr(result["reply"]);
       }
       if (result !== null && "reports" in result && result["reports"] !== null && result["reports"].length > 0) {
-        let r0 = result["reports"][0];
-        if (r0 !== null && "reply" in r0 && r0["reply"] !== null) {
-          return safeStr(r0["reply"]);
-        }
-        if (r0 !== null && "body" in r0 && r0["body"] !== null && "reply" in r0["body"] && r0["body"]["reply"] !== null) {
-          return safeStr(r0["body"]["reply"]);
+        for (const r of result["reports"]) {
+          if (r !== null && "reply" in r && r["reply"] !== null) {
+            return safeStr(r["reply"]);
+          }
+          if (r !== null && "body" in r && r["body"] !== null && "reply" in r["body"] && r["body"]["reply"] !== null) {
+            return safeStr(r["body"]["reply"]);
+          }
         }
       }
       return "Sorry \u2014 I couldn\u2019t generate a reply right now. Please try again.";
@@ -702,7 +703,23 @@ function Dashboard() {
       if (isUser) {
         return __jacJsx("div", {"key": mid, "className": "flex justify-end mb-10"}, [__jacJsx("div", {"className": "flex items-end gap-4"}, [__jacJsx("div", {"className": "flex flex-col items-end"}, [__jacJsx("div", {"className": "text-white font-bold text-sm mb-2"}, [getUserName()]), __jacJsx("div", {"className": "bg-purple-600 text-white rounded-2xl px-5 py-3 text-sm leading-relaxed max-w-[560px]"}, [content]), __jacJsx("div", {"className": "text-xs text-gray-500 mt-2 text-right"}, [ts])]), __jacJsx("div", {"className": "w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0"}, [__jacJsx("span", {"className": "text-white text-sm font-semibold"}, [getUserInitial()])])])]);
       }
-      return __jacJsx("div", {"key": mid, "className": "flex justify-start mb-10"}, [__jacJsx("div", {"className": "flex items-end gap-4"}, [__jacJsx("div", {"className": "w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0"}, [__jacJsx("span", {"className": "text-white text-sm font-semibold"}, ["AI"])]), __jacJsx("div", {"className": "flex flex-col items-start"}, [__jacJsx("div", {"className": "text-white font-bold text-sm mb-2"}, ["Arise AI"]), __jacJsx("div", {"className": "bg-[#1a1a1a] text-white rounded-2xl px-5 py-3 text-sm leading-relaxed max-w-[560px]"}, [content]), __jacJsx("div", {"className": "text-xs text-gray-500 mt-2 text-left"}, [ts])])])]);
+      return __jacJsx("div", {"key": mid, "className": "flex justify-start mb-10"}, [__jacJsx("div", {"className": "flex items-end gap-4"}, [__jacJsx("div", {"className": "w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center flex-shrink-0"}, [__jacJsx("span", {"className": "text-white text-sm font-semibold"}, ["AI"])]), __jacJsx("div", {"className": "flex flex-col items-start"}, [__jacJsx("div", {"className": "text-white font-bold text-sm mb-2"}, ["Arise AI"]), __jacJsx("div", {"className": "bg-[#1a1a1a] text-white rounded-2xl px-5 py-3 text-sm leading-relaxed max-w-[560px]"}, [__jacJsx(ReactMarkdown, {"components": {p: props => {
+        return __jacJsx("p", {"className": "mb-2 last:mb-0"}, [props.children]);
+      }, ul: props => {
+        return __jacJsx("ul", {"className": "list-disc ml-4 mb-2"}, [props.children]);
+      }, ol: props => {
+        return __jacJsx("ol", {"className": "list-decimal ml-4 mb-2"}, [props.children]);
+      }, li: props => {
+        return __jacJsx("li", {"className": "mb-1"}, [props.children]);
+      }, strong: props => {
+        return __jacJsx("strong", {"className": "font-bold text-white"}, [props.children]);
+      }, h1: props => {
+        return __jacJsx("h1", {"className": "text-lg font-bold mb-2"}, [props.children]);
+      }, h2: props => {
+        return __jacJsx("h2", {"className": "text-md font-bold mb-2"}, [props.children]);
+      }, h3: props => {
+        return __jacJsx("h3", {"className": "text-sm font-bold mb-1"}, [props.children]);
+      }}}, [content])]), __jacJsx("div", {"className": "text-xs text-gray-500 mt-2 text-left"}, [ts])])])]);
     }), isTyping ? TypingIndicator() : "", __jacJsx("div", {"ref": messagesEndRef}, [])]), __jacJsx("div", {"className": "border-t border-gray-800 pt-4"}, [__jacJsx("div", {"className": "relative flex items-center gap-2"}, [__jacJsx("input", {"type": "text", "value": inputValue, "onChange": e => {
       setInputValue(e.target.value);
     }, "onKeyPress": e => {

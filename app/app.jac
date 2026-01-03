@@ -34,24 +34,20 @@ node End {
 }
 
 
-# User profile object
- obj UserProfile {
+obj UserProfile {
     has skills: list[Skill];
     has certifications: list[Certification];
     has interests: list[Interest];
 }
 
 
-# Role requires skills and certifications
- obj RoleProfile {
+obj RoleProfile {
     has skills: list[Skill];
     has certifications: list[Certification];
 }
 
 
-# User Agents
- # Initialize Memory for a new user
- walker initialize_memory {
+walker initialize_memory {
     has email: str = "";
     has full_name: str = "";
 
@@ -59,17 +55,14 @@ node End {
 }
 
 
-# Create a new Resume node
- walker create_resume_node {
+walker create_resume_node {
     can create_resume_node with `root entry;
 }
 
 
-# Save CV contents to Resume node as bytes
- walker upload_resume {
+walker upload_resume {
     has file: bytes = b"";
-    # Base64 string from frontend
-     has name: str = "";
+    has name: str = "";
     has mime: str = "";
 
     can visit_resume_node with `root entry;
@@ -77,36 +70,31 @@ node End {
 }
 
 
-# Update resume upload status in memory
- walker update_resume_upload_status {
+walker update_resume_upload_status {
     can check_memory with `root entry;
     can update_resume_upload_status with Memory entry;
 }
 
 
-# Check if CV is uploaded or not
- walker check_resume_upload_status {
+walker check_resume_upload_status {
     can check_memory with `root entry;
     can check_resume_upload_status with Memory entry;
 }
 
 
-# Save CV to disk
- walker save_resume {
+walker save_resume {
     can visit_resume with `root entry;
     can save_resume with Resume entry;
 }
 
 
-# Retrieve resume/cv
- walker retrieve_resume {
+walker retrieve_resume {
     can visit_resume with `root entry;
     can retrieve_resume with Resume entry;
 }
 
 
-# analyze CV and report findings to FE
- walker analyze_cv {
+walker analyze_cv {
     has user_profile: UserProfile = UserProfile([], [], []);
 
     def extract_user_skills_from_cv(resume_text: str) -> UserProfile | None by llm(
@@ -118,15 +106,13 @@ node End {
 }
 
 
-# extract full names and email
- walker get_user_details {
+walker get_user_details {
     can visit_memory with `root entry;
     can get_user_details with Memory entry;
 }
 
 
-# create and store user profile (Internal API: used by analyze_cv agent)
- walker create_user_graph {
+walker create_user_graph {
     has user_profile: UserProfile = UserProfile([], [], []);
 
     can visit_memory with `root entry;
@@ -134,23 +120,19 @@ node End {
 }
 
 
-# Suggest roles based on user profile
- walker generate_role_suggestions {
+walker generate_role_suggestions {
     has user_profile: UserProfile = UserProfile([], [], []);
 
     def suggest_roles_based_on_profile(user_profile: UserProfile) -> list[Role] by llm(
         method="Reason"
     );
 
-    # Fetch Profile
-     can fetch_user_profile with `root entry;
-    # Suggest Roles
-     can suggest_roles with `root entry;
+    can fetch_user_profile with `root entry;
+    can suggest_roles with `root entry;
 }
 
 
-# Retrieve user profile i.e skills, interests and certification
- walker get_user_profile {
+walker get_user_profile {
     has user_profile: UserProfile = UserProfile([], [], []);
 
     can visit_memory with `root entry;
@@ -163,16 +145,14 @@ node End {
 }
 
 
-# Retrieve user target roles (Used in dashboard to display user's target roles)
- walker get_user_target_roles {
+walker get_user_target_roles {
     has target_roles: list[Role] = [];
 
     can fetch_target_roles with `root entry;
 }
 
 
-# Retrieve roadmap for a target role
- walker get_road_map {
+walker get_road_map {
     has role_title: str = "";
     has learning_path: str | any = "";
     has disk_path: str = "";
@@ -182,8 +162,7 @@ node End {
 }
 
 
-# Update user profile i.e add/remove skills, interests and certs
- walker update_user_profile {
+walker update_user_profile {
     has updated_skills: list[dict] = [];
     has updated_interests: list[dict] = [];
     has updated_certifications: list[dict] = [];
@@ -198,8 +177,7 @@ node End {
 }
 
 
-# delete entire user profile
- walker delete_user_profile {
+walker delete_user_profile {
     can visit_memory with `root entry;
     can delete_memory with Memory entry;
     can delete_skill with Skill entry;
@@ -208,9 +186,7 @@ node End {
 }
 
 
-# Target role Agents
- # create role requirements graph (Skills and certs required for a particular role)
- walker create_role_requirements_graph {
+walker create_role_requirements_graph {
     has role_title: str = "";
     has role_description: str = "";
     has required_skills: list = [];
@@ -220,8 +196,7 @@ node End {
 }
 
 
-# retrieve roles from graph (Traverse target role graph and retrieve required certs and skills)
- walker get_all_role_requirements {
+walker get_all_role_requirements {
     has role_title: str = "";
     has required_skills: list = [];
     has required_certifications: list = [];
@@ -232,14 +207,12 @@ node End {
 }
 
 
-# Fetch live skills and certs from the web for a given target role
- walker collect_role_requirements {
+walker collect_role_requirements {
     has role_title: str = "";
     has role_description: str = "";
     has role_requirements: RoleProfile = RoleProfile([], []);
 
-    # LLM function: extract skills + certs from title + description
-     def get_role_requirements(role_title: str, role_description: str) -> RoleProfile by llm(
+    def get_role_requirements(role_title: str, role_description: str) -> RoleProfile by llm(
         method="ReAct",
         tools=([search_job_requirements])
     );
@@ -249,9 +222,7 @@ node End {
 }
 
 
-# Skill Gap Agents
- # find skill gaps for a given role (Internal) (Compare target role graph and user profile)
- walker find_skill_and_certification_gaps {
+walker find_skill_and_certification_gaps {
     has role_title: str = "";
     has user_profile: UserProfile = UserProfile([], [], []);
     has role_requirements: RoleProfile = RoleProfile([], []);
@@ -262,18 +233,14 @@ node End {
         role_requirements: RoleProfile
     ) -> RoleProfile by llm(method="Reason");
 
-    # collect skills and certs from user graph
-     can fetch_user_profile with `root entry;
-    # collect skills and certs from role requirements graph
-     can fetch_role_requirements with `root entry;
-    # compare and find gaps
-     can find_gaps with `root entry;
+    can fetch_user_profile with `root entry;
+    can fetch_role_requirements with `root entry;
+    can find_gaps with `root entry;
     can save_identified_gaps_to_graph with `root entry;
 }
 
 
-# create skill-and-cert gap graph (Fully Internal)
- walker create_skill_gap_graph {
+walker create_skill_gap_graph {
     has gaps: RoleProfile = RoleProfile([], []);
     has role_title: str = "";
     has initial_gap: int = 0;
@@ -285,8 +252,7 @@ node End {
 }
 
 
-# update Skill gap graph.
- walker update_skill_gap_graph {
+walker update_skill_gap_graph {
     has completed_skills: list = [];
     has completed_certifications: list = [];
     has role_title: str = "";
@@ -299,8 +265,7 @@ node End {
 }
 
 
-# adds completed skills  to main user profile graph (Fully Internal)
- walker add_completed_skill_to_user_profile {
+walker add_completed_skill_to_user_profile {
     has completed_skill: Skill = Skill("", "");
 
     can visit_memory with `root entry;
@@ -308,8 +273,7 @@ node End {
 }
 
 
-# Add completed certifications to user's main profile graph (Fully Internal)
- walker add_completed_certification_to_user_profile {
+walker add_completed_certification_to_user_profile {
     has completed_certification: Certification = Certification("", "", "");
 
     can visit_memory with `root entry;
@@ -317,8 +281,7 @@ node End {
 }
 
 
-# Check skill/certification progress
- walker check_progress {
+walker check_progress {
     has current_gap: int = 0;
     has role_title: str = "";
 
@@ -327,8 +290,7 @@ node End {
 }
 
 
-# Retrieve Skill gap graph
- walker retrieve_skill_gaps {
+walker retrieve_skill_gaps {
     has gaps: RoleProfile = RoleProfile([], []);
     has role_title: str = "";
 
@@ -340,8 +302,7 @@ node End {
 }
 
 
-# recommend learning paths to fill skill gaps
- walker recommend_learning_paths {
+walker recommend_learning_paths {
     has gaps: RoleProfile = RoleProfile([], []);
     has user_profile: UserProfile = UserProfile([], [], []);
     has target_role_requirements: RoleProfile = RoleProfile([], []);
@@ -611,13 +572,7 @@ def fetch_arbeitnow_jobs(max_items: int = 25) -> list[dict] {
 }
 
 
-# ---------------------------
- #          helpers
- # ---------------------------
- def _filter_jobs_by_focus(
-    jobs: any,
-    focus: any
-) -> list[dict] {
+def _filter_jobs_by_focus(jobs: any, focus: any) -> list[dict] {
     if focus == None {
         return jobs if jobs else [];
     }
@@ -841,12 +796,7 @@ impl live_job_market_trends_notifications.run{
 
 
 glob career_llm =
-    Model(
-        model_name="gemini/gemini-2.5-flash",
-        temperature=0.2,
-        max_tokens=600,
-        verbose=False
-    );
+    Model(model_name="gemini/gemini-2.5-flash", temperature=0.2, verbose=False);
 
 
 import re;
@@ -869,34 +819,32 @@ glob history_by_user = {};
 
 """Generate a helpful, structured career guidance reply.
 It should:
+- USE the user_profile provided (skills, certifications, interests) to personalize advice.
+- Reference specific skills the user already has when relevant.
+- Suggest skills/certifications the user is MISSING for their goals.
 - Do NOT write or mention any assistant name (e.g., "Smart Career Path Navigator", "Arise", "Navigator").
 - Do NOT prefix the answer with a name. Start directly with the content.
-- Give clear, practical advice (short paragraphs + bullet-like lines).
-- Consider the student's interests, skills and level.
+- Give clear, practical advice using Markdown for structure.
+- Consider the student's interests, skills and level from user_profile.
 - Suggest next actions (courses, projects, internships, skills).
 - Ask at most ONE follow-up question when clarification is needed.
 
 Style:
 - Sound human and warm (1 short greeting line only during greetings).
-- Then give structured, practical guidance.
-- Plain text only (no Markdown like **bold**).
-- Use compact sections if needed, but don’t over-label.
-- some part should be in bullet points
+- Use Markdown elements like **bold**, *italics*, and lists for readability.
+- Use compact sections with relevant headers if helpful.
+- bullet points are highly encouraged.
 
 Output format rules:
-- DO NOT use Markdown syntax like **bold**, *italics*, or '- ' bullets.
-- Use plain text only
-use inform of paragaraph
-• ...
-Next Steps:
-1) ...
+- Use standard Markdown syntax.
 - Keep the answer compact but clear (around 10–15 short lines).
 """
 def generate_career_answer(
     user_id: str,
     message: str,
     focus_area: str,
-    history: list
+    history: list,
+    user_profile: UserProfile
 ) -> str by career_llm();
 
 
@@ -904,11 +852,7 @@ walker career_chat {
     has user_id: str = "";
     has message: str = "";
     has focus_area: str = "General guidance";
-
-    obj __specs__ {
-        static has methods: list = ["post"];
-        static has auth: bool = False;
-    }
+    has user_profile: UserProfile = UserProfile([], [], []);
 
     can chat with `root entry;
 }
@@ -923,7 +867,18 @@ impl career_chat.chat{
         history_by_user[uid] = [];
     }
     let history = history_by_user[uid];
-    let raw_reply = generate_career_answer(uid, self.message, self.focus_area, history);
+    print("Getting User Profile to Chatbot\n");
+    let profile_walker = root spawn get_user_profile();
+    self.user_profile = profile_walker.user_profile;
+    print(f"User Profile fetched:\n {self.user_profile}\n");
+    let raw_reply =
+        generate_career_answer(
+            uid,
+            self.message,
+            self.focus_area,
+            history,
+            self.user_profile
+        );
     let reply_text = clean_reply_text(raw_reply);
     history.append(
         {"from_user" : True , "text" : self.message , "focus_area" : self.focus_area }
