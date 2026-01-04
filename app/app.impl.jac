@@ -159,6 +159,11 @@ impl retrieve_resume.retrieve_resume{
         disengage;
     }
     # Encode to base64 for transmission
+    # Read file bytes
+    # Original file path
+    # Handle duplicate filenames
+    # No extension
+    # Encode to base64 for transmission
     let encoded =
         base64.b64encode(file_bytes).decode('utf-8');
     report
@@ -233,6 +238,13 @@ impl analyze_cv.extract_user_skills{
     # Final Report
      # Save file bytes
      # Ensure file_path exists on Resume node
+     # Edge Case Checks
+     # Extract Text
+     # LLM Extraction
+     # create User graph
+     # Final Report
+     # Save file bytes
+     # Ensure file_path exists on Resume node
      report
     {"status" : "Success" , "message" : "Resume processed successfully" , "body" :
     {"skills" : [ s.name for s in self.user_profile.skills ] , "certifications" : [ {"title" : c.title , "provider" : c.provider , "url" : c.url } for c in self.user_profile.certifications ] , "interests" : [ {"name" : i.name , "description" : i.description } for i in self.user_profile.interests ] } } ;
@@ -249,6 +261,7 @@ impl get_user_details.visit_memory{
 
 impl get_user_details.get_user_details{
     # Edge Case Checks
+     # Edge Case Checks
      if here.full_name == None or here.email == None  {
         report
         {"status" : "Fail" , "message" : "User details missing in memory" , "body" : {} } ;
@@ -289,6 +302,15 @@ impl create_user_graph.create_user_graph{
     }
     for cert in self.user_profile.certifications {
         # Check if Certification exists
+         # Read file bytes
+         # Encode to base64 for transmission
+         # Edge Case Checks
+         # Extract Text
+         # LLM Extraction
+         # create User graph
+         # Final Success Report
+         # Check if Skill exists
+         # Check if Certification exists
          # Read file bytes
          # Encode to base64 for transmission
          # Edge Case Checks
@@ -348,6 +370,10 @@ impl generate_role_suggestions.suggest_roles{
     }
     let suggested_roles = self.suggest_roles_based_on_profile(self.user_profile);
     # LLM returned nothing
+     # Check if Interest exists
+     # cease operation if user profile is not fetched
+     # Edge case: empty or weak profile
+     # LLM returned nothing
      if suggested_roles == None {
         print("ERROR: LLM returned no roles.\n");
         report
@@ -380,6 +406,16 @@ impl generate_role_suggestions.suggest_roles{
         disengage;
     }
     # Final response
+     # Final Report
+     # Edge Case Checks
+     # Final Success Report
+     # Check if Skill exists
+     # Check if Certification exists
+     # Check if Interest exists
+     # LLM returned empty list
+     # Validate each LLM-generated role object
+     # All roles were invalid
+     # Final response
      # Final Report
      # Edge Case Checks
      # Final Success Report
@@ -516,15 +552,8 @@ impl get_road_map.return_learning_path{
         print("Using provided disk path...\n");
         path = self.disk_path;
     }
-    # check if file exists
-     if os.path.exists(path) {
-        # read markdown from disk
-         # cease operation if user profile is not fetched
-         # Edge case: empty or weak profile
-         # LLM returned nothing
-         # LLM returned empty list
-         # Validate each LLM-generated role object
-         with open(path, "r", encoding="utf-8") as f  {
+    if os.path.exists(path) {
+        with open(path, "r", encoding="utf-8") as f  {
             let content = f.read();
         }
         self.learning_path = content;
@@ -563,10 +592,7 @@ impl update_user_profile.add_new_skills{
         if not [-->( ` ? Skill ) ]( ? name == name )  {
             let new_skill = Skill(name=name, description=desc);
             here +>: skilled_in :+> new_skill;
-            # delete newly added skill from skill gap graph if it exists
-             # All roles were invalid
-             # Final response
-             root spawn update_skill_gap_graph(completed_skills=[name]);
+            root spawn update_skill_gap_graph(completed_skills=[name]);
             report
             {"status" : "Success" , "message" : "Skill added successfully" , "body" : {"name" : name } } ;
         } else {
@@ -647,11 +673,7 @@ impl update_user_profile.add_new_certifications{
         if not [-->( ` ? Certification ) ]( ? title == title )  {
             let new_cert = Certification(title=title, provider=provider, url=url);
             here +>: has_certification :+> new_cert;
-            # Delete newly acquired certification from certification gap graph
-             # check if file exists
-             # read markdown from disk
-             # delete newly added skill from skill gap graph if it exists
-             root spawn update_skill_gap_graph(completed_certifications=[title]);
+            root spawn update_skill_gap_graph(completed_certifications=[title]);
             report
             {"status" : "Success" , "message" : "Certification added successfully" , "body" : {"title" : title } } ;
         } else {
@@ -730,8 +752,7 @@ impl delete_user_profile.delete_interest{
 
 impl delete_user_profile.delete_certification{
     deleted_certification = here.title;
-    # and use here.title instead of here.name
-     try {
+    try {
         del here ;
         report
         {"status" : "Success" , "message" : "Certification deleted Succesfully" , "body" : {"title" : deleted_certification } } ;
@@ -939,6 +960,23 @@ impl find_skill_and_certification_gaps.fetch_role_requirements{
             required_certifications=[]
         );
     # cease operation if role requirements are not fetched
+     # check if file exists
+     # read markdown from disk
+     # cease operation if user profile is not fetched
+     # Edge case: empty or weak profile
+     # LLM returned nothing
+     # LLM returned empty list
+     # Validate each LLM-generated role object
+     # check if file exists
+     # read markdown from disk
+     # cease operation if user profile is not fetched
+     # Edge case: empty or weak profile
+     # LLM returned nothing
+     # LLM returned empty list
+     # Validate each LLM-generated role object
+     # delete newly added skill from skill gap graph if it exists
+     # All roles were invalid
+     # Final response
      if fetched_requirements == None or fetched_requirements.role_requirements == None  {
         print("ERROR: Failed to fetch role requirements.\n");
         report
@@ -1125,6 +1163,9 @@ impl add_completed_certification_to_user_profile.add_certification{
     # EMPTY CHECK
      # cease operation if user profile is not fetched
      # cease operation if role requirements are not fetched
+     # delete newly added skill from skill gap graph if it exists
+     # All roles were invalid
+     # Final response
      if not self.completed_certification.title
     or self.completed_certification.title == ""
      {
@@ -1337,6 +1378,10 @@ impl recommend_learning_paths.fetch_gaps{
     print("Fetching skill and certification gaps for learning path recommendation...\n");
     let fetched_gaps = root spawn retrieve_skill_gaps(role_title=self.role_title);
     # cease operation if gaps are not fetched
+     # Delete newly acquired certification from certification gap graph
+     # check if file exists
+     # read markdown from disk
+     # delete newly added skill from skill gap graph if it exists
      if fetched_gaps == None or fetched_gaps.gaps == None  {
         print("ERROR: Failed to fetch skill and certification gaps.\n");
         report
@@ -1370,6 +1415,7 @@ impl recommend_learning_paths.fetch_user_profile{
     print("Fetching user profile for learning path recommendation...\n");
     let fetched_profile = root spawn get_user_profile();
     # cease operation if user profile is not fetched
+     # and use here.title instead of here.name
      if fetched_profile == None or fetched_profile.user_profile == None  {
         print("ERROR: Failed to fetch user profile.\n");
         report
@@ -1428,6 +1474,77 @@ impl recommend_learning_paths.recommend_path{
          # check if file exists and increment
          # convert escaped newlines to real newlines
          # write to file
+         # Delete newly acquired certification from certification gap graph
+         # check if file exists
+         # read markdown from disk
+         # delete newly added skill from skill gap graph if it exists
+         # and use here.title instead of here.name
+         # cease operation if user profile is not fetched
+         # Delete newly acquired certification from certification gap graph
+         # cease operation if role requirements are not fetched
+         # cease operation if user profile is not fetched
+         # Delete newly acquired certification from certification gap graph
+         # cease operation if role requirements are not fetched
+         # Update progress
+         #call a walker to update main skill graph
+         #call a walker to update main skill graph
+         # EMPTY CHECK
+         # Update progress
+         #call a walker to update main skill graph
+         #call a walker to update main skill graph
+         # EMPTY CHECK
+         # EMPTY CHECK
+         # cease operation if user profile is not fetched
+         # cease operation if role requirements are not fetched
+         # EMPTY CHECK
+         # cease operation if user profile is not fetched
+         # cease operation if role requirements are not fetched
+         # cease operation if gaps are not fetched
+         # cease operation if role requirements are not fetched
+         # cease operation if user profile is not fetched
+         # save learning path to graph
+         # create subdir if it doesn't exist
+         # sanitize role title to use as filename
+         # check if file exists and increment
+         # convert escaped newlines to real newlines
+         # write to file
+         # Update progress
+         #call a walker to update main skill graph
+         #call a walker to update main skill graph
+         # EMPTY CHECK
+         # EMPTY CHECK
+         # cease operation if gaps are not fetched
+         # cease operation if role requirements are not fetched
+         # cease operation if user profile is not fetched
+         # save learning path to graph
+         # create subdir if it doesn't exist
+         # sanitize role title to use as filename
+         # check if file exists and increment
+         # convert escaped newlines to real newlines
+         # write to file
+         # cease operation if gaps are not fetched
+         # cease operation if role requirements are not fetched
+         # cease operation if user profile is not fetched
+         # save learning path to graph
+         # create subdir if it doesn't exist
+         # sanitize role title to use as filename
+         # check if file exists and increment
+         # convert escaped newlines to real newlines
+         # write to file
+         # Update progress
+         #call a walker to update main skill graph
+         #call a walker to update main skill graph
+         # EMPTY CHECK
+         # EMPTY CHECK
+         # cease operation if gaps are not fetched
+         # cease operation if role requirements are not fetched
+         # cease operation if user profile is not fetched
+         # save learning path to graph
+         # create subdir if it doesn't exist
+         # sanitize role title to use as filename
+         # check if file exists and increment
+         # convert escaped newlines to real newlines
+         # write to file
          with open(file_path, "w", encoding="utf-8") as f  {
             f.write(md_content);
         }
@@ -1444,4 +1561,37 @@ impl recommend_learning_paths.recommend_path{
         {"status" : "Fail" , "message" : "Failed to recommend learning path: " + str(e) , "body" : {} } ;
         disengage;
     }
+}
+
+
+impl career_chat.chat{
+    let uid = self.user_id;
+    if not uid {
+        uid = "anonymous";
+    }
+    if uid not in history_by_user {
+        history_by_user[uid] = [];
+    }
+    let history = history_by_user[uid];
+    print("Getting User Profile to Chatbot\n");
+    let profile_walker = root spawn get_user_profile();
+    self.user_profile = profile_walker.user_profile;
+    print(f"User Profile fetched:\n {self.user_profile}\n");
+    let raw_reply =
+        generate_career_answer(
+            uid,
+            self.message,
+            self.focus_area,
+            history,
+            self.user_profile
+        );
+    let reply_text = clean_reply_text(raw_reply);
+    history.append(
+        {"from_user" : True , "text" : self.message , "focus_area" : self.focus_area }
+    );
+    history.append(
+        {"from_user" : False , "text" : reply_text , "focus_area" : self.focus_area }
+    );
+    history_by_user[uid] = history;
+    report {"reply" : reply_text , "history" : history } ;
 }
