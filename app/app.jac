@@ -166,6 +166,7 @@ walker update_user_profile {
     has updated_skills: list[dict] = [];
     has updated_interests: list[dict] = [];
     has updated_certifications: list[dict] = [];
+    has append_only: bool = False;
 
     can visit_memory with `root entry;
     can add_new_skills with Memory entry;
@@ -516,13 +517,22 @@ def fetch_remoteok_jobs(max_items: int = 25) -> list[dict] {
 
 
 def fetch_arbeitnow_jobs(max_items: int = 25) -> list[dict] {
-    let url = "https://www.arbeitnow.com/api/job-board-api";
+    let # check if file exists
+    url =
+        "https://www.arbeitnow.com/api/job-board-api";
     try {
-        let resp =
+        let # read markdown from disk
+        resp =
+            # cease operation if user profile is not fetched
             requests.get(
+                # Edge case: empty or weak profile
                 url,
+                # LLM returned nothing
                 timeout=25,
+                # LLM returned empty list
                 headers={"User-Agent" : "Mozilla/5.0" , "Accept" : "application/json" }
+                # Validate each LLM-generated role object
+
             );
         let ct = _safe_str(resp.headers.get("Content-Type", "")).lower();
         print("[ARBEITNOW]", resp.status_code, ct);
@@ -817,12 +827,53 @@ def clean_reply_text(text: str) -> str {
 glob history_by_user = {};
 
 
+def add_skill_tool(name: str, description: str = "") -> str {
+    if name {
+        let sanitized_skills = [{"name" : name , "description" : description }];
+        root spawn update_user_profile(
+            updated_skills=sanitized_skills,
+            append_only=True
+        );
+        return f"Skill '{name}' added successfully.";
+    }
+    return "No valid skill name provided.";
+}
+
+
+def add_certification_tool(title: str, provider: str = "", url: str = "") -> str {
+    if title {
+        let sanitized_certs = [{"name" : title , "provider" : provider , "url" : url }];
+        root spawn update_user_profile(
+            updated_certifications=sanitized_certs,
+            append_only=True
+        );
+        return f"Certification '{title}' added successfully.";
+    }
+    return "No valid certification title provided.";
+}
+
+
+def add_interest_tool(name: str, description: str = "") -> str {
+    if name {
+        let sanitized_interests = [{"name" : name , "description" : description }];
+        root spawn update_user_profile(
+            updated_interests=sanitized_interests,
+            append_only=True
+        );
+        return f"Interest '{name}' added successfully.";
+    }
+    return "No valid interest name provided.";
+}
+
+
 """You are a helpful, professional, and concise career assistant named Arise AI.
 
 Your goal is to have a natural conversation.
 - If the user greets you or engages in small talk, respond warmly and briefly without diving into career advice immediately.
 - Only use the provided `user_profile` (skills, certifications, interests) when it is relevant to the user's query or when they ask for personalized guidance.
 - Reference existing skills appropriately to encourage the user, and point out gaps if they ask about goals.
+- If a user mentions new skills, certifications, or interests they have acquired, use the appropriate tools to add them to their profile.
+- Always confirm with the user after successfully adding new information to their profile.
 - Keep your responses concise and direct. Avoid being overly verbose or repetitive.
 - Use Markdown (bold, lists) for clarity when helpful, but don't force a specific structure if a simple paragraph is better.
 """
@@ -832,7 +883,10 @@ def generate_career_answer(
     focus_area: str,
     history: list,
     user_profile: UserProfile
-) -> str by career_llm();
+) -> str by career_llm(
+    method="ReAct",
+    tools=[add_skill_tool, add_certification_tool, add_interest_tool]
+);
 
 
 walker career_chat {
@@ -870,6 +924,40 @@ impl career_chat.chat{
     history.append(
         {"from_user" : True , "text" : self.message , "focus_area" : self.focus_area }
     );
+    # Delete newly acquired certification from certification gap graph
+    # Read file bytes
+    # Original file path
+    # Handle duplicate filenames
+    # No extension
+    # delete newly added skill from skill gap graph if it exists
+    # All roles were invalid
+    # Final response
+    # Encode to base64 for transmission
+    # Edge Case Checks
+    # Delete newly acquired certification from certification gap graph
+    # check if file exists
+    # read markdown from disk
+    # delete newly added skill from skill gap graph if it exists
+    # Extract Text
+    # LLM Extraction
+    # create User graph
+    # Final Report
+    # Save file bytes
+    # Ensure file_path exists on Resume node
+    # Edge Case Checks
+    # Final Success Report
+    # Check if Skill exists
+    # Check if Certification exists
+    # Read file bytes
+    # Encode to base64 for transmission
+    # Edge Case Checks
+    # Extract Text
+    # LLM Extraction
+    # create User graph
+    # Check if Interest exists
+    # cease operation if user profile is not fetched
+    # Edge case: empty or weak profile
+    # LLM returned nothing
     history.append(
         {"from_user" : False , "text" : reply_text , "focus_area" : self.focus_area }
     );
@@ -884,3 +972,427 @@ with entry {
     let FIRECRAWL_API_KEY = os.getenv('FIRECRAWL_API_KEY');
     let firecrawl = FirecrawlApp(api_key=FIRECRAWL_API_KEY);
 }
+
+
+# cease operation if user profile is not fetched
+
+
+
+# Delete newly acquired certification from certification gap graph
+
+
+
+# cease operation if role requirements are not fetched
+
+
+
+# LLM returned empty list
+
+
+
+# Validate each LLM-generated role object
+
+
+
+# All roles were invalid
+
+
+
+# Final response
+
+
+
+# Final Report
+
+
+
+# Edge Case Checks
+
+
+
+# Final Success Report
+
+
+
+# Check if Skill exists
+
+
+
+# Check if Certification exists
+
+
+
+# Check if Interest exists
+
+
+
+# cease operation if user profile is not fetched
+
+
+
+# cease operation if role requirements are not fetched
+
+
+
+# check if file exists
+
+
+
+# read markdown from disk
+
+
+
+# cease operation if user profile is not fetched
+
+
+
+# Edge case: empty or weak profile
+
+
+
+# LLM returned nothing
+
+
+
+# LLM returned empty list
+
+
+
+# Validate each LLM-generated role object
+
+
+
+# delete newly added skill from skill gap graph if it exists
+
+
+
+# All roles were invalid
+
+
+
+# Final response
+
+
+
+# Update progress
+
+
+
+#call a walker to update main skill graph
+
+
+
+#call a walker to update main skill graph
+
+
+
+# EMPTY CHECK
+
+
+
+# EMPTY CHECK
+
+
+
+# Update progress
+
+
+
+#call a walker to update main skill graph
+
+
+
+#call a walker to update main skill graph
+
+
+
+# EMPTY CHECK
+
+
+
+# EMPTY CHECK
+
+
+
+# cease operation if user profile is not fetched
+
+
+
+# cease operation if role requirements are not fetched
+
+
+
+# cease operation if gaps are not fetched
+
+
+
+# cease operation if role requirements are not fetched
+
+
+
+# cease operation if user profile is not fetched
+
+
+
+# save learning path to graph
+
+
+
+# create subdir if it doesn't exist
+
+
+
+# sanitize role title to use as filename
+
+
+
+# check if file exists and increment
+
+
+
+# convert escaped newlines to real newlines
+
+
+
+# write to file
+
+
+
+# Update progress
+
+
+
+#call a walker to update main skill graph
+
+
+
+#call a walker to update main skill graph
+
+
+
+# EMPTY CHECK
+
+
+
+# EMPTY CHECK
+
+
+
+# cease operation if gaps are not fetched
+
+
+
+# cease operation if role requirements are not fetched
+
+
+
+# cease operation if user profile is not fetched
+
+
+
+# save learning path to graph
+
+
+
+# create subdir if it doesn't exist
+
+
+
+# sanitize role title to use as filename
+
+
+
+# check if file exists and increment
+
+
+
+# convert escaped newlines to real newlines
+
+
+
+# write to file
+
+
+
+# cease operation if gaps are not fetched
+
+
+
+# cease operation if role requirements are not fetched
+
+
+
+# cease operation if user profile is not fetched
+
+
+
+# save learning path to graph
+
+
+
+# create subdir if it doesn't exist
+
+
+
+# Delete newly acquired certification from certification gap graph
+
+
+
+# check if file exists
+
+
+
+# read markdown from disk
+
+
+
+# delete newly added skill from skill gap graph if it exists
+
+
+
+# sanitize role title to use as filename
+
+
+
+# check if file exists and increment
+
+
+
+# convert escaped newlines to real newlines
+
+
+
+# write to file
+
+
+
+# cease operation if user profile is not fetched
+
+
+
+# Delete newly acquired certification from certification gap graph
+
+
+
+# cease operation if role requirements are not fetched
+
+
+
+# Update progress
+
+
+
+#call a walker to update main skill graph
+
+
+
+#call a walker to update main skill graph
+
+
+
+# EMPTY CHECK
+
+
+
+# EMPTY CHECK
+
+
+
+# cease operation if user profile is not fetched
+
+
+
+# cease operation if role requirements are not fetched
+
+
+
+# cease operation if gaps are not fetched
+
+
+
+# cease operation if role requirements are not fetched
+
+
+
+# cease operation if user profile is not fetched
+
+
+
+# save learning path to graph
+
+
+
+# create subdir if it doesn't exist
+
+
+
+# sanitize role title to use as filename
+
+
+
+# check if file exists and increment
+
+
+
+# convert escaped newlines to real newlines
+
+
+
+# write to file
+
+
+
+# Update progress
+
+
+
+#call a walker to update main skill graph
+
+
+
+#call a walker to update main skill graph
+
+
+
+# EMPTY CHECK
+
+
+
+# EMPTY CHECK
+
+
+
+# cease operation if gaps are not fetched
+
+
+
+# cease operation if role requirements are not fetched
+
+
+
+# cease operation if user profile is not fetched
+
+
+
+# save learning path to graph
+
+
+
+# create subdir if it doesn't exist
+
+
+
+# sanitize role title to use as filename
+
+
+
+# check if file exists and increment
+
+
+
+# convert escaped newlines to real newlines
+
+
+
+# write to file
+
