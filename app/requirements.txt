@@ -4,6 +4,7 @@ python-docx
 requests
 beautifulsoup4
 firecrawl-py
-jac-client
+jac-client==0.2.3
 byllm
-mistralai
+jacenv
+.jaccache
