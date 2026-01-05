@@ -861,6 +861,41 @@ def add_interest_tool(name: str, description: str = "") -> str {
 }
 
 
+def get_target_roles_tool() -> str {
+    let roles_walker = root spawn get_user_target_roles();
+    if roles_walker.target_roles {
+        let roles_list = [f"{r.title}: {r.description}" for r in roles_walker.target_roles];
+        return "Current target roles:\n" + "\n".join(roles_list);
+    }
+    return "No target roles found.";
+}
+
+
+def get_skill_gaps_tool(role_title: str) -> str {
+    let gaps_walker = root spawn retrieve_skill_gaps(role_title=role_title);
+    let out = f"Skill gaps for {role_title}:\n";
+    let has_gaps = False;
+    if gaps_walker.gaps.skills {
+        out += "Missing Skills:\n";
+        for s in gaps_walker.gaps.skills {
+            out += f"- {s.name}: {s.description}\n";
+        }
+        has_gaps = True;
+    }
+    if gaps_walker.gaps.certifications {
+        out += "Missing Certifications:\n";
+        for c in gaps_walker.gaps.certifications {
+            out += f"- {c.title} (Provider: {c.provider})\n";
+        }
+        has_gaps = True;
+    }
+    if not has_gaps {
+        return f"No gaps identified for {role_title}. You seem to meet all identified requirements!";
+    }
+    return out;
+}
+
+
 """You are a helpful, professional, and concise career assistant named Arise AI.
 
 Your goal is to have a natural conversation.
@@ -868,6 +903,8 @@ Your goal is to have a natural conversation.
 - Only use the provided `user_profile` (skills, certifications, interests) when it is relevant to the user's query or when they ask for personalized guidance.
 - Reference existing skills appropriately to encourage the user, and point out gaps if they ask about goals.
 - If a user mentions new skills, certifications, or interests they have acquired, use the appropriate tools to add them to their profile.
+- If a user asks about their skill gaps for a specific role, use `get_skill_gaps_tool`.
+- If a user asks what target roles they have or what roles they are working towards, use `get_target_roles_tool`.
 - Always confirm with the user after successfully adding new information to their profile.
 - Keep your responses concise and direct. Avoid being overly verbose or repetitive.
 - Use Markdown (bold, lists) for clarity when helpful, but don't force a specific structure if a simple paragraph is better.
@@ -880,7 +917,13 @@ def generate_career_answer(
     user_profile: UserProfile
 ) -> str by career_llm(
     method="ReAct",
-    tools=[add_skill_tool, add_certification_tool, add_interest_tool]
+    tools=[
+        add_skill_tool,
+        add_certification_tool,
+        add_interest_tool,
+        get_target_roles_tool,
+        get_skill_gaps_tool
+    ]
 );
 
 
