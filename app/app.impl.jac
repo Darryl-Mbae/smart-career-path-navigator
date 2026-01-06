@@ -1595,3 +1595,110 @@ impl career_chat.chat{
     history_by_user[uid] = history;
     report {"reply" : reply_text , "history" : history } ;
 }
+
+impl live_job_market_trends_notifications.run {
+    let utc_dt = _utc_now_dt();
+    let generated_time_utc = _iso_from_dt(utc_dt);
+    let generated_time_local = _eat_from_utc_dt(utc_dt);
+    let jobs_list = [];
+    let r1 = fetch_remotive_jobs(max_items=self.max_jobs_per_source);
+    time.sleep(1);
+    let r2 = fetch_remoteok_jobs(max_items=self.max_jobs_per_source);
+    time.sleep(1);
+    let r3 = fetch_arbeitnow_jobs(max_items=self.max_jobs_per_source);
+    print("[COUNTS] remotive=", len(r1), " remoteok=", len(r2), " arbeitnow=", len(r3));
+    for j in (r1 if r1 else []) {
+        jobs_list.append(j);
+    }
+    for j in (r2 if r2 else []) {
+        jobs_list.append(j);
+    }
+    for j in (r3 if r3 else []) {
+        jobs_list.append(j);
+    }
+    jobs_list = _filter_jobs_by_focus(jobs_list, self.focus);
+    if jobs_list == None or len(jobs_list) == 0  {
+        report
+        {"status" : "Fail" , "message" : "No live jobs found (all sources returned empty after parsing)." , "body" :
+        {"generated_time_utc" : generated_time_utc , "generated_time_local" : generated_time_local , "debug_counts" :
+        {"remotive" : len(r1) , "remoteok" : len(r2) , "arbeitnow" : len(r3) } , "summary" : "" , "notifications" : [] , "highlighted_roles" : [] , "high_demand_skills" : [] , "jobs" : [] , "sources" : ["Remotive", "RemoteOK", "Arbeitnow"] } } ;
+        return;
+    }
+    let snap = _build_snapshot_from_jobs(jobs_list);
+    let top_roles = snap.get("top_roles", []) if snap else [];
+    let top_skills = snap.get("top_skills", []) if snap else [];
+    let notifications = [];
+    let role_str = "";
+    let i = 0;
+    while i < len(top_roles) and i < 8  {
+        if role_str == "" {
+            role_str = _safe_str(top_roles[i]);
+        } else {
+            role_str = role_str + ", " + _safe_str(top_roles[i]);
+        }
+        i = i + 1;
+    }
+    let skill_str = "";
+    let k = 0;
+    while k < len(top_skills) and k < 10  {
+        if skill_str == "" {
+            skill_str = _safe_str(top_skills[k]);
+        } else {
+            skill_str = skill_str + ", " + _safe_str(top_skills[k]);
+        }
+        k = k + 1;
+    }
+    notifications.append(
+
+        {"id" : "snapshot:" + utc_dt.strftime("%Y%m%d%H%M%S") , "type" : "event" , "title" : "Live global hiring snapshot" , "description" : ("Top roles trending now: " + role_str + ". " + "High-demand skills: " + skill_str + ". " + "Open jobs below are pulled live from public sources.") , "time" : generated_time_utc , "local_time" : generated_time_local , "url" : jobs_list[0].get("url", "") if jobs_list and len(jobs_list) > 0  else "" , "read" : False }
+    );
+    let idx = 0;
+    while idx < len(jobs_list) and len(notifications) < (self.max_notifications + 1)  {
+        let j = jobs_list[idx];
+        if j == None {
+            idx = idx + 1;
+            continue;
+        }
+        let title = _safe_str(j.get("title", ""));
+        let company = _safe_str(j.get("company", ""));
+        let loc = _safe_str(j.get("location", ""));
+        let src = _safe_str(j.get("source", ""));
+        let urlj = _safe_str(j.get("url", ""));
+        let tags = j.get("tags", []) if j else [];
+        if title.strip() == "" or urlj.strip() == ""  {
+            idx = idx + 1;
+            continue;
+        }
+        let tag_line = "";
+        let t = 0;
+        while t < len(tags) and t < 6  {
+            let tg = _safe_str(tags[t]).strip();
+            if tg != "" {
+                if tag_line == "" {
+                    tag_line = tg;
+                } else {
+                    tag_line = tag_line + ", " + tg;
+                }
+            }
+            t = t + 1;
+        }
+        let desc = "";
+        if loc.strip() != "" {
+            desc = "Location: " + loc + ". ";
+        }
+        if src.strip() != "" {
+            desc = desc + "Source: " + src + ". ";
+        }
+        if tag_line != "" {
+            desc = desc + "Skills: " + tag_line + ".";
+        }
+        notifications.append(
+
+            {"id" : _safe_str(j.get("id", "job:" + _safe_str(idx))) , "type" : "success" , "title" : (title + (" — " + company if company.strip() != "" else "")) , "description" : desc , "time" : generated_time_utc , "local_time" : generated_time_local , "url" : urlj , "read" : False }
+        );
+        idx = idx + 1;
+    }
+    report
+    {"status" : "Success" , "message" : "Live job openings + trending roles/skills generated" , "body" :
+    {"generated_time_utc" : generated_time_utc , "generated_time_local" : generated_time_local , "summary" : "Live jobs pulled from Remotive, RemoteOK, and Arbeitnow (public endpoints)." , "notifications" : notifications , "highlighted_roles" : top_roles , "high_demand_skills" : top_skills , "jobs" : jobs_list , "sources" : ["Remotive", "RemoteOK", "Arbeitnow"] } } ;
+}

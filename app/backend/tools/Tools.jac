@@ -1,5 +1,4 @@
 import from dotenv { load_dotenv }
-import from dotenv { load_dotenv }
 import base64;
 import re;
 import os;
@@ -9,6 +8,7 @@ import requests;
 import json;
 import from firecrawl { FirecrawlApp }
 import from concurrent.futures { ThreadPoolExecutor, as_completed }
+import from backend.helpers.Helpers { _safe_str }
 
 # Tools
 # Job recommender tools
@@ -323,9 +323,177 @@ def search_learning_links(search_phrase: str, limit: int = 10) -> list {
     return deduped[:limit];
 }
 
-with entry {
-    load_dotenv();
-    let SERPER_API_KEY = os.getenv('SERPER_API_KEY');
-    let FIRECRAWL_API_KEY = os.getenv('FIRECRAWL_API_KEY');
-    let firecrawl = FirecrawlApp(api_key=FIRECRAWL_API_KEY);
+def fetch_remotive_jobs(max_items: int = 25) -> list[dict] {
+    let url = "https://remotive.com/api/remote-jobs";
+    try {
+        let resp =
+            requests.get(
+                url,
+                timeout=25,
+                headers={"User-Agent" : "Mozilla/5.0" , "Accept" : "application/json" }
+            );
+        let ct = _safe_str(resp.headers.get("Content-Type", "")).lower();
+        print("[REMOTIVE]", resp.status_code, ct);
+        if resp.status_code != 200 {
+            return [];
+        }
+        if ct.find("application/json") == -1 {
+            return [];
+        }
+        let data = None;
+        try {
+            data = resp.json();
+        } except Exception as e {
+            try {
+                data = json.loads(resp.text);
+            } except Exception as e2 {
+                return [];
+            }
+        }
+        let jobs = data.get("jobs", []) if data else [];
+        if jobs == None {
+            jobs = [];
+        }
+        let out = [];
+        for j in jobs {
+            if len(out) >= max_items {
+                break;
+            }
+            if j == None {
+                continue;
+            }
+            let title = _safe_str(j.get("title", ""));
+            let urlj = _safe_str(j.get("url", ""));
+            if title.strip() == "" or urlj.strip() == ""  {
+                continue;
+            }
+            out.append(
+                {"id" : "remotive:" + _safe_str(j.get("id", "x" + _safe_str(len(out)))) , "title" : title , "company" : _safe_str(j.get("company_name", "")) , "location" : _safe_str(j.get("candidate_required_location", "Remote")) , "url" : urlj , "tags" : j.get("tags", []) if j else [] , "source" : "Remotive" , "posted" : _safe_str(j.get("publication_date", "")) }
+            );
+        }
+        return out;
+    } except Exception as e {
+        print("[REMOTIVE ERROR]", e);
+        return [];
+    }
+}
+
+
+def fetch_remoteok_jobs(max_items: int = 25) -> list[dict] {
+    let url = "https://remoteok.com/api";
+    try {
+        let resp =
+            requests.get(
+                url,
+                timeout=25,
+                headers=
+                {"User-Agent" : "Mozilla/5.0" , "Accept" : "application/json" , "Referer" : "https://remoteok.com/" }
+            );
+        let ct = _safe_str(resp.headers.get("Content-Type", "")).lower();
+        print("[REMOTEOK]", resp.status_code, ct);
+        if resp.status_code != 200 {
+            return [];
+        }
+        if ct.find("application/json") == -1 {
+            return [];
+        }
+        let data = None;
+        try {
+            data = resp.json();
+        } except Exception as e {
+            try {
+                data = json.loads(resp.text);
+            } except Exception as e2 {
+                return [];
+            }
+        }
+        if data == None or len(data) == 0  {
+            return [];
+        }
+        let out = [];
+        for j in data {
+            if len(out) >= max_items {
+                break;
+            }
+            if j == None {
+                continue;
+            }
+            let position = _safe_str(j.get("position", ""));
+            if position.strip() == "" {
+                continue;
+            }
+            let urlj = _safe_str(j.get("url", ""));
+            if urlj.strip() == "" {
+                urlj = _safe_str(j.get("apply_url", ""));
+            }
+            if urlj.strip() == "" {
+                continue;
+            }
+            out.append(
+                {"id" : "remoteok:" + _safe_str(j.get("id", "x" + _safe_str(len(out)))) , "title" : position , "company" : _safe_str(j.get("company", "")) , "location" : _safe_str(j.get("location", "Remote")) , "url" : urlj , "tags" : j.get("tags", []) if j else [] , "source" : "RemoteOK" , "posted" : _safe_str(j.get("date", "")) }
+            );
+        }
+        return out;
+    } except Exception as e {
+        print("[REMOTEOK ERROR]", e);
+        return [];
+    }
+}
+
+
+def fetch_arbeitnow_jobs(max_items: int = 25) -> list[dict] {
+    let url =
+        "https://www.arbeitnow.com/api/job-board-api";
+    try {
+        let resp =
+            requests.get(
+                url,
+                timeout=25,
+                headers={"User-Agent" : "Mozilla/5.0" , "Accept" : "application/json" }
+
+            );
+        let ct = _safe_str(resp.headers.get("Content-Type", "")).lower();
+        print("[ARBEITNOW]", resp.status_code, ct);
+        if resp.status_code != 200 {
+            return [];
+        }
+        if ct.find("application/json") == -1 {
+            return [];
+        }
+        let data = None;
+        try {
+            data = resp.json();
+        } except Exception as e {
+            try {
+                data = json.loads(resp.text);
+            } except Exception as e2 {
+                return [];
+            }
+        }
+        let jobs = data.get("data", []) if data else [];
+        if jobs == None {
+            jobs = [];
+        }
+        let out = [];
+        for j in jobs {
+            if len(out) >= max_items {
+                break;
+            }
+            if j == None {
+                continue;
+            }
+            let title = _safe_str(j.get("title", ""));
+            let urlj = _safe_str(j.get("url", ""));
+            if title.strip() == "" or urlj.strip() == ""  {
+                continue;
+            }
+            out.append(
+                {"id" : "arbeitnow:" + _safe_str(j.get("slug", "x" + _safe_str(len(out)))) , "title" : title , "company" : _safe_str(j.get("company_name", "")) , "location" : _safe_str(j.get("location", "")) , "url" : urlj , "tags" : j.get("tags", []) if j else [] , "source" : "Arbeitnow" , "posted" : "" }
+            );
+        }
+        return out;
+    } except Exception as e {
+        print("[ARBEITNOW ERROR]", e);
+        return [];
+    }
 }

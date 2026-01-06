@@ -10,17 +10,16 @@ import docx;
 import requests;
 import json;
 import from firecrawl { FirecrawlApp }
-import from backend.models.Models { Memory, Resume, Skill, Role, Certification, Interest, RequirementsGap, LearningPath }
-
+import from backend.models.Models { Memory, Resume, Skill, Role, Certification, Interest, RequirementsGap, LearningPath, UserProfile, RoleProfile }
 import from backend.relationships.Relationships { skilled_in, has_certification, interested_in, requires_skill, requires_certification, has_skill_gap, has_certification_gap }
-
-import from backend.tools.Tools { is_valid_url, search_job_urls, search_job_requirements, fetch_careerjet_descriptions, search_urls, extract_markdown, search_learning_resources, is_learning_url, search_learning_links }
-import from backend.helpers.Helpers { read_document_text }
+import from backend.tools.Tools { is_valid_url, search_job_urls, search_job_requirements, fetch_careerjet_descriptions, search_urls, extract_markdown, search_learning_resources, is_learning_url, search_learning_links, fetch_remotive_jobs, fetch_remoteok_jobs, fetch_arbeitnow_jobs }
+import from backend.helpers.Helpers { read_document_text, _utc_now_dt, _iso_from_dt, _eat_from_utc_dt, _safe_str, _contains, _normalize_title_for_freq, _freq_top, _build_snapshot_from_jobs, _filter_jobs_by_focus, clean_reply_text }
 
 
 glob llm = Model(model_name="gemini/gemini-2.5-flash", verbose=True);
 glob career_llm =
     Model(model_name="gemini/gemini-2.5-flash", temperature=0.2, verbose=False);
+glob history_by_user = {};
 
 
 node End {
@@ -33,19 +32,6 @@ node End {
         {"status" : "Success" , "message" : "User profile fetched successfully" , "body" :
         {"skills" : [ {"name" : s.name , "description" : s.description } for s in self.user_profile.skills ] , "interests" : [ {"name" : i.name , "description" : i.description } for i in self.user_profile.interests ] , "certifications" : [ {"title" : c.title , "provider" : c.provider , "url" : c.url } for c in self.user_profile.certifications ] } } ;
     }
-}
-
-
-obj UserProfile {
-    has skills: list[Skill];
-    has certifications: list[Certification];
-    has interests: list[Interest];
-}
-
-
-obj RoleProfile {
-    has skills: list[Skill];
-    has certifications: list[Certification];
 }
 
 
@@ -328,362 +314,6 @@ walker recommend_learning_paths {
 }
 
 
-def _utc_now_dt()  -> any {
-    return datetime.datetime.utcnow().replace(microsecond=0);
-}
-
-
-def _iso_from_dt(dt: any) -> str {
-    return dt.isoformat() + "Z";
-}
-
-
-def _eat_from_utc_dt(dt: any) -> str {
-    let eat_dt = dt + datetime.timedelta(hours=3);
-    return eat_dt.strftime("%Y-%m-%d %H:%M:%S EAT");
-}
-
-
-def _safe_str(x: any) -> str {
-    if x == None {
-        return "";
-    }
-    return str(x);
-}
-
-
-def _contains(hay: any, needle: any) -> bool {
-    let h = _safe_str(hay).lower();
-    let n = _safe_str(needle).lower();
-    if h == "" or n == ""  {
-        return False;
-    }
-    return h.find(n) != -1;
-}
-
-
-def _normalize_title_for_freq(title: any) -> str {
-    let t = _safe_str(title).strip();
-    if t == "" {
-        return "";
-    }
-    let lowers = t.lower();
-    let tokens =
-
-        ["senior",
-        "jr",
-        "junior",
-        "lead",
-        "principal",
-        "intern",
-        "internship",
-        "mid-level",
-        "mid level"];
-    for w in tokens {
-        lowers = lowers.replace(w, "");
-    }
-    let parts = lowers.split();
-    let out = "";
-    for p in parts {
-        if p.strip() == "" {
-            continue;
-        }
-        if out == "" {
-            out = p;
-        } else {
-            out = out + " " + p;
-        }
-    }
-    return out.title();
-}
-
-
-def fetch_remotive_jobs(max_items: int = 25) -> list[dict] {
-    let url = "https://remotive.com/api/remote-jobs";
-    try {
-        let resp =
-            requests.get(
-                url,
-                timeout=25,
-                headers={"User-Agent" : "Mozilla/5.0" , "Accept" : "application/json" }
-            );
-        let ct = _safe_str(resp.headers.get("Content-Type", "")).lower();
-        print("[REMOTIVE]", resp.status_code, ct);
-        if resp.status_code != 200 {
-            return [];
-        }
-        if ct.find("application/json") == -1 {
-            return [];
-        }
-        let data = None;
-        try {
-            data = resp.json();
-        } except Exception as e {
-            try {
-                data = json.loads(resp.text);
-            } except Exception as e2 {
-                return [];
-            }
-        }
-        let jobs = data.get("jobs", []) if data else [];
-        if jobs == None {
-            jobs = [];
-        }
-        let out = [];
-        for j in jobs {
-            if len(out) >= max_items {
-                break;
-            }
-            if j == None {
-                continue;
-            }
-            let title = _safe_str(j.get("title", ""));
-            let urlj = _safe_str(j.get("url", ""));
-            if title.strip() == "" or urlj.strip() == ""  {
-                continue;
-            }
-            out.append(
-
-                {"id" : "remotive:" + _safe_str(j.get("id", "x" + _safe_str(len(out)))) , "title" : title , "company" : _safe_str(j.get("company_name", "")) , "location" : _safe_str(j.get("candidate_required_location", "Remote")) , "url" : urlj , "tags" : j.get("tags", []) if j else [] , "source" : "Remotive" , "posted" : _safe_str(j.get("publication_date", "")) }
-            );
-        }
-        return out;
-    } except Exception as e {
-        print("[REMOTIVE ERROR]", e);
-        return [];
-    }
-}
-
-
-def fetch_remoteok_jobs(max_items: int = 25) -> list[dict] {
-    let url = "https://remoteok.com/api";
-    try {
-        let resp =
-            requests.get(
-                url,
-                timeout=25,
-                headers=
-                {"User-Agent" : "Mozilla/5.0" , "Accept" : "application/json" , "Referer" : "https://remoteok.com/" }
-            );
-        let ct = _safe_str(resp.headers.get("Content-Type", "")).lower();
-        print("[REMOTEOK]", resp.status_code, ct);
-        if resp.status_code != 200 {
-            return [];
-        }
-        if ct.find("application/json") == -1 {
-            return [];
-        }
-        let data = None;
-        try {
-            data = resp.json();
-        } except Exception as e {
-            try {
-                data = json.loads(resp.text);
-            } except Exception as e2 {
-                return [];
-            }
-        }
-        if data == None or len(data) == 0  {
-            return [];
-        }
-        let out = [];
-        for j in data {
-            if len(out) >= max_items {
-                break;
-            }
-            if j == None {
-                continue;
-            }
-            let position = _safe_str(j.get("position", ""));
-            if position.strip() == "" {
-                continue;
-            }
-            let urlj = _safe_str(j.get("url", ""));
-            if urlj.strip() == "" {
-                urlj = _safe_str(j.get("apply_url", ""));
-            }
-            if urlj.strip() == "" {
-                continue;
-            }
-            out.append(
-
-                {"id" : "remoteok:" + _safe_str(j.get("id", "x" + _safe_str(len(out)))) , "title" : position , "company" : _safe_str(j.get("company", "")) , "location" : _safe_str(j.get("location", "Remote")) , "url" : urlj , "tags" : j.get("tags", []) if j else [] , "source" : "RemoteOK" , "posted" : _safe_str(j.get("date", "")) }
-            );
-        }
-        return out;
-    } except Exception as e {
-        print("[REMOTEOK ERROR]", e);
-        return [];
-    }
-}
-
-
-def fetch_arbeitnow_jobs(max_items: int = 25) -> list[dict] {
-    let # check if file exists
-    url =
-        "https://www.arbeitnow.com/api/job-board-api";
-    try {
-        let # read markdown from disk
-        resp =
-            # cease operation if user profile is not fetched
-            requests.get(
-                # Edge case: empty or weak profile
-                url,
-                # LLM returned nothing
-                timeout=25,
-                # LLM returned empty list
-                headers={"User-Agent" : "Mozilla/5.0" , "Accept" : "application/json" }
-                # Validate each LLM-generated role object
-
-            );
-        let ct = _safe_str(resp.headers.get("Content-Type", "")).lower();
-        print("[ARBEITNOW]", resp.status_code, ct);
-        if resp.status_code != 200 {
-            return [];
-        }
-        if ct.find("application/json") == -1 {
-            return [];
-        }
-        let data = None;
-        try {
-            data = resp.json();
-        } except Exception as e {
-            try {
-                data = json.loads(resp.text);
-            } except Exception as e2 {
-                return [];
-            }
-        }
-        let jobs = data.get("data", []) if data else [];
-        if jobs == None {
-            jobs = [];
-        }
-        let out = [];
-        for j in jobs {
-            if len(out) >= max_items {
-                break;
-            }
-            if j == None {
-                continue;
-            }
-            let title = _safe_str(j.get("title", ""));
-            let urlj = _safe_str(j.get("url", ""));
-            if title.strip() == "" or urlj.strip() == ""  {
-                continue;
-            }
-            out.append(
-
-                {"id" : "arbeitnow:" + _safe_str(j.get("slug", "x" + _safe_str(len(out)))) , "title" : title , "company" : _safe_str(j.get("company_name", "")) , "location" : _safe_str(j.get("location", "")) , "url" : urlj , "tags" : j.get("tags", []) if j else [] , "source" : "Arbeitnow" , "posted" : "" }
-            );
-        }
-        return out;
-    } except Exception as e {
-        print("[ARBEITNOW ERROR]", e);
-        return [];
-    }
-}
-
-
-def _filter_jobs_by_focus(jobs: any, focus: any) -> list[dict] {
-    if focus == None {
-        return jobs if jobs else [];
-    }
-    let f = _safe_str(focus).strip().lower();
-    if f == "" or f == "all"  {
-        return jobs if jobs else [];
-    }
-    let out = [];
-    for j in (jobs if jobs else []) {
-        if j == None {
-            continue;
-        }
-        let title = _safe_str(j.get("title", "")).lower();
-        let tags = j.get("tags", []) if j else [];
-        let tag_join = "";
-        for t in (tags if tags else []) {
-            let ts = _safe_str(t).lower();
-            if ts.strip() == "" {
-                continue;
-            }
-            if tag_join == "" {
-                tag_join = ts;
-            } else {
-                tag_join = tag_join + " " + ts;
-            }
-        }
-        if _contains(title, f) or _contains(tag_join, f)  {
-            out.append(j);
-        }
-    }
-    return out;
-}
-
-
-def _freq_top(items: any, top_n: int = 10) -> list[str] {
-    let freq = {};
-    for x in (items if items else []) {
-        let s = _safe_str(x).strip();
-        if s == "" {
-            continue;
-        }
-        if s in freq {
-            freq[s] = freq[s] + 1;
-        } else {
-            freq[s] = 1;
-        }
-    }
-    let pairs = [];
-    for k in freq.keys() {
-        pairs.append({"k" : k , "v" : freq[k] });
-    }
-    let i = 0;
-    while i < len(pairs) {
-        let j = i + 1;
-        while j < len(pairs) {
-            if pairs[j]["v"] > pairs[i]["v"] {
-                let tmp = pairs[i];
-                pairs[i] = pairs[j];
-                pairs[j] = tmp;
-            }
-            j = j + 1;
-        }
-        i = i + 1;
-    }
-    let out = [];
-    let idx = 0;
-    while idx < len(pairs) and len(out) < top_n  {
-        out.append(_safe_str(pairs[idx]["k"]));
-        idx = idx + 1;
-    }
-    return out;
-}
-
-
-def _build_snapshot_from_jobs(jobs: any) -> dict {
-    let role_titles = [];
-    let tags = [];
-    for j in (jobs if jobs else []) {
-        if j == None {
-            continue;
-        }
-        let t = _normalize_title_for_freq(j.get("title", ""));
-        if t != "" {
-            role_titles.append(t);
-        }
-        let jt = j.get("tags", []) if j else [];
-        for tag in (jt if jt else []) {
-            let tg = _safe_str(tag).strip();
-            if tg != "" {
-                tags.append(tg);
-            }
-        }
-    }
-    let top_roles = _freq_top(role_titles, top_n=12);
-    let top_skills = _freq_top(tags, top_n=16);
-    return {"top_roles" : top_roles , "top_skills" : top_skills };
-}
-
-
 walker live_job_market_trends_notifications {
     has location: str = "Kenya";
     has focus: str = "all";
@@ -699,130 +329,18 @@ walker live_job_market_trends_notifications {
 }
 
 
-impl live_job_market_trends_notifications.run{
-    let utc_dt = _utc_now_dt();
-    let generated_time_utc = _iso_from_dt(utc_dt);
-    let generated_time_local = _eat_from_utc_dt(utc_dt);
-    let jobs_list = [];
-    let r1 = fetch_remotive_jobs(max_items=self.max_jobs_per_source);
-    time.sleep(1);
-    let r2 = fetch_remoteok_jobs(max_items=self.max_jobs_per_source);
-    time.sleep(1);
-    let r3 = fetch_arbeitnow_jobs(max_items=self.max_jobs_per_source);
-    print("[COUNTS] remotive=", len(r1), " remoteok=", len(r2), " arbeitnow=", len(r3));
-    for j in (r1 if r1 else []) {
-        jobs_list.append(j);
-    }
-    for j in (r2 if r2 else []) {
-        jobs_list.append(j);
-    }
-    for j in (r3 if r3 else []) {
-        jobs_list.append(j);
-    }
-    jobs_list = _filter_jobs_by_focus(jobs_list, self.focus);
-    if jobs_list == None or len(jobs_list) == 0  {
-        report
-        {"status" : "Fail" , "message" : "No live jobs found (all sources returned empty after parsing)." , "body" :
-        {"generated_time_utc" : generated_time_utc , "generated_time_local" : generated_time_local , "debug_counts" :
-        {"remotive" : len(r1) , "remoteok" : len(r2) , "arbeitnow" : len(r3) } , "summary" : "" , "notifications" : [] , "highlighted_roles" : [] , "high_demand_skills" : [] , "jobs" : [] , "sources" : ["Remotive", "RemoteOK", "Arbeitnow"] } } ;
-        return;
-    }
-    let snap = _build_snapshot_from_jobs(jobs_list);
-    let top_roles = snap.get("top_roles", []) if snap else [];
-    let top_skills = snap.get("top_skills", []) if snap else [];
-    let notifications = [];
-    let role_str = "";
-    let i = 0;
-    while i < len(top_roles) and i < 8  {
-        if role_str == "" {
-            role_str = _safe_str(top_roles[i]);
-        } else {
-            role_str = role_str + ", " + _safe_str(top_roles[i]);
-        }
-        i = i + 1;
-    }
-    let skill_str = "";
-    let k = 0;
-    while k < len(top_skills) and k < 10  {
-        if skill_str == "" {
-            skill_str = _safe_str(top_skills[k]);
-        } else {
-            skill_str = skill_str + ", " + _safe_str(top_skills[k]);
-        }
-        k = k + 1;
-    }
-    notifications.append(
+walker career_chat {
+    has user_id: str = "";
+    has message: str = "";
+    has focus_area: str = "General guidance";
+    has user_profile: UserProfile = UserProfile([], [], []);
 
-        {"id" : "snapshot:" + utc_dt.strftime("%Y%m%d%H%M%S") , "type" : "event" , "title" : "Live global hiring snapshot" , "description" : ("Top roles trending now: " + role_str + ". " + "High-demand skills: " + skill_str + ". " + "Open jobs below are pulled live from public sources.") , "time" : generated_time_utc , "local_time" : generated_time_local , "url" : jobs_list[0].get("url", "") if jobs_list and len(jobs_list) > 0  else "" , "read" : False }
-    );
-    let idx = 0;
-    while idx < len(jobs_list) and len(notifications) < (self.max_notifications + 1)  {
-        let j = jobs_list[idx];
-        if j == None {
-            idx = idx + 1;
-            continue;
-        }
-        let title = _safe_str(j.get("title", ""));
-        let company = _safe_str(j.get("company", ""));
-        let loc = _safe_str(j.get("location", ""));
-        let src = _safe_str(j.get("source", ""));
-        let urlj = _safe_str(j.get("url", ""));
-        let tags = j.get("tags", []) if j else [];
-        if title.strip() == "" or urlj.strip() == ""  {
-            idx = idx + 1;
-            continue;
-        }
-        let tag_line = "";
-        let t = 0;
-        while t < len(tags) and t < 6  {
-            let tg = _safe_str(tags[t]).strip();
-            if tg != "" {
-                if tag_line == "" {
-                    tag_line = tg;
-                } else {
-                    tag_line = tag_line + ", " + tg;
-                }
-            }
-            t = t + 1;
-        }
-        let desc = "";
-        if loc.strip() != "" {
-            desc = "Location: " + loc + ". ";
-        }
-        if src.strip() != "" {
-            desc = desc + "Source: " + src + ". ";
-        }
-        if tag_line != "" {
-            desc = desc + "Skills: " + tag_line + ".";
-        }
-        notifications.append(
-
-            {"id" : _safe_str(j.get("id", "job:" + _safe_str(idx))) , "type" : "success" , "title" : (title + (" — " + company if company.strip() != "" else "")) , "description" : desc , "time" : generated_time_utc , "local_time" : generated_time_local , "url" : urlj , "read" : False }
-        );
-        idx = idx + 1;
-    }
-    report
-    {"status" : "Success" , "message" : "Live job openings + trending roles/skills generated" , "body" :
-    {"generated_time_utc" : generated_time_utc , "generated_time_local" : generated_time_local , "summary" : "Live jobs pulled from Remotive, RemoteOK, and Arbeitnow (public endpoints)." , "notifications" : notifications , "highlighted_roles" : top_roles , "high_demand_skills" : top_skills , "jobs" : jobs_list , "sources" : ["Remotive", "RemoteOK", "Arbeitnow"] } } ;
+    can chat with `root entry;
 }
 
 
-def clean_reply_text(text: str) -> str {
-    if not text {
-        return "";
-    }
-    let s = "" + text;
-    try {
-        s = re.sub(r"(?i)^\s*smart\s+career\s+path\s+navigator\s*:\s*", "", s);
-    } except Exception as e { }
-    return s.strip();
-}
-
-
-glob history_by_user = {};
-
-
-def add_skill_tool(name: str, description: str = "") -> str {
+# Local Tools
+ def add_skill_tool(name: str, description: str = "") -> str {
     if name {
         let sanitized_skills = [{"name" : name , "description" : description }];
         root spawn update_user_profile(
@@ -861,10 +379,11 @@ def add_interest_tool(name: str, description: str = "") -> str {
 }
 
 
-def get_target_roles_tool() -> str {
+def get_target_roles_tool()  -> str {
     let roles_walker = root spawn get_user_target_roles();
     if roles_walker.target_roles {
-        let roles_list = [f"{r.title}: {r.description}" for r in roles_walker.target_roles];
+        let roles_list =
+            [ f"{r.title}: {r.description}" for r in roles_walker.target_roles ];
         return "Current target roles:\n" + "\n".join(roles_list);
     }
     return "No target roles found.";
@@ -917,57 +436,13 @@ def generate_career_answer(
     user_profile: UserProfile
 ) -> str by career_llm(
     method="ReAct",
-    tools=[
-        add_skill_tool,
-        add_certification_tool,
-        add_interest_tool,
-        get_target_roles_tool,
-        get_skill_gaps_tool
-    ]
+    tools=
+    [add_skill_tool,
+    add_certification_tool,
+    add_interest_tool,
+    get_target_roles_tool,
+    get_skill_gaps_tool]
 );
-
-
-walker career_chat {
-    has user_id: str = "";
-    has message: str = "";
-    has focus_area: str = "General guidance";
-    has user_profile: UserProfile = UserProfile([], [], []);
-
-    can chat with `root entry;
-}
-
-
-impl career_chat.chat{
-    let uid = self.user_id;
-    if not uid {
-        uid = "anonymous";
-    }
-    if uid not in history_by_user {
-        history_by_user[uid] = [];
-    }
-    let history = history_by_user[uid];
-    print("Getting User Profile to Chatbot\n");
-    let profile_walker = root spawn get_user_profile();
-    self.user_profile = profile_walker.user_profile;
-    print(f"User Profile fetched:\n {self.user_profile}\n");
-    let raw_reply =
-        generate_career_answer(
-            uid,
-            self.message,
-            self.focus_area,
-            history,
-            self.user_profile
-        );
-    let reply_text = clean_reply_text(raw_reply);
-    history.append(
-        {"from_user" : True , "text" : self.message , "focus_area" : self.focus_area }
-    );
-    history.append(
-        {"from_user" : False , "text" : reply_text , "focus_area" : self.focus_area }
-    );
-    history_by_user[uid] = history;
-    report {"reply" : reply_text , "history" : history } ;
-}
 
 
 with entry {

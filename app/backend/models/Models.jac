@@ -10,7 +10,6 @@ node Resume {
     has file_path: str = "";
     has mime: str = "";
     has content: any = None;
-
 # will store decoded bytes
  }
 
@@ -53,6 +52,18 @@ node RequirementsGap {
     has learning_path: str = "";
     # Actual learning path in markdown format
      has disk_path: str = "";
-
 # Path where learning path markdown is saved in memory
  }
+
+
+obj UserProfile {
+    has skills: list[Skill];
+    has certifications: list[Certification];
+    has interests: list[Interest];
+}
+
+
+obj RoleProfile {
+    has skills: list[Skill];
+    has certifications: list[Certification];
+}
