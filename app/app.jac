@@ -276,6 +276,9 @@ walker check_progress {
 
     can visit_requirements_gap_node with `root entry;
     can check_learning_progress with RequirementsGap entry;
+    def maximize_role_match(role_title: str, available_roles: list) -> str by llm(
+        method="Reason"
+    );
 }
 
 
@@ -428,6 +431,19 @@ def add_target_role_tool(role: str, description: str = "") -> str {
 }
 
 
+def check_progress_tool(role: str) -> str {
+    if role {
+        let progress = root spawn check_progress(role_title=role);
+        if progress.reports.length > 0 and progress.reports[0].status == "Success"  {
+            return f"Your current progress for {role} is {progress.reports[0].body}%.";
+        } else {
+            return f"Could not calculate progress for {role}. Ensure you have this target role and valid requirements.";
+        }
+    }
+    return "No role provided to check progress.";
+}
+
+
 """You are a helpful, professional, and concise career assistant named Arise AI.
 
 Your goal is to have a natural conversation.
@@ -436,6 +452,7 @@ Your goal is to have a natural conversation.
 - Reference existing skills appropriately to encourage the user, and point out gaps if they ask about goals.
 - If a user mentions new skills, certifications, or interests they have acquired, use the appropriate tools to add them to their profile.
 - If a user asks about their skill gaps for a specific role, use `get_skill_gaps_tool`.
+- If a user asks about their progress or how much they have completed for a role, use `check_progress_tool`.
 - If a user asks what target roles they have or what roles they are working towards, use `get_target_roles_tool`.
 - If a user wants to add, set, or pursue a new target role, use `add_target_role_tool`. This will also automatically fetch requirements for that role.
 - Always confirm with the user after successfully adding new information to their profile.
@@ -456,7 +473,8 @@ def generate_career_answer(
     add_interest_tool,
     get_target_roles_tool,
     get_skill_gaps_tool,
-    add_target_role_tool]
+    add_target_role_tool,
+    check_progress_tool]
 );
 
 

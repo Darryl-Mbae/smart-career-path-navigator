@@ -1187,9 +1187,37 @@ impl add_completed_certification_to_user_profile.add_certification{
 
 
 impl check_progress.visit_requirements_gap_node{
-    visit [-->( ` ? RequirementsGap ) ]( ? role_title == self.role_title )  else {
+    let available_roles = [];
+    let matching_node = None;
+    let all_nodes = [-->]( ` ? RequirementsGap ) ;
+    for node in all_nodes {
+        available_roles.append(node.role_title);
+        if node.role_title == self.role_title {
+            matching_node = node;
+            break;
+        }
+    }
+    if not matching_node {
+        # Try fuzzy match if exact match fails
+         try {
+            let best_match = self.maximize_role_match(self.role_title, available_roles);
+            print(f"Fuzzy match result: '{self.role_title}' -> '{best_match}'");
+            for node in all_nodes {
+                if node.role_title == best_match {
+                    matching_node = node;
+                    self.role_title = best_match;
+                    break;
+                }
+            }
+        } except Exception as e {
+            print(f"LLM matching failed: {e}");
+        }
+    }
+    if matching_node {
+        visit matching_node;
+    } else {
         report
-        {"status" : "Fail" , "message" : "Progress for the specified role could not be fetched!" , "body" : {} } ;
+        {"status" : "Fail" , "message" : f"Progress for '{self.role_title}' could not be fetched. Available roles: {available_roles}" , "body" : {} } ;
         disengage;
     }
 }
@@ -1198,7 +1226,7 @@ impl check_progress.visit_requirements_gap_node{
 impl check_progress.check_learning_progress{
     self.current_gap = len([-->]);
     try {
-        here.progress = 1 - (self.current_gap / here.initial_gap) * 100;
+        here.progress = (1 - (self.current_gap / here.initial_gap)) * 100;
         report
         {"status" : "Success" , "message" : "Progress retrieved successfully!" , "body" : {here.progress} } ;
     } except Exception as e {
