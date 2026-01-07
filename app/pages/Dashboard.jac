@@ -302,6 +302,8 @@ cl {
 
                 setSelectedRoles(roleObjects);
 
+                
+                let allRoadmaps = [];
                 for role in roles {
                     let roleTitle = "";
 
@@ -321,9 +323,39 @@ cl {
                         role_title = roleTitle
                     );
 
-                    setRoadmapData(roadmap.reports);
+                    if roadmap.reports.length > 0 {
+                        let rep = roadmap.reports[0];
+                        if rep.status == "Success" {
+                             allRoadmaps.push(rep);
+                        } else {
+                            # Fallback if roadmap not found
+                            allRoadmaps.push({
+                                "id": "temp_" + roleTitle,
+                                "body": {
+                                    "role_title": roleTitle,
+                                    "learning_path": "GENERATING_ROADMAP" 
+                                }
+                            });
+                            # Trigger background generation
+                            generateRoadmap(roleTitle);
+                        }
+                    }
+                   
                 }
+                setRoadmapData(allRoadmaps);
 
+            } except Exception as err {
+                console.log(err);
+            }
+        }
+
+        async def generateRoadmap(roleTitle: str) -> None {
+            try {
+               await root spawn recommend_learning_paths(
+                   role_title=roleTitle
+               );
+               # Refresh data after generation
+               getSkillGap();
             } except Exception as err {
                 console.log(err);
             }
@@ -1516,28 +1548,48 @@ cl {
                             </button>
 
                             <div className="rounded-lg p-8">
-                               <div className="max-w-4xl mx-auto px-2 lg:px-6 py-8 text-white">
-                                <ReactMarkdown
-                                    components={{
-                                    h1: lambda props:any -> any { return <h1 className="text-4xl font-bold mb-6 pb-2 border-b border-gray-700">{props.children}</h1>; },
-                                    h2: lambda props:any -> any { return <h2 className="text-3xl font-semibold mt-8 mb-4 pb-2 border-b border-gray-700">{props.children}</h2>; },
-                                    h3: lambda props:any -> any { return <h3 className="text-2xl font-semibold mt-6 mb-3">{props.children}</h3>; },
-                                    h4: lambda props:any -> any { return <h4 className="text-xl font-semibold mt-4 mb-2">{props.children}</h4>; },
-                                    p: lambda props:any -> any { return <p className="mb-4 leading-7 text-gray-200">{props.children}</p>; },
-                                    ul: lambda props:any -> any { return <ul className="list-disc ml-6 mb-4 space-y-2">{props.children}</ul>; },
-                                    ol: lambda props:any -> any { return <ol className="list-decimal ml-6 mb-4 space-y-2">{props.children}</ol>; },
-                                    li: lambda props:any -> any { return <li className="leading-7 text-gray-200">{props.children}</li>; },
-                                    strong: lambda props:any -> any { return <strong className="font-semibold text-white">{props.children}</strong>; },
-                                    em: lambda props:any -> any { return <em className="italic text-gray-300">{props.children}</em>; },
-                                    code: lambda props:any -> any { return <code className="bg-gray-800 text-pink-400 px-1.5 py-0.5 rounded text-sm font-mono">{props.children}</code>; },
-                                    pre: lambda props:any -> any { return <pre className="bg-gray-900 p-4 rounded-lg overflow-x-auto mb-4 border border-gray-700">{props.children}</pre>; },
-                                    blockquote: lambda props:any -> any { return <blockquote className="border-l-4 border-gray-600 pl-4 italic text-gray-400 my-4">{props.children}</blockquote>; },
-                                    a: lambda props:any -> any { return <a className="text-blue-400 hover:text-blue-300 underline" href={props.href}>{props.children}</a>; }
-                                    }}
-                                >
-                                    {roadmapMarkdown}
-                                </ReactMarkdown>
-                                </div>
+                               {
+                                   <div className="flex flex-col items-center justify-center p-20 min-h-[400px]">
+                                        <div className="bg-blue-600/20 backdrop-blur-sm border border-blue-500/30 p-8 rounded-2xl flex flex-col items-center gap-4 shadow-xl shadow-blue-900/10">
+                                            <div style={{
+                                                "display": "flex",
+                                                "justifyContent": "center",
+                                                "alignItems": "center",
+                                                "gap": "8px",
+                                                "height": "40px"
+                                            }}>
+                                                <span className="loading-dot w-3 h-3 bg-blue-400"></span>
+                                                <span className="loading-dot w-3 h-3 bg-blue-400" style={{"animationDelay": "0.2s"}}></span>
+                                                <span className="loading-dot w-3 h-3 bg-blue-400" style={{"animationDelay": "0.4s"}}></span>
+                                            </div>
+                                            <div className="text-blue-300 font-medium tracking-wide animate-pulse">Generating your personalized roadmap...</div>
+                                        </div>
+                                   </div>
+                                   if roadmapMarkdown == "GENERATING_ROADMAP"
+                                   else 
+                                   <div className="max-w-4xl mx-auto px-2 lg:px-6 py-8 text-white">
+                                    <ReactMarkdown
+                                        components={{
+                                        h1: lambda props:any -> any { return <h1 className="text-4xl font-bold mb-6 pb-2 border-b border-gray-700">{props.children}</h1>; },
+                                        h2: lambda props:any -> any { return <h2 className="text-3xl font-semibold mt-8 mb-4 pb-2 border-b border-gray-700">{props.children}</h2>; },
+                                        h3: lambda props:any -> any { return <h3 className="text-2xl font-semibold mt-6 mb-3">{props.children}</h3>; },
+                                        h4: lambda props:any -> any { return <h4 className="text-xl font-semibold mt-4 mb-2">{props.children}</h4>; },
+                                        p: lambda props:any -> any { return <p className="mb-4 leading-7 text-gray-200">{props.children}</p>; },
+                                        ul: lambda props:any -> any { return <ul className="list-disc ml-6 mb-4 space-y-2">{props.children}</ul>; },
+                                        ol: lambda props:any -> any { return <ol className="list-decimal ml-6 mb-4 space-y-2">{props.children}</ol>; },
+                                        li: lambda props:any -> any { return <li className="leading-7 text-gray-200">{props.children}</li>; },
+                                        strong: lambda props:any -> any { return <strong className="font-semibold text-white">{props.children}</strong>; },
+                                        em: lambda props:any -> any { return <em className="italic text-gray-300">{props.children}</em>; },
+                                        code: lambda props:any -> any { return <code className="bg-gray-800 text-pink-400 px-1.5 py-0.5 rounded text-sm font-mono">{props.children}</code>; },
+                                        pre: lambda props:any -> any { return <pre className="bg-gray-900 p-4 rounded-lg overflow-x-auto mb-4 border border-gray-700">{props.children}</pre>; },
+                                        blockquote: lambda props:any -> any { return <blockquote className="border-l-4 border-gray-600 pl-4 italic text-gray-400 my-4">{props.children}</blockquote>; },
+                                        a: lambda props:any -> any { return <a className="text-blue-400 hover:text-blue-300 underline" href={props.href}>{props.children}</a>; }
+                                        }}
+                                    >
+                                        {roadmapMarkdown}
+                                    </ReactMarkdown>
+                                    </div>
+                               }
                             </div>
                         </div>
                     )

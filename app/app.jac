@@ -415,6 +415,19 @@ def get_skill_gaps_tool(role_title: str) -> str {
 }
 
 
+def add_target_role_tool(role: str, description: str = "") -> str {
+    if role {
+        # Spawn the walker that collects requirements and creates the Role node
+         root spawn collect_role_requirements(
+            role_title=role,
+            role_description=description
+        );
+        return f"Target role '{role}' added successfully. I am now analyzing industry requirements for this role...";
+    }
+    return "No valid role title provided.";
+}
+
+
 """You are a helpful, professional, and concise career assistant named Arise AI.
 
 Your goal is to have a natural conversation.
@@ -424,6 +437,7 @@ Your goal is to have a natural conversation.
 - If a user mentions new skills, certifications, or interests they have acquired, use the appropriate tools to add them to their profile.
 - If a user asks about their skill gaps for a specific role, use `get_skill_gaps_tool`.
 - If a user asks what target roles they have or what roles they are working towards, use `get_target_roles_tool`.
+- If a user wants to add, set, or pursue a new target role, use `add_target_role_tool`. This will also automatically fetch requirements for that role.
 - Always confirm with the user after successfully adding new information to their profile.
 - Keep your responses concise and direct. Avoid being overly verbose or repetitive.
 - Use Markdown (bold, lists) for clarity when helpful, but don't force a specific structure if a simple paragraph is better.
@@ -441,7 +455,8 @@ def generate_career_answer(
     add_certification_tool,
     add_interest_tool,
     get_target_roles_tool,
-    get_skill_gaps_tool]
+    get_skill_gaps_tool,
+    add_target_role_tool]
 );
 
 

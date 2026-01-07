@@ -928,6 +928,8 @@ impl collect_role_requirements.collect_certs_and_skills{
             required_skills=self.role_requirements.skills,
             required_certifications=self.role_requirements.certifications
         );
+    print("Triggering skill gap analysis for the new role...\n");
+    root spawn find_skill_and_certification_gaps(role_title=self.role_title);
 }
 
 
@@ -1596,7 +1598,8 @@ impl career_chat.chat{
     report {"reply" : reply_text , "history" : history } ;
 }
 
-impl live_job_market_trends_notifications.run {
+
+impl live_job_market_trends_notifications.run{
     let utc_dt = _utc_now_dt();
     let generated_time_utc = _iso_from_dt(utc_dt);
     let generated_time_local = _eat_from_utc_dt(utc_dt);

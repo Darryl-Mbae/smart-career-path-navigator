@@ -230,6 +230,7 @@ function Dashboard() {
         return {name: roleName};
       });
       setSelectedRoles(roleObjects);
+      let allRoadmaps = [];
       for (const role of roles) {
         let roleTitle = "";
         if (role.title) {
@@ -240,8 +241,25 @@ function Dashboard() {
         let result = await __jacSpawn("retrieve_skill_gaps", "", {"role_title": roleTitle});
         setUserSkillGap(userSkillgap.concat(result.result.gaps));
         let roadmap = await __jacSpawn("get_road_map", "", {"role_title": roleTitle});
-        setRoadmapData(roadmap.reports);
+        if (roadmap.reports.length > 0) {
+          let rep = roadmap.reports[0];
+          if (rep.status === "Success") {
+            allRoadmaps.push(rep);
+          } else {
+            allRoadmaps.push({"id": "temp_" + roleTitle, "body": {"role_title": roleTitle, "learning_path": "GENERATING_ROADMAP"}});
+            generateRoadmap(roleTitle);
+          }
+        }
       }
+      setRoadmapData(allRoadmaps);
+    } catch (err) {
+      console.log(err);
+    }
+  }
+  async function generateRoadmap(roleTitle) {
+    try {
+      await __jacSpawn("recommend_learning_paths", "", {"role_title": roleTitle});
+      getSkillGap();
     } catch (err) {
       console.log(err);
     }
@@ -539,7 +557,7 @@ function Dashboard() {
       return __jacJsx(RoadmapContent, {"key": roadmap.id, "roadmap": roadmap.body.role_title, "markdown": roadmap.body.learning_path}, []);
     })])]), activeLink === "roadmap-inside" && __jacJsx("div", {}, [__jacJsx("button", {"onClick": e => {
       setActiveLink("roadmap");
-    }, "className": "flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-6 bg-transparent border-none cursor-pointer"}, [__jacJsx("svg", {"className": "w-5 h-5", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M15 19l-7-7 7-7"}, [])]), __jacJsx("span", {}, ["Back to Roadmaps"])]), __jacJsx("div", {"className": "rounded-lg p-8"}, [__jacJsx("div", {"className": "max-w-4xl mx-auto px-2 lg:px-6 py-8 text-white"}, [__jacJsx(ReactMarkdown, {"components": {h1: props => {
+    }, "className": "flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-6 bg-transparent border-none cursor-pointer"}, [__jacJsx("svg", {"className": "w-5 h-5", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M15 19l-7-7 7-7"}, [])]), __jacJsx("span", {}, ["Back to Roadmaps"])]), __jacJsx("div", {"className": "rounded-lg p-8"}, [roadmapMarkdown === "GENERATING_ROADMAP" ? __jacJsx("div", {"className": "flex flex-col items-center justify-center p-20 min-h-[400px]"}, [__jacJsx("div", {"className": "bg-blue-600/20 backdrop-blur-sm border border-blue-500/30 p-8 rounded-2xl flex flex-col items-center gap-4 shadow-xl shadow-blue-900/10"}, [__jacJsx("div", {"style": {"display": "flex", "justifyContent": "center", "alignItems": "center", "gap": "8px", "height": "40px"}}, [__jacJsx("span", {"className": "loading-dot w-3 h-3 bg-blue-400"}, []), __jacJsx("span", {"className": "loading-dot w-3 h-3 bg-blue-400", "style": {"animationDelay": "0.2s"}}, []), __jacJsx("span", {"className": "loading-dot w-3 h-3 bg-blue-400", "style": {"animationDelay": "0.4s"}}, [])]), __jacJsx("div", {"className": "text-blue-300 font-medium tracking-wide animate-pulse"}, ["Generating your personalized roadmap..."])])]) : __jacJsx("div", {"className": "max-w-4xl mx-auto px-2 lg:px-6 py-8 text-white"}, [__jacJsx(ReactMarkdown, {"components": {h1: props => {
       return __jacJsx("h1", {"className": "text-4xl font-bold mb-6 pb-2 border-b border-gray-700"}, [props.children]);
     }, h2: props => {
       return __jacJsx("h2", {"className": "text-3xl font-semibold mt-8 mb-4 pb-2 border-b border-gray-700"}, [props.children]);
