@@ -272,7 +272,11 @@ walker add_completed_certification_to_user_profile {
 
 walker check_progress {
     has current_gap: int = 0;
+    has initial_gap: int = 0;
+    has progress: float = 0.0;
     has role_title: str = "";
+    has success: bool = False;
+    has error_message: str = "";
 
     can visit_requirements_gap_node with `root entry;
     can check_learning_progress with RequirementsGap entry;
@@ -343,6 +347,7 @@ walker career_chat {
 
 
 # Local Tools
+ # Local Tools
  def add_skill_tool(name: str, description: str = "") -> str {
     if name {
         let sanitized_skills = [{"name" : name , "description" : description }];
@@ -421,6 +426,7 @@ def get_skill_gaps_tool(role_title: str) -> str {
 def add_target_role_tool(role: str, description: str = "") -> str {
     if role {
         # Spawn the walker that collects requirements and creates the Role node
+         # Spawn the walker that collects requirements and creates the Role node
          root spawn collect_role_requirements(
             role_title=role,
             role_description=description
@@ -432,15 +438,22 @@ def add_target_role_tool(role: str, description: str = "") -> str {
 
 
 def check_progress_tool(role: str) -> str {
-    if role {
-        let progress = root spawn check_progress(role_title=role);
-        if progress.reports.length > 0 and progress.reports[0].status == "Success"  {
-            return f"Your current progress for {role} is {progress.reports[0].body}%.";
-        } else {
-            return f"Could not calculate progress for {role}. Ensure you have this target role and valid requirements.";
-        }
+    if not role {
+        return "No role provided to check progress.";
     }
-    return "No role provided to check progress.";
+    try {
+        let progress_walker = root spawn check_progress(role_title=role);
+        if progress_walker.success {
+            return f"Your progress for **{progress_walker.role_title}**: {progress_walker.progress}% complete. Remaining gaps: {progress_walker.current_gap} out of {progress_walker.initial_gap} total requirements.";
+        } else {
+            if progress_walker.error_message {
+                return f"Could not calculate progress for {role}. {progress_walker.error_message}";
+            }
+            return f"Could not calculate progress for {role}. Please ensure you have this target role set up with requirements.";
+        }
+    } except Exception as e {
+        return f"Error checking progress for {role}: {str(e)}";
+    }
 }
 
 
@@ -452,12 +465,14 @@ Your goal is to have a natural conversation.
 - Reference existing skills appropriately to encourage the user, and point out gaps if they ask about goals.
 - If a user mentions new skills, certifications, or interests they have acquired, use the appropriate tools to add them to their profile.
 - If a user asks about their skill gaps for a specific role, use `get_skill_gaps_tool`.
-- If a user asks about their progress or how much they have completed for a role, use `check_progress_tool`.
+- If a user asks about their progress or how much they have completed for a role, use `check_progress_tool` with the exact role title.
+- If a user asks about progress for ALL their target roles or "my roles", first use `get_target_roles_tool` to get the list of roles, then use `check_progress_tool` for EACH role individually and combine the results in your response.
 - If a user asks what target roles they have or what roles they are working towards, use `get_target_roles_tool`.
 - If a user wants to add, set, or pursue a new target role, use `add_target_role_tool`. This will also automatically fetch requirements for that role.
 - Always confirm with the user after successfully adding new information to their profile.
 - Keep your responses concise and direct. Avoid being overly verbose or repetitive.
 - Use Markdown (bold, lists) for clarity when helpful, but don't force a specific structure if a simple paragraph is better.
+- When tools return successful results, USE those results in your response. Do not claim a tool failed if it returned valid data.
 """
 def generate_career_answer(
     user_id: str,

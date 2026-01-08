@@ -144,11 +144,7 @@ impl retrieve_resume.retrieve_resume{
         {"status" : "Fail" , "message" : "Resume file does not exist on disk" , "body" : {} } ;
         disengage;
     }
-    # Read file bytes
-     # Original file path
-     # Handle duplicate filenames
-     # No extension
-     try {
+    try {
         with open(here.file_path, "rb") as f  {
             let file_bytes = f.read();
         }
@@ -158,14 +154,7 @@ impl retrieve_resume.retrieve_resume{
         {"status" : "Fail" , "message" : "Error reading resume file from disk" , "body" : {} } ;
         disengage;
     }
-    # Encode to base64 for transmission
-    # Read file bytes
-    # Original file path
-    # Handle duplicate filenames
-    # No extension
-    # Encode to base64 for transmission
-    let encoded =
-        base64.b64encode(file_bytes).decode('utf-8');
+    let encoded = base64.b64encode(file_bytes).decode('utf-8');
     report
     {"status" : "Success" , "message" : "Resume retrieved successfully" , "body" : {"name" : here.name , "mime" : here.mime , "file_base64" : encoded } } ;
 }
@@ -204,8 +193,7 @@ impl analyze_cv.visit_resume{
 
 
 impl analyze_cv.extract_user_skills{
-    # Edge Case Checks
-     if not here.file_path {
+    if not here.file_path {
         report
         {"status" : "Fail" , "message" : "No resume file path found" , "body" : {} } ;
         disengage;
@@ -215,37 +203,21 @@ impl analyze_cv.extract_user_skills{
         {"status" : "Fail" , "message" : "Resume file does not exist on disk" , "body" : {} } ;
         disengage;
     }
-    # Extract Text
-    let text =
-        read_document_text(here.file_path);
+    let text = read_document_text(here.file_path);
     if not text {
         report
         {"status" : "Fail" , "message" : "Unable to extract text from resume" , "body" : {} } ;
         disengage;
     }
-    # LLM Extraction
-     try {
+    try {
         self.user_profile = self.extract_user_skills_from_cv(text);
     } except Exception as err {
         report {"status" : "Fail" , "message" : {err} , "body" : {} } ;
         disengage;
     }
-    # create User graph
-    print(
-        "Saving User Profile to Memory...\n"
-    );
+    print("Saving User Profile to Memory...\n");
     root spawn create_user_graph(user_profile=self.user_profile);
-    # Final Report
-     # Save file bytes
-     # Ensure file_path exists on Resume node
-     # Edge Case Checks
-     # Extract Text
-     # LLM Extraction
-     # create User graph
-     # Final Report
-     # Save file bytes
-     # Ensure file_path exists on Resume node
-     report
+    report
     {"status" : "Success" , "message" : "Resume processed successfully" , "body" :
     {"skills" : [ s.name for s in self.user_profile.skills ] , "certifications" : [ {"title" : c.title , "provider" : c.provider , "url" : c.url } for c in self.user_profile.certifications ] , "interests" : [ {"name" : i.name , "description" : i.description } for i in self.user_profile.interests ] } } ;
 }
@@ -362,6 +334,16 @@ impl generate_role_suggestions.fetch_user_profile{
 impl generate_role_suggestions.suggest_roles{
     print("Using LLM to suggest roles based on user profile...\n");
     # Edge case: empty or weak profile
+     # Read file bytes
+     # Original file path
+     # Handle duplicate filenames
+     # No extension
+     # Encode to base64 for transmission
+     # Read file bytes
+     # Original file path
+     # Handle duplicate filenames
+     # No extension
+     # Encode to base64 for transmission
      if len(self.user_profile.skills) == 0
     and len(self.user_profile.interests) == 0
     and len(self.user_profile.certifications) == 0
@@ -406,6 +388,68 @@ impl generate_role_suggestions.suggest_roles{
         disengage;
     }
     # Final response
+     # Final Report
+     # Edge Case Checks
+     # Final Success Report
+     # Check if Skill exists
+     # Check if Certification exists
+     # Check if Interest exists
+     # LLM returned empty list
+     # Validate each LLM-generated role object
+     # All roles were invalid
+     # Final response
+     # Final Report
+     # Edge Case Checks
+     # Final Success Report
+     # Check if Skill exists
+     # Check if Certification exists
+     # Check if Interest exists
+     # Edge Case Checks
+     # Extract Text
+     # LLM Extraction
+     # create User graph
+     # Final Report
+     # Save file bytes
+     # Ensure file_path exists on Resume node
+     # Edge Case Checks
+     # Extract Text
+     # LLM Extraction
+     # create User graph
+     # Final Report
+     # Save file bytes
+     # Ensure file_path exists on Resume node
+     # Edge Case Checks
+     # Edge Case Checks
+     # Final Success Report
+     # Check if Skill exists
+     # Check if Certification exists
+     # Read file bytes
+     # Encode to base64 for transmission
+     # Edge Case Checks
+     # Extract Text
+     # LLM Extraction
+     # create User graph
+     # Final Success Report
+     # Check if Skill exists
+     # Check if Certification exists
+     # Read file bytes
+     # Encode to base64 for transmission
+     # Edge Case Checks
+     # Extract Text
+     # LLM Extraction
+     # create User graph
+     # Check if Interest exists
+     # cease operation if user profile is not fetched
+     # Edge case: empty or weak profile
+     # LLM returned nothing
+     # Check if Interest exists
+     # cease operation if user profile is not fetched
+     # Edge case: empty or weak profile
+     # LLM returned nothing
+     # LLM returned empty list
+     # Validate each LLM-generated role object
+     # All roles were invalid
+     # Final response
      # Final Report
      # Edge Case Checks
      # Final Success Report
@@ -1065,6 +1109,26 @@ impl create_skill_gap_graph.create_role_requirements_gap_graph{
         {"status" : "success" , "message" : "Certification gaps added to graph" , "body" : {} } ;
     }
     # Update progress
+    # cease operation if user profile is not fetched
+    # Delete newly acquired certification from certification gap graph
+    # cease operation if role requirements are not fetched
+    # check if file exists
+    # read markdown from disk
+    # cease operation if user profile is not fetched
+    # Edge case: empty or weak profile
+    # LLM returned nothing
+    # LLM returned empty list
+    # Validate each LLM-generated role object
+    # check if file exists
+    # read markdown from disk
+    # cease operation if user profile is not fetched
+    # Edge case: empty or weak profile
+    # LLM returned nothing
+    # LLM returned empty list
+    # Validate each LLM-generated role object
+    # delete newly added skill from skill gap graph if it exists
+    # All roles were invalid
+    # Final response
     self.initial_gap =
         self.cert_count + self.skill_count;
     here.initial_gap = self.initial_gap;
@@ -1216,8 +1280,10 @@ impl check_progress.visit_requirements_gap_node{
     if matching_node {
         visit matching_node;
     } else {
-        report
-        {"status" : "Fail" , "message" : f"Progress for '{self.role_title}' could not be fetched. Available roles: {available_roles}" , "body" : {} } ;
+        self.success = False;
+        self.error_message =
+            f"Progress for '{self.role_title}' could not be fetched. Available roles: {available_roles}";
+        report {"status" : "Fail" , "message" : self.error_message , "body" : {} } ;
         disengage;
     }
 }
@@ -1226,12 +1292,25 @@ impl check_progress.visit_requirements_gap_node{
 impl check_progress.check_learning_progress{
     self.current_gap = len([-->]);
     try {
-        here.progress = (1 - (self.current_gap / here.initial_gap)) * 100;
+        self.initial_gap = here.initial_gap if here.initial_gap else 0;
+        if self.initial_gap == 0 {
+            # User is already fully qualified - no gaps existed
+            self.progress =
+                100.0;
+        } else {
+            self.progress = round((1 - (self.current_gap / self.initial_gap)) * 100, 2);
+        }
+        # Also store on node for persistence
+        here.progress =
+            self.progress;
+        self.success = True;
         report
-        {"status" : "Success" , "message" : "Progress retrieved successfully!" , "body" : {here.progress} } ;
+        {"status" : "Success" , "message" : "Progress retrieved successfully!" , "body" :
+        {"progress" : self.progress , "current_gap" : self.current_gap , "initial_gap" : self.initial_gap , "role_title" : self.role_title } } ;
     } except Exception as e {
-        report
-        {"status" : "Fail" , "message" : "Could not fetch progress: " + str(e) , "body" : {} } ;
+        self.success = False;
+        self.error_message = "Could not fetch progress: " + str(e);
+        report {"status" : "Fail" , "message" : self.error_message , "body" : {} } ;
     }
 }
 
@@ -1490,6 +1569,118 @@ impl recommend_learning_paths.recommend_path{
         let md_content =
             learning_path_node.learning_path.encode("utf-8").decode("unicode_escape");
         # write to file
+         # Update progress
+         #call a walker to update main skill graph
+         #call a walker to update main skill graph
+         # EMPTY CHECK
+         # EMPTY CHECK
+         # cease operation if gaps are not fetched
+         # cease operation if role requirements are not fetched
+         # cease operation if user profile is not fetched
+         # save learning path to graph
+         # create subdir if it doesn't exist
+         # sanitize role title to use as filename
+         # check if file exists and increment
+         # convert escaped newlines to real newlines
+         # write to file
+         # Delete newly acquired certification from certification gap graph
+         # check if file exists
+         # read markdown from disk
+         # delete newly added skill from skill gap graph if it exists
+         # and use here.title instead of here.name
+         # cease operation if user profile is not fetched
+         # Delete newly acquired certification from certification gap graph
+         # cease operation if role requirements are not fetched
+         # cease operation if user profile is not fetched
+         # Delete newly acquired certification from certification gap graph
+         # cease operation if role requirements are not fetched
+         # Update progress
+         #call a walker to update main skill graph
+         #call a walker to update main skill graph
+         # EMPTY CHECK
+         # Update progress
+         #call a walker to update main skill graph
+         #call a walker to update main skill graph
+         # EMPTY CHECK
+         # EMPTY CHECK
+         # cease operation if user profile is not fetched
+         # cease operation if role requirements are not fetched
+         # EMPTY CHECK
+         # cease operation if user profile is not fetched
+         # cease operation if role requirements are not fetched
+         # cease operation if gaps are not fetched
+         # cease operation if role requirements are not fetched
+         # cease operation if user profile is not fetched
+         # save learning path to graph
+         # create subdir if it doesn't exist
+         # sanitize role title to use as filename
+         # check if file exists and increment
+         # convert escaped newlines to real newlines
+         # write to file
+         # Update progress
+         #call a walker to update main skill graph
+         #call a walker to update main skill graph
+         # EMPTY CHECK
+         # EMPTY CHECK
+         # cease operation if gaps are not fetched
+         # cease operation if role requirements are not fetched
+         # cease operation if user profile is not fetched
+         # save learning path to graph
+         # create subdir if it doesn't exist
+         # sanitize role title to use as filename
+         # check if file exists and increment
+         # convert escaped newlines to real newlines
+         # write to file
+         # cease operation if gaps are not fetched
+         # cease operation if role requirements are not fetched
+         # cease operation if user profile is not fetched
+         # save learning path to graph
+         # create subdir if it doesn't exist
+         # sanitize role title to use as filename
+         # check if file exists and increment
+         # convert escaped newlines to real newlines
+         # write to file
+         # Update progress
+         #call a walker to update main skill graph
+         #call a walker to update main skill graph
+         # EMPTY CHECK
+         # EMPTY CHECK
+         # cease operation if gaps are not fetched
+         # cease operation if role requirements are not fetched
+         # cease operation if user profile is not fetched
+         # save learning path to graph
+         # create subdir if it doesn't exist
+         # sanitize role title to use as filename
+         # check if file exists and increment
+         # convert escaped newlines to real newlines
+         # write to file
+         # Update progress
+         #call a walker to update main skill graph
+         #call a walker to update main skill graph
+         # EMPTY CHECK
+         # EMPTY CHECK
+         # cease operation if user profile is not fetched
+         # cease operation if role requirements are not fetched
+         # delete newly added skill from skill gap graph if it exists
+         # All roles were invalid
+         # Final response
+         # Try fuzzy match if exact match fails
+         # User is already fully qualified - no gaps existed
+         # Also store on node for persistence
+         # cease operation if gaps are not fetched
+         # Delete newly acquired certification from certification gap graph
+         # check if file exists
+         # read markdown from disk
+         # delete newly added skill from skill gap graph if it exists
+         # cease operation if role requirements are not fetched
+         # cease operation if user profile is not fetched
+         # and use here.title instead of here.name
+         # save learning path to graph
+         # create subdir if it doesn't exist
+         # sanitize role title to use as filename
+         # check if file exists and increment
+         # convert escaped newlines to real newlines
+         # write to file
          # Update progress
          #call a walker to update main skill graph
          #call a walker to update main skill graph
