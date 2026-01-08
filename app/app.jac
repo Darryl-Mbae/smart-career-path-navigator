@@ -144,6 +144,8 @@ walker get_road_map {
     has role_title: str = "";
     has learning_path: str | any = "";
     has disk_path: str = "";
+    has success: bool = False;
+    has error_message: str = "";
 
     can fetch_learning_path with `root entry;
     can return_learning_path with LearningPath entry;
@@ -346,8 +348,7 @@ walker career_chat {
 }
 
 
-# Local Tools
- # Local Tools
+
  def add_skill_tool(name: str, description: str = "") -> str {
     if name {
         let sanitized_skills = [{"name" : name , "description" : description }];
@@ -423,10 +424,11 @@ def get_skill_gaps_tool(role_title: str) -> str {
 }
 
 
-def add_target_role_tool(role: str, description: str = "") -> str {
+def add_target_role_tool(
+    role: str,
+    description: str = ""
+) -> str {
     if role {
-        # Spawn the walker that collects requirements and creates the Role node
-         # Spawn the walker that collects requirements and creates the Role node
          root spawn collect_role_requirements(
             role_title=role,
             role_description=description
