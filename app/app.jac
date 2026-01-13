@@ -144,8 +144,6 @@ walker get_road_map {
     has role_title: str = "";
     has learning_path: str | any = "";
     has disk_path: str = "";
-    has success: bool = False;
-    has error_message: str = "";
 
     can fetch_learning_path with `root entry;
     can return_learning_path with LearningPath entry;
@@ -348,7 +346,8 @@ walker career_chat {
 }
 
 
-
+# Local Tools
+ # Local Tools
  def add_skill_tool(name: str, description: str = "") -> str {
     if name {
         let sanitized_skills = [{"name" : name , "description" : description }];
@@ -424,11 +423,10 @@ def get_skill_gaps_tool(role_title: str) -> str {
 }
 
 
-def add_target_role_tool(
-    role: str,
-    description: str = ""
-) -> str {
+def add_target_role_tool(role: str, description: str = "") -> str {
     if role {
+        # Spawn the walker that collects requirements and creates the Role node
+         # Spawn the walker that collects requirements and creates the Role node
          root spawn collect_role_requirements(
             role_title=role,
             role_description=description
@@ -459,16 +457,32 @@ def check_progress_tool(role: str) -> str {
 }
 
 
+def get_roadmap_tool(role: str) -> str {
+    if not role {
+        return "Please specify a role to view the roadmap for.";
+    }
+    try {
+        let walker = root spawn get_road_map(role_title=role);
+        if walker.learning_path and len(walker.learning_path) > 0  {
+            return f"**Roadmap for {role}**\n\n{walker.learning_path}";
+        }
+        return f"No existing roadmap found for {role}. You can ask me to 'generate a roadmap' for this role.";
+    } except Exception as e {
+        return f"Error retrieving roadmap: {str(e)}";
+    }
+}
+
+
 """You are a helpful, professional, and concise career assistant named Arise AI.
 
 Your goal is to have a natural conversation.
 - If the user greets you or engages in small talk, respond warmly and briefly without diving into career advice immediately.
 - Only use the provided `user_profile` (skills, certifications, interests) when it is relevant to the user's query or when they ask for personalized guidance.
-- Reference existing skills appropriately to encourage the user, and point out gaps if they ask about goals.
 - If a user mentions new skills, certifications, or interests they have acquired, use the appropriate tools to add them to their profile.
 - If a user asks about their skill gaps for a specific role, use `get_skill_gaps_tool`.
 - If a user asks about their progress or how much they have completed for a role, use `check_progress_tool` with the exact role title.
 - If a user asks about progress for ALL their target roles or "my roles", first use `get_target_roles_tool` to get the list of roles, then use `check_progress_tool` for EACH role individually and combine the results in your response.
+- If a user asks to see, view, or get their learning path or roadmap for a role, use `get_roadmap_tool`.
 - If a user asks what target roles they have or what roles they are working towards, use `get_target_roles_tool`.
 - If a user wants to add, set, or pursue a new target role, use `add_target_role_tool`. This will also automatically fetch requirements for that role.
 - Always confirm with the user after successfully adding new information to their profile.
@@ -491,7 +505,8 @@ def generate_career_answer(
     get_target_roles_tool,
     get_skill_gaps_tool,
     add_target_role_tool,
-    check_progress_tool]
+    check_progress_tool,
+    get_roadmap_tool]
 );
 
 
