@@ -232,8 +232,7 @@ impl get_user_details.visit_memory{
 
 
 impl get_user_details.get_user_details{
-
-     if here.full_name == None or here.email == None  {
+    if here.full_name == None or here.email == None  {
         report
         {"status" : "Fail" , "message" : "User details missing in memory" , "body" : {} } ;
         disengage;
@@ -244,8 +243,7 @@ impl get_user_details.get_user_details{
         report {"status" : "Fail" , "message" : "No user details found" , "body" : {} } ;
         disengage;
     }
-
-     report
+    report
     {"status" : "Success" , "message" : "User details fetched successfully" , "body" : {"full_name" : name_clean , "email" : email_clean } } ;
 }
 
@@ -264,23 +262,20 @@ impl create_user_graph.create_user_graph{
     print(f"Found user: {here.resume_uploaded}");
     end_node = End();
     for skill in self.user_profile.skills {
-        # Check if Skill exists
-         if [-->( ` ? Skill ) ]( ? name == skill.name )  {
+        if [-->( ` ? Skill ) ]( ? name == skill.name )  {
             print(f"Skipping duplicate skill: {skill.name}");
             continue;
         }
         here +>: skilled_in :+> skill ++> end_node;
     }
     for cert in self.user_profile.certifications {
-
-         if [-->( ` ? Certification ) ]( ? title == cert.title )  {
+        if [-->( ` ? Certification ) ]( ? title == cert.title )  {
             continue;
         }
         here +>: has_certification :+> cert ++> end_node;
     }
     for interest in self.user_profile.interests {
-        # Check if Interest exists
-         if [-->( ` ? Interest ) ]( ? name == interest.name )  {
+        if [-->( ` ? Interest ) ]( ? name == interest.name )  {
             continue;
         }
         here +>: interested_in :+> interest ++> end_node;
@@ -301,37 +296,32 @@ Avoid generic suggestions and prioritize roles where the user's skill combinatio
 impl generate_role_suggestions.fetch_user_profile{
     print("Fetching user profile for role suggestion...\n");
     let fetched_profile = root spawn get_user_profile();
-
-     if fetched_profile == None or fetched_profile.user_profile == None  {
+    if fetched_profile == None or fetched_profile.user_profile == None  {
         print("ERROR: Failed to fetch user profile.\n");
         report
         {"status" : "Fail" , "message" : "Unable to load user profile." , "body" : [] } ;
         disengage;
     }
     self.user_profile = fetched_profile.user_profile;
-
 }
 
 
 impl generate_role_suggestions.suggest_roles{
     print("Using LLM to suggest roles based on user profile...\n");
-
-     if len(self.user_profile.skills) == 0
+    if len(self.user_profile.skills) == 0
     and len(self.user_profile.interests) == 0
     and len(self.user_profile.certifications) == 0
      {
         print("WARNING: User profile is empty. LLM suggestions may be inaccurate.\n");
     }
     let suggested_roles = self.suggest_roles_based_on_profile(self.user_profile);
-
-     if suggested_roles == None {
+    if suggested_roles == None {
         print("ERROR: LLM returned no roles.\n");
         report
         {"status" : "Error" , "message" : "LLM failed to generate any role suggestions." , "body" : [] } ;
         disengage;
     }
-
-     if len(suggested_roles) == 0 {
+    if len(suggested_roles) == 0 {
         print("No roles returned by LLM.\n");
         report
         {"status" : "Empty" , "message" : "No roles could be suggested for the provided profile." , "body" : [] } ;
@@ -339,8 +329,7 @@ impl generate_role_suggestions.suggest_roles{
     }
     print("Suggested Roles:\n");
     let valid_roles = [];
-
-     for role in suggested_roles {
+    for role in suggested_roles {
         if role == None or role.title == None or role.description == None  {
             print("Skipping malformed role suggestion returned by LLM.\n");
             continue;
@@ -348,15 +337,13 @@ impl generate_role_suggestions.suggest_roles{
         print(f"- {role.title}: {role.description}\n");
         valid_roles += [role];
     }
-    # All roles were invalid
-     if len(valid_roles) == 0 {
+    if len(valid_roles) == 0 {
         print("ERROR: All LLM suggestions were malformed.\n");
         report
         {"status" : "Fail" , "message" : "LLM returned invalid role objects." , "body" : [] } ;
         disengage;
     }
-
-     report
+    report
     {"status" : "Success" , "message" : "Roles suggested successfully" , "body" : [ {"title" : role.title , "description" : role.description } for role in valid_roles ] } ;
 }
 
@@ -875,8 +862,7 @@ Find the skills and certification gaps by comparing the user profile and role re
 impl find_skill_and_certification_gaps.fetch_user_profile{
     print("Fetching user profile for gap analysis...\n");
     let fetched_profile = root spawn get_user_profile();
-
-     if fetched_profile == None or fetched_profile.user_profile == None  {
+    if fetched_profile == None or fetched_profile.user_profile == None  {
         print("ERROR: Failed to fetch user profile.\n");
         report
         {"status" : "Fail" , "message" : "Unable to load user profile." , "body" : {} } ;
@@ -894,8 +880,7 @@ impl find_skill_and_certification_gaps.fetch_role_requirements{
             required_skills=[],
             required_certifications=[]
         );
-    # cease operation if role requirements are not fetched
-     if fetched_requirements == None or fetched_requirements.role_requirements == None  {
+    if fetched_requirements == None or fetched_requirements.role_requirements == None  {
         print("ERROR: Failed to fetch role requirements.\n");
         report
         {"status" : "Fail" , "message" : "Unable to load role requirements." , "body" : {} } ;
@@ -980,9 +965,7 @@ impl create_skill_gap_graph.create_role_requirements_gap_graph{
         report
         {"status" : "success" , "message" : "Certification gaps added to graph" , "body" : {} } ;
     }
-
-    self.initial_gap =
-        self.cert_count + self.skill_count;
+    self.initial_gap = self.cert_count + self.skill_count;
     here.initial_gap = self.initial_gap;
 }
 
@@ -1018,8 +1001,7 @@ impl update_skill_gap_graph.visit_certifications{
 
 
 impl update_skill_gap_graph.update_skills{
-    #call a walker to update main skill graph
-     root spawn add_completed_skill_to_user_profile(completed_skill=here);
+    root spawn add_completed_skill_to_user_profile(completed_skill=here);
     let completed_skill = here.name;
     del here ;
     report
@@ -1028,10 +1010,7 @@ impl update_skill_gap_graph.update_skills{
 
 
 impl update_skill_gap_graph.update_certifications{
-    #call a walker to update main skill graph
-     root spawn add_completed_certification_to_user_profile(
-        completed_certification=here
-    );
+    root spawn add_completed_certification_to_user_profile(completed_certification=here);
     let completed_certification = here.title;
     del here ;
     report
@@ -1050,8 +1029,7 @@ impl add_completed_skill_to_user_profile.visit_memory{
 
 
 impl add_completed_skill_to_user_profile.add_skill{
-    # EMPTY CHECK
-     if not self.completed_skill.name or self.completed_skill.name == ""  {
+    if not self.completed_skill.name or self.completed_skill.name == ""  {
         report
         {"status" : "Fail" , "message" : "Completed skill entry is empty. Skipping." , "body" : {} } ;
         disengage;
@@ -1078,8 +1056,7 @@ impl add_completed_certification_to_user_profile.visit_memory{
 
 
 impl add_completed_certification_to_user_profile.add_certification{
-
-     if not self.completed_certification.title
+    if not self.completed_certification.title
     or self.completed_certification.title == ""
      {
         report
@@ -1109,8 +1086,7 @@ impl check_progress.visit_requirements_gap_node{
         }
     }
     if not matching_node {
-        # Try fuzzy match if exact match fails
-         try {
+        try {
             let best_match = self.maximize_role_match(self.role_title, available_roles);
             print(f"Fuzzy match result: '{self.role_title}' -> '{best_match}'");
             for node in all_nodes {
@@ -1333,8 +1309,7 @@ impl recommend_learning_paths.check_existing_learning_path{
 impl recommend_learning_paths.fetch_gaps{
     print("Fetching skill and certification gaps for learning path recommendation...\n");
     let fetched_gaps = root spawn retrieve_skill_gaps(role_title=self.role_title);
-
-     if fetched_gaps == None or fetched_gaps.gaps == None  {
+    if fetched_gaps == None or fetched_gaps.gaps == None  {
         print("ERROR: Failed to fetch skill and certification gaps.\n");
         report
         {"status" : "Fail" , "message" : "Unable to load skill and certification gaps." , "body" : {} } ;
@@ -1366,8 +1341,7 @@ impl recommend_learning_paths.fetch_role_requirements{
 impl recommend_learning_paths.fetch_user_profile{
     print("Fetching user profile for learning path recommendation...\n");
     let fetched_profile = root spawn get_user_profile();
-
-     if fetched_profile == None or fetched_profile.user_profile == None  {
+    if fetched_profile == None or fetched_profile.user_profile == None  {
         print("ERROR: Failed to fetch user profile.\n");
         report
         {"status" : "Fail" , "message" : "Unable to load user profile." , "body" : {} } ;
@@ -1408,10 +1382,47 @@ impl recommend_learning_paths.recommend_path{
             counter = counter + 1;
         }
         # convert escaped newlines to real newlines
+        # cease operation if role requirements are not fetched
+        # save learning path to graph
+        # create subdir if it doesn't exist
+        # sanitize role title to use as filename
+        # check if file exists and increment
+        # Check if Skill exists
+        # Check if Interest exists
+        # convert escaped newlines to real newlines
+        # All roles were invalid
+        # Check if Skill exists
+        # Check if Interest exists
+        # All roles were invalid
+        # cease operation if role requirements are not fetched
+        #call a walker to update main skill graph
+        #call a walker to update main skill graph
+        # EMPTY CHECK
+        # cease operation if role requirements are not fetched
+        # Try fuzzy match if exact match fails
+        # User is already fully qualified - no gaps existed
+        # Also store on node for persistence
+        # cease operation if role requirements are not fetched
+        # save learning path to graph
+        # create subdir if it doesn't exist
+        # sanitize role title to use as filename
+        # check if file exists and increment
+        # convert escaped newlines to real newlines
+        #call a walker to update main skill graph
+        #call a walker to update main skill graph
+        # EMPTY CHECK
+        # Try fuzzy match if exact match fails
+        # User is already fully qualified - no gaps existed
+        # Also store on node for persistence
+        # cease operation if role requirements are not fetched
+        # save learning path to graph
+        # create subdir if it doesn't exist
+        # sanitize role title to use as filename
+        # check if file exists and increment
+        # convert escaped newlines to real newlines
         let md_content =
             learning_path_node.learning_path.encode("utf-8").decode("unicode_escape");
-      
-         with open(file_path, "w", encoding="utf-8") as f  {
+        with open(file_path, "w", encoding="utf-8") as f  {
             f.write(md_content);
         }
         print("Learning path saved to:", file_path, "\n");
@@ -1485,6 +1496,9 @@ impl live_job_market_trends_notifications.run{
     }
     jobs_list = _filter_jobs_by_focus(jobs_list, self.focus);
     if jobs_list == None or len(jobs_list) == 0  {
+        self.success = False;
+        self.error_message =
+            "No live jobs found (all sources returned empty after parsing).";
         report
         {"status" : "Fail" , "message" : "No live jobs found (all sources returned empty after parsing)." , "body" :
         {"generated_time_utc" : generated_time_utc , "generated_time_local" : generated_time_local , "debug_counts" :
@@ -1565,6 +1579,8 @@ impl live_job_market_trends_notifications.run{
         );
         idx = idx + 1;
     }
+    self.notifications = notifications;
+    self.success = True;
     report
     {"status" : "Success" , "message" : "Live job openings + trending roles/skills generated" , "body" :
     {"generated_time_utc" : generated_time_utc , "generated_time_local" : generated_time_local , "summary" : "Live jobs pulled from Remotive, RemoteOK, and Arbeitnow (public endpoints)." , "notifications" : notifications , "highlighted_roles" : top_roles , "high_demand_skills" : top_skills , "jobs" : jobs_list , "sources" : ["Remotive", "RemoteOK", "Arbeitnow"] } } ;

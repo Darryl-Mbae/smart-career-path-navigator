@@ -473,6 +473,88 @@ def get_roadmap_tool(role: str) -> str {
 }
 
 
+def get_user_profile_tool()  -> str {
+    try {
+        let walker = root spawn get_user_profile();
+        if not walker.user_profile {
+            return "Your profile is currently empty. Tell me about your skills!";
+        }
+        let p = walker.user_profile;
+        let skill_list =
+            ", ".join([ s.name for s in p.skills ]) if p.skills else "None";
+        let cert_list =
+            ", ".join([ c.title for c in p.certifications ])
+            if p.certifications
+            else "None";
+        let interest_list =
+            ", ".join([ i.name for i in p.interests ]) if p.interests else "None";
+        return f"**User Profile**\n\n- **Skills**: {skill_list}\n- **Certifications**: {cert_list}\n- **Interests**: {interest_list}";
+    } except Exception as e {
+        return f"Error fetching profile: {str(e)}";
+    }
+}
+
+
+def get_job_notifications_tool() -> str {
+    try {
+        # Limit to 5 per source for speed
+        let walker = root spawn live_job_market_trends_notifications(max_jobs_per_source=5, location="Remote");
+        if walker.success {
+            let notifications = walker.notifications;
+            if not notifications { return "No current job notifications found."; }
+            
+            let out = "**Live Job Market Trends:**\n\n";
+            let count = 0;
+            for n in notifications {
+                # Filter for actual job entries (type='success')
+                if n.get("type") == "success" {
+                    let title = n.get("title");
+                    let url = n.get("url");
+                    let desc = n.get("description");
+                     out += f"- **[{title}]({url})**\n  {desc}\n\n";
+                    count += 1;
+                    if count >= 5 { break; }
+                }
+            }
+            if count == 0 { return "No specific job openings found right now."; }
+            return out;
+        }
+        if walker.error_message {
+            return f"Unable to fetch job notifications: {walker.error_message}";
+        }
+        return "Unable to fetch job notifications at this time.";
+    } except Exception as e {
+        return f"Error checking job market: {str(e)}";
+    }
+}
+
+
+def get_role_requirements_tool(role: str) -> str {
+    if not role {
+        return "Please specify a role to check requirements for.";
+    }
+    try {
+        let walker = root spawn get_all_role_requirements(role_title=role);
+        if walker.role_requirements {
+            let r = walker.role_requirements;
+            if not r.skills and not r.certifications  {
+                return f"No requirements found for {role}.";
+            }
+            let skills =
+                ", ".join([ s.name for s in r.skills ]) if r.skills else "None";
+            let certs =
+                ", ".join([ c.title for c in r.certifications ])
+                if r.certifications
+                else "None";
+            return f"**Requirements for {role}**\n\n- **Skills**: {skills}\n- **Certifications**: {certs}";
+        }
+        return f"Could not find requirements for {role}.";
+    } except Exception as e {
+        return f"Error retrieving requirements: {str(e)}";
+    }
+}
+
+
 """You are a helpful, professional, and concise career assistant named Arise AI.
 
 Your goal is to have a natural conversation.
@@ -483,6 +565,9 @@ Your goal is to have a natural conversation.
 - If a user asks about their progress or how much they have completed for a role, use `check_progress_tool` with the exact role title.
 - If a user asks about progress for ALL their target roles or "my roles", first use `get_target_roles_tool` to get the list of roles, then use `check_progress_tool` for EACH role individually and combine the results in your response.
 - If a user asks to see, view, or get their learning path or roadmap for a role, use `get_roadmap_tool`.
+- If a user asks to see their profile, skills, or what you know about them, use `get_user_profile_tool`.
+- If a user asks about job trends, open positions, or market data, use `get_job_notifications_tool`.
+- If a user asks about the requirements for a specific role (without asking for gaps), use `get_role_requirements_tool`.
 - If a user asks what target roles they have or what roles they are working towards, use `get_target_roles_tool`.
 - If a user wants to add, set, or pursue a new target role, use `add_target_role_tool`. This will also automatically fetch requirements for that role.
 - Always confirm with the user after successfully adding new information to their profile.
@@ -506,7 +591,10 @@ def generate_career_answer(
     get_skill_gaps_tool,
     add_target_role_tool,
     check_progress_tool,
-    get_roadmap_tool]
+    get_roadmap_tool,
+    get_user_profile_tool,
+    get_job_notifications_tool,
+    get_role_requirements_tool]
 );
 
 
