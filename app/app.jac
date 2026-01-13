@@ -175,6 +175,20 @@ walker delete_user_profile {
 }
 
 
+walker remove_profile_item {
+    has item_name: str;
+    has item_type: str;
+    has success: bool = False;
+    has message: str = "Item not found";
+
+    can visit_memory with `root entry;
+    can find_item with Memory entry;
+    can check_and_delete_skill with Skill entry;
+    can check_and_delete_interest with Interest entry;
+    can check_and_delete_certification with Certification entry;
+}
+
+
 walker create_role_requirements_graph {
     has role_title: str = "";
     has role_description: str = "";
@@ -495,28 +509,37 @@ def get_user_profile_tool()  -> str {
 }
 
 
-def get_job_notifications_tool() -> str {
+def get_job_notifications_tool()  -> str {
     try {
         # Limit to 5 per source for speed
-        let walker = root spawn live_job_market_trends_notifications(max_jobs_per_source=5, location="Remote");
+        let walker =
+            root spawn live_job_market_trends_notifications(
+                max_jobs_per_source=5,
+                location="Remote"
+            );
         if walker.success {
             let notifications = walker.notifications;
-            if not notifications { return "No current job notifications found."; }
-            
+            if not notifications {
+                return "No current job notifications found.";
+            }
             let out = "**Live Job Market Trends:**\n\n";
             let count = 0;
             for n in notifications {
                 # Filter for actual job entries (type='success')
-                if n.get("type") == "success" {
+                 if n.get("type") == "success" {
                     let title = n.get("title");
                     let url = n.get("url");
                     let desc = n.get("description");
-                     out += f"- **[{title}]({url})**\n  {desc}\n\n";
+                    out += f"- **[{title}]({url})**\n  {desc}\n\n";
                     count += 1;
-                    if count >= 5 { break; }
+                    if count >= 5 {
+                        break;
+                    }
                 }
             }
-            if count == 0 { return "No specific job openings found right now."; }
+            if count == 0 {
+                return "No specific job openings found right now.";
+            }
             return out;
         }
         if walker.error_message {
@@ -555,6 +578,59 @@ def get_role_requirements_tool(role: str) -> str {
 }
 
 
+def remove_skill_tool(skill: str) -> str {
+    if not skill {
+        return "Please provide the skill name to remove.";
+    }
+    try {
+        let walker = root spawn remove_profile_item(item_name=skill, item_type="skill");
+        if walker.success {
+            return f"✅ removed **{skill}** from your profile.";
+        }
+        return f"Could not remove **{skill}**. {walker.message}";
+    } except Exception as e {
+        return f"Error removing skill: {str(e)}";
+    }
+}
+
+
+def remove_certification_tool(certification: str) -> str {
+    if not certification {
+        return "Please provide the certification name to remove.";
+    }
+    try {
+        let walker =
+            root spawn remove_profile_item(
+                item_name=certification,
+                item_type="certification"
+            );
+        if walker.success {
+            return f"✅ removed **{certification}** from your profile.";
+        }
+        return f"Could not remove **{certification}**. {walker.message}";
+    } except Exception as e {
+        return f"Error removing certification: {str(e)}";
+    }
+}
+
+
+def remove_interest_tool(interest: str) -> str {
+    if not interest {
+        return "Please provide the interest name to remove.";
+    }
+    try {
+        let walker =
+            root spawn remove_profile_item(item_name=interest, item_type="interest");
+        if walker.success {
+            return f"✅ removed **{interest}** from your profile.";
+        }
+        return f"Could not remove **{interest}**. {walker.message}";
+    } except Exception as e {
+        return f"Error removing interest: {str(e)}";
+    }
+}
+
+
 """You are a helpful, professional, and concise career assistant named Arise AI.
 
 Your goal is to have a natural conversation.
@@ -571,6 +647,7 @@ Your goal is to have a natural conversation.
 - If a user asks what target roles they have or what roles they are working towards, use `get_target_roles_tool`.
 - If a user wants to add, set, or pursue a new target role, use `add_target_role_tool`. This will also automatically fetch requirements for that role.
 - Always confirm with the user after successfully adding new information to their profile.
+- If a user asks to remove a skill, certification, or interest, use the appropriate removal tool (`remove_skill_tool` etc.).
 - Keep your responses concise and direct. Avoid being overly verbose or repetitive.
 - Use Markdown (bold, lists) for clarity when helpful, but don't force a specific structure if a simple paragraph is better.
 - When tools return successful results, USE those results in your response. Do not claim a tool failed if it returned valid data.
@@ -594,7 +671,10 @@ def generate_career_answer(
     get_roadmap_tool,
     get_user_profile_tool,
     get_job_notifications_tool,
-    get_role_requirements_tool]
+    get_role_requirements_tool,
+    remove_skill_tool,
+    remove_certification_tool,
+    remove_interest_tool]
 );
 
 
