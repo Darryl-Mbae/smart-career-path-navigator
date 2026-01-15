@@ -157,11 +157,9 @@ walker update_user_profile {
     has append_only: bool = False;
 
     can visit_memory with `root entry;
-    can add_new_skills with Memory entry;
+    can manage_profile with Memory entry;
     can delete_skill with Skill entry;
-    can add_new_interests with Memory entry;
     can delete_interest with Interest entry;
-    can add_new_certifications with Memory entry;
     can delete_certification with Certification entry;
 }
 
@@ -361,9 +359,11 @@ walker career_chat {
 
 
 # Local Tools
- # Local Tools
  def add_skill_tool(name: str, description: str = "") -> str {
-    if name {
+    # Local Tools
+     # Local Tools
+     # Local Tools
+     if name {
         let sanitized_skills = [{"name" : name , "description" : description }];
         root spawn update_user_profile(
             updated_skills=sanitized_skills,
@@ -441,7 +441,9 @@ def add_target_role_tool(role: str, description: str = "") -> str {
     if role {
         # Spawn the walker that collects requirements and creates the Role node
          # Spawn the walker that collects requirements and creates the Role node
+         # Spawn the walker that collects requirements and creates the Role node
          root spawn collect_role_requirements(
+            # Spawn the walker that collects requirements and creates the Role node
             role_title=role,
             role_description=description
         );
@@ -526,8 +528,11 @@ def get_job_notifications_tool()  -> str {
             let count = 0;
             for n in notifications {
                 # Filter for actual job entries (type='success')
+                 # Limit to 5 per source for speed
                  if n.get("type") == "success" {
-                    let title = n.get("title");
+                    # Filter for actual job entries (type='success')
+                    let title =
+                        n.get("title");
                     let url = n.get("url");
                     let desc = n.get("description");
                     out += f"- **[{title}]({url})**\n  {desc}\n\n";

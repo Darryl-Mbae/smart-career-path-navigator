@@ -32,6 +32,7 @@ cl {
         let [cvFileName, setCvFileName] = useState("");
         let [cvMimeType, setCvMimeType] = useState("");
         let [cvPreviewUrl, setCvPreviewUrl] = useState("");
+        let [selectedInterests, setSelectedInterests] = useState([]);
 
 
         let [notifications, setNotifications] = useState([]);
@@ -226,6 +227,9 @@ cl {
         let certificationsClasses = "bg-primary text-white"
         if activeLink == "certifications"
         else "text-gray-300 hover:bg-[#101010ff] hover:text-white";
+        let interestsClasses = "bg-primary text-white"
+        if activeLink == "interests"
+        else "text-gray-300 hover:bg-[#101010ff] hover:text-white";
 
         let devRoles = ["Frontend Developer", "Backend Developer", "Fullstack Developer", "Mobile Developer", "DevOps Engineer", "UI/UX Designer", "Data Scientist", "Machine Learning Engineer"];
 
@@ -254,6 +258,16 @@ cl {
                         };
                     }
                 );
+                
+                let interestData = profile.reports[0].body.interests;
+                let interestObjects = interestData.map(
+                    lambda interest:any -> any {
+                        return {
+                            name: interest.name
+                        };
+                    }
+                );
+                setSelectedInterests(interestObjects);
 
                 setSelectedCertifications(certObjects);
 
@@ -469,7 +483,8 @@ cl {
             try{
                 let result = await root spawn update_user_profile(
                     updated_skills=selectedSkills,
-                    updated_certifications=selectedCertifications
+                    updated_certifications=selectedCertifications,
+                    updated_interests=selectedInterests
 
                 );
 
@@ -487,7 +502,8 @@ cl {
             try {
                 let result = await root spawn update_user_profile(
                     updated_certifications=selectedCertifications,
-                    updated_skills=selectedSkills
+                    updated_skills=selectedSkills,
+                    updated_interests=selectedInterests
                 );
 
                 if result {
@@ -501,6 +517,48 @@ cl {
 
         def handleSaveCertifications() -> None {
             saveCertifications();
+        }
+
+        def handleSaveInterests() -> None {
+            saveInterests();
+        }
+
+        async def saveInterests() -> None {
+            setIsLoading(True);
+            try {
+                let result = await root spawn update_user_profile(
+                    updated_interests=selectedInterests,
+                    updated_skills=selectedSkills,
+                    updated_certifications=selectedCertifications
+                );
+
+                if result {
+                    setIsLoading(false);
+                }
+            } except Exception as err {
+                console.log(err);
+            }
+        }
+
+        def handleSaveInterests() -> None {
+            saveInterests();
+        }
+
+        async def saveInterests() -> None {
+            setIsLoading(True);
+            try {
+                let result = await root spawn update_user_profile(
+                    updated_interests=selectedInterests,
+                    updated_skills=selectedSkills,
+                    updated_certifications=selectedCertifications
+                );
+
+                if result {
+                    setIsLoading(false);
+                }
+            } except Exception as err {
+                console.log(err);
+            }
         }
 
         async def openResumePreview() -> None {
@@ -749,6 +807,13 @@ cl {
                                     <span>Certifications</span>
                                 </div>
                             </li>
+                            <li className="mb-[6px]">
+                                <div 
+                                    onClick={lambda e:any -> None { setActiveLink("interests"); }}
+                                    className={baseLinkClasses + interestsClasses}>
+                                    <span>Interests</span>
+                                </div>
+                            </li>
                         </ul>
                     </div>
                 </nav>
@@ -844,6 +909,13 @@ cl {
                                     onClick={lambda e:any -> None { setActiveLink("certifications"); }}
                                     className={baseLinkClasses + certificationsClasses}>
                                     <span>Certifications</span>
+                                </div>
+                            </li>
+                             <li className="mb-[6px]">
+                                <div 
+                                    onClick={lambda e:any -> None { setActiveLink("interests"); setSidebarOpen(false); }}
+                                    className={baseLinkClasses + interestsClasses}>
+                                    <span>Interests</span>
                                 </div>
                             </li>
                         </ul>
@@ -1561,6 +1633,20 @@ cl {
                         selectedItems={selectedCertifications}
                         setSelectedItems={setSelectedCertifications}
                         onSave={handleSaveCertifications}
+                    />
+                )}
+
+                {activeLink == "interests" && (
+                    <SelectionManager 
+                        title="Select Your Interests"
+                        description="Choose or add your interests"
+                        placeholder="Search or type an interest and press Enter"
+                        selectedLabel="Selected Interests"
+                        availableLabel="Available Interests"
+                        availableItems="none"
+                        selectedItems={selectedInterests}
+                        setSelectedItems={setSelectedInterests}
+                        onSave={handleSaveInterests}
                     />
                 )}
 

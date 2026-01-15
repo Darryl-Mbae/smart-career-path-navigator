@@ -26,6 +26,7 @@ function Dashboard() {
   let [cvFileName, setCvFileName] = useState("");
   let [cvMimeType, setCvMimeType] = useState("");
   let [cvPreviewUrl, setCvPreviewUrl] = useState("");
+  let [selectedInterests, setSelectedInterests] = useState([]);
   let [notifications, setNotifications] = useState([]);
   let [selectedNotification, setSelectedNotification] = useState(null);
   let [notifError, setNotifError] = useState("");
@@ -190,6 +191,7 @@ function Dashboard() {
   let roadmapClasses = activeLink === "roadmap" ? "bg-primary text-white" : "text-gray-300 hover:bg-[#101010ff] hover:text-white";
   let ariseaiClasses = activeLink === "ariseai" ? "bg-primary text-white" : "text-gray-300 hover:bg-[#101010ff] hover:text-white";
   let certificationsClasses = activeLink === "certifications" ? "bg-primary text-white" : "text-gray-300 hover:bg-[#101010ff] hover:text-white";
+  let interestsClasses = activeLink === "interests" ? "bg-primary text-white" : "text-gray-300 hover:bg-[#101010ff] hover:text-white";
   let devRoles = ["Frontend Developer", "Backend Developer", "Fullstack Developer", "Mobile Developer", "DevOps Engineer", "UI/UX Designer", "Data Scientist", "Machine Learning Engineer"];
   async function getUserDetails() {
     try {
@@ -206,6 +208,11 @@ function Dashboard() {
         }
         return {name: certName, url: cert.url};
       });
+      let interestData = profile.reports[0].body.interests;
+      let interestObjects = interestData.map(interest => {
+        return {name: interest.name};
+      });
+      setSelectedInterests(interestObjects);
       setSelectedCertifications(certObjects);
       let skillObjects = data.map(skill => {
         return {name: skill.name, description: skill.description};
@@ -325,7 +332,7 @@ function Dashboard() {
   async function saveSkills() {
     setIsLoading(true);
     try {
-      let result = await __jacSpawn("update_user_profile", "", {"updated_skills": selectedSkills, "updated_certifications": selectedCertifications});
+      let result = await __jacSpawn("update_user_profile", "", {"updated_skills": selectedSkills, "updated_certifications": selectedCertifications, "updated_interests": selectedInterests});
       if (result) {
         setIsLoading(false);
       }
@@ -336,7 +343,7 @@ function Dashboard() {
   async function saveCertifications() {
     setIsLoading(true);
     try {
-      let result = await __jacSpawn("update_user_profile", "", {"updated_certifications": selectedCertifications, "updated_skills": selectedSkills});
+      let result = await __jacSpawn("update_user_profile", "", {"updated_certifications": selectedCertifications, "updated_skills": selectedSkills, "updated_interests": selectedInterests});
       if (result) {
         setIsLoading(false);
       }
@@ -346,6 +353,34 @@ function Dashboard() {
   }
   function handleSaveCertifications() {
     saveCertifications();
+  }
+  function handleSaveInterests() {
+    saveInterests();
+  }
+  async function saveInterests() {
+    setIsLoading(true);
+    try {
+      let result = await __jacSpawn("update_user_profile", "", {"updated_interests": selectedInterests, "updated_skills": selectedSkills, "updated_certifications": selectedCertifications});
+      if (result) {
+        setIsLoading(false);
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  }
+  function handleSaveInterests() {
+    saveInterests();
+  }
+  async function saveInterests() {
+    setIsLoading(true);
+    try {
+      let result = await __jacSpawn("update_user_profile", "", {"updated_interests": selectedInterests, "updated_skills": selectedSkills, "updated_certifications": selectedCertifications});
+      if (result) {
+        setIsLoading(false);
+      }
+    } catch (err) {
+      console.log(err);
+    }
   }
   async function openResumePreview() {
     await fetchResume(true);
@@ -449,7 +484,9 @@ function Dashboard() {
       setActiveLink("roles");
     }, "className": baseLinkClasses + rolesClasses}, [__jacJsx("span", {}, ["Roles"])])]), __jacJsx("li", {"className": "mb-[6px]"}, [__jacJsx("div", {"onClick": e => {
       setActiveLink("certifications");
-    }, "className": baseLinkClasses + certificationsClasses}, [__jacJsx("span", {}, ["Certifications"])])])])])]), __jacJsx("div", {"className": "p-4 "}, [__jacJsx("div", {"className": "flex items-center gap-3 px-4 py-3 text-red-400", "onClick": handleLogout}, [__jacJsx(LogOut, {}, []), __jacJsx("div", {"className": "text-sm text-red-400 font-medium"}, ["Logout"])])])]);
+    }, "className": baseLinkClasses + certificationsClasses}, [__jacJsx("span", {}, ["Certifications"])])]), __jacJsx("li", {"className": "mb-[6px]"}, [__jacJsx("div", {"onClick": e => {
+      setActiveLink("interests");
+    }, "className": baseLinkClasses + interestsClasses}, [__jacJsx("span", {}, ["Interests"])])])])])]), __jacJsx("div", {"className": "p-4 "}, [__jacJsx("div", {"className": "flex items-center gap-3 px-4 py-3 text-red-400", "onClick": handleLogout}, [__jacJsx(LogOut, {}, []), __jacJsx("div", {"className": "text-sm text-red-400 font-medium"}, ["Logout"])])])]);
   }
   function MobileDashSideBar() {
     let baseClasses = "fixed top-0 left-0 bg-[#0b0b0b] h-screen w-[80%] max-w-[300px] transform transition-transform duration-300 ease-in-out z-[100000] flex flex-col border-r border-gray-800";
@@ -476,7 +513,10 @@ function Dashboard() {
       setSidebarOpen(false);
     }, "className": baseLinkClasses + rolesClasses}, [__jacJsx("span", {}, ["Roles"])])]), __jacJsx("li", {"className": "mb-[6px]"}, [__jacJsx("div", {"onClick": e => {
       setActiveLink("certifications");
-    }, "className": baseLinkClasses + certificationsClasses}, [__jacJsx("span", {}, ["Certifications"])])])])])]), __jacJsx("div", {"className": "p-4 "}, [__jacJsx("div", {"className": "flex items-center gap-3 px-4 py-3 text-red-400", "onClick": handleLogout}, [__jacJsx(LogOut, {}, []), __jacJsx("div", {"className": "text-sm text-red-400 font-medium"}, ["Logout"])])])]);
+    }, "className": baseLinkClasses + certificationsClasses}, [__jacJsx("span", {}, ["Certifications"])])]), __jacJsx("li", {"className": "mb-[6px]"}, [__jacJsx("div", {"onClick": e => {
+      setActiveLink("interests");
+      setSidebarOpen(false);
+    }, "className": baseLinkClasses + interestsClasses}, [__jacJsx("span", {}, ["Interests"])])])])])]), __jacJsx("div", {"className": "p-4 "}, [__jacJsx("div", {"className": "flex items-center gap-3 px-4 py-3 text-red-400", "onClick": handleLogout}, [__jacJsx(LogOut, {}, []), __jacJsx("div", {"className": "text-sm text-red-400 font-medium"}, ["Logout"])])])]);
   }
   function ProfilePanel() {
     return __jacJsx("div", {"className": "hidden lg:flex lg:flex-col lg:w-72 bg-[#0b0b0b] h-screen border-l border-gray-800"}, [__jacJsx("div", {"className": "p-6"}, [__jacJsx("div", {"className": "flex flex-col items-center mb-6"}, [__jacJsx("div", {"className": "w-20 h-20 rounded-full bg-primary flex items-center justify-center text-white font-semibold text-2xl mb-4"}, [userDetails.full_name ? userDetails.full_name[0] : "U"]), __jacJsx("div", {"className": "text-white font-medium"}, [userDetails.full_name ? userDetails.full_name : "Guest"]), __jacJsx("div", {"className": "text-gray-400 text-sm"}, [userDetails.email ? userDetails.email : ""])])]), __jacJsx("div", {"className": "flex-1 overflow-y-auto px-6 pb-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"}, ["                        ", userSkillgap.length > 0 ? __jacJsx("div", {}, [userSkillgap[0].skills ? __jacJsx(null, {}, [__jacJsx("h3", {"className": "mt-4 text-base font-normal text-gray-300 mb-6"}, ["Skills Gap Analysis"]), userSkillgap[0].skills.slice(0, 3).map(skillgap => {
@@ -589,7 +629,7 @@ function Dashboard() {
           setNotifications(updatedNotifications);
         }
       }}, [__jacJsx("div", {"className": "flex items-start gap-4"}, [__jacJsx("div", {"className": "w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 " + iconBg}, [notification.type === "message" && __jacJsx("svg", {"className": "w-6 h-6 text-white", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"}, [])]), notification.type === "event" && __jacJsx("svg", {"className": "w-6 h-6 text-white", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"}, [])]), notification.type === "success" && __jacJsx("svg", {"className": "w-6 h-6 text-white", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M5 13l4 4L19 7"}, [])]), notification.type === "warning" && __jacJsx("svg", {"className": "w-6 h-6 text-white", "fill": "none", "stroke": "currentColor", "viewBox": "0 0 24 24"}, [__jacJsx("path", {"strokeLinecap": "round", "strokeLinejoin": "round", "strokeWidth": 2, "d": "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"}, [])])]), __jacJsx("div", {"className": "flex-1 min-w-0"}, [__jacJsx("div", {"className": "flex items-start justify-between gap-4 mb-1"}, [__jacJsx("h3", {"className": "text-white font-semibold flex items-center gap-2"}, [notification.title, isUnread && __jacJsx("span", {"className": "w-2 h-2 bg-primary rounded-full"}, [])]), __jacJsx("span", {"className": "text-gray-400 text-sm flex-shrink-0"}, [notification.time])]), __jacJsx("p", {"className": "text-gray-400 text-sm line-clamp-2"}, [notification.description])])])]);
-    })])])]), activeLink === "skills" && __jacJsx(SelectionManager, {"title": "Select Your Skills", "description": "Choose or add your skills", "placeholder": "Search or type a skill and press Enter", "selectedLabel": "Selected Skills", "availableLabel": "Available Skills", "availableItems": "none", "selectedItems": selectedSkills, "setSelectedItems": setSelectedSkills, "onSave": handleSaveSkills}, []), activeLink === "roles" && __jacJsx(SelectionManager, {"title": "Select Your Roles", "description": "Choose or add your target roles", "placeholder": "Search or type a role and press Enter", "selectedLabel": "Selected Roles", "availableLabel": "Available Roles", "availableItems": "none", "selectedItems": selectedRoles, "setSelectedItems": setSelectedRoles, "onSave": () => {}}, []), activeLink === "certifications" && __jacJsx(SelectionManager, {"title": "Select Your Certifications", "description": "Choose or add your certifications", "placeholder": "Search or type a certification and press Enter", "selectedLabel": "Selected Certifications", "availableLabel": "Available Certifications", "availableItems": "none", "selectedItems": selectedCertifications, "setSelectedItems": setSelectedCertifications, "onSave": handleSaveCertifications}, []), activeLink === "roadmap" && __jacJsx("div", {}, [__jacJsx("h1", {"className": "text-2xl md:text-3xl font-bold text-white mb-6"}, ["My Roadmap"]), __jacJsx("p", {"className": "text-gray-400"}, ["Your personalized learning path"]), __jacJsx("div", {"className": "grid grid-cols-1 md:grid-cols-3 gap-4"}, [roadmapData.map(roadmap => {
+    })])])]), activeLink === "skills" && __jacJsx(SelectionManager, {"title": "Select Your Skills", "description": "Choose or add your skills", "placeholder": "Search or type a skill and press Enter", "selectedLabel": "Selected Skills", "availableLabel": "Available Skills", "availableItems": "none", "selectedItems": selectedSkills, "setSelectedItems": setSelectedSkills, "onSave": handleSaveSkills}, []), activeLink === "roles" && __jacJsx(SelectionManager, {"title": "Select Your Roles", "description": "Choose or add your target roles", "placeholder": "Search or type a role and press Enter", "selectedLabel": "Selected Roles", "availableLabel": "Available Roles", "availableItems": "none", "selectedItems": selectedRoles, "setSelectedItems": setSelectedRoles, "onSave": () => {}}, []), activeLink === "certifications" && __jacJsx(SelectionManager, {"title": "Select Your Certifications", "description": "Choose or add your certifications", "placeholder": "Search or type a certification and press Enter", "selectedLabel": "Selected Certifications", "availableLabel": "Available Certifications", "availableItems": "none", "selectedItems": selectedCertifications, "setSelectedItems": setSelectedCertifications, "onSave": handleSaveCertifications}, []), activeLink === "interests" && __jacJsx(SelectionManager, {"title": "Select Your Interests", "description": "Choose or add your interests", "placeholder": "Search or type an interest and press Enter", "selectedLabel": "Selected Interests", "availableLabel": "Available Interests", "availableItems": "none", "selectedItems": selectedInterests, "setSelectedItems": setSelectedInterests, "onSave": handleSaveInterests}, []), activeLink === "roadmap" && __jacJsx("div", {}, [__jacJsx("h1", {"className": "text-2xl md:text-3xl font-bold text-white mb-6"}, ["My Roadmap"]), __jacJsx("p", {"className": "text-gray-400"}, ["Your personalized learning path"]), __jacJsx("div", {"className": "grid grid-cols-1 md:grid-cols-3 gap-4"}, [roadmapData.map(roadmap => {
       return __jacJsx(RoadmapContent, {"key": roadmap.id, "roadmap": roadmap.body.role_title, "markdown": roadmap.body.learning_path}, []);
     })])]), activeLink === "roadmap-inside" && __jacJsx("div", {}, [__jacJsx("button", {"onClick": e => {
       setActiveLink("roadmap");

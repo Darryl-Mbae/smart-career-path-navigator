@@ -498,9 +498,10 @@ impl update_user_profile.visit_memory{
 }
 
 
-impl update_user_profile.add_new_skills{
-    print("Arrived at Memory node..\n");
-    if not self.append_only {
+impl update_user_profile.manage_profile{
+    print("Arrived at Memory node (Manage Profile)..\n");
+    # --- SKILLS ---
+     if not self.append_only {
         print("Visiting Skill nodes to delete..\n");
         visit [-->( ` ? Skill ) ] else {
             report {"status" : "Info" , "message" : "No skills found" , "body" : {} } ;
@@ -509,7 +510,7 @@ impl update_user_profile.add_new_skills{
     print(f"Clone that remained at Memory Adding new skills...{self.updated_skills}\n");
     for skill in self.updated_skills {
         let name = skill["name"];
-        let desc = skill["description"];
+        let desc = skill.get("description", "");
         if not [-->( ` ? Skill ) ]( ? name == name )  {
             let new_skill = Skill(name=name, description=desc);
             here +>: skilled_in :+> new_skill;
@@ -521,26 +522,8 @@ impl update_user_profile.add_new_skills{
             {"status" : "Fail" , "message" : "Skill already exists" , "body" : {"name" : name } } ;
         }
     }
-}
-
-
-impl update_user_profile.delete_skill{
-    print("Deleting skills if not in updated list...\n");
-    let names = [ s["name"] for s in self.updated_skills ];
-    if here.name not in names {
-        let removed = here.name;
-        del here ;
-        report
-        {"status" : "Success" , "message" : "Skill deleted" , "body" : {"name" : removed } } ;
-    } else {
-        report
-        {"status" : "Fail" , "message" : "Skill not deleted because it exists in updated list" , "body" : {"name" : here.name } } ;
-    }
-}
-
-
-impl update_user_profile.add_new_interests{
-    if not self.append_only {
+    # --- INTERESTS ---
+     if not self.append_only {
         print("Visiting Interest nodes to delete..\n");
         visit [-->( ` ? Interest ) ] else {
             report {"status" : "Info" , "message" : "No interests found" , "body" : {} } ;
@@ -549,7 +532,7 @@ impl update_user_profile.add_new_interests{
     print("Adding new interests...\n");
     for interest in self.updated_interests {
         let name = interest["name"];
-        let desc = interest["description"];
+        let desc = interest.get("description", "");
         if not [-->( ` ? Interest ) ]( ? name == name )  {
             let new_interest = Interest(name=name, description=desc);
             here +>: interested_in :+> new_interest;
@@ -560,26 +543,8 @@ impl update_user_profile.add_new_interests{
             {"status" : "Fail" , "message" : "Interest already exists" , "body" : {"name" : name } } ;
         }
     }
-}
-
-
-impl update_user_profile.delete_interest{
-    print("Deleting interests if not in updated list...\n");
-    let names = [ i["name"] for i in self.updated_interests ];
-    if here.name not in names {
-        let removed = here.name;
-        del here ;
-        report
-        {"status" : "Success" , "message" : "Interest deleted" , "body" : {"name" : removed } } ;
-    } else {
-        report
-        {"status" : "Fail" , "message" : "Interest not deleted because it exists in updated list" , "body" : {"name" : here.name } } ;
-    }
-}
-
-
-impl update_user_profile.add_new_certifications{
-    if not self.append_only {
+    # --- CERTIFICATIONS ---
+     if not self.append_only {
         print("Visiting Certification nodes to delete..\n");
         visit [-->( ` ? Certification ) ] else {
             report
@@ -601,6 +566,37 @@ impl update_user_profile.add_new_certifications{
             report
             {"status" : "Fail" , "message" : "Certification already exists" , "body" : {"title" : title } } ;
         }
+    }
+}
+
+
+impl update_user_profile.delete_skill{
+    print("Deleting skills if not in updated list...\n");
+    let names = [ s["name"] for s in self.updated_skills ];
+    if here.name not in names {
+        let removed = here.name;
+        del here ;
+        report
+        {"status" : "Success" , "message" : "Skill deleted" , "body" : {"name" : removed } } ;
+    } else {
+        report
+        {"status" : "Fail" , "message" : "Skill not deleted because it exists in updated list" , "body" : {"name" : here.name } } ;
+    }
+}
+
+
+impl update_user_profile.delete_interest{
+    print("Deleting interests if not in updated list...\n");
+    let names = [ i["name"] for i in self.updated_interests ];
+    print(f"Current interest: {here.name}, Updated List: {names}\n");
+    if here.name not in names {
+        let removed = here.name;
+        del here ;
+        report
+        {"status" : "Success" , "message" : "Interest deleted" , "body" : {"name" : removed } } ;
+    } else {
+        report
+        {"status" : "Fail" , "message" : "Interest not deleted because it exists in updated list" , "body" : {"name" : here.name } } ;
     }
 }
 
@@ -1125,6 +1121,9 @@ impl check_progress.check_learning_progress{
         }
         # Also store on node for persistence
         # User is already fully qualified - no gaps existed
+        # User is already fully qualified - no gaps existed
+        # Also store on node for persistence
+        # User is already fully qualified - no gaps existed
         here.progress =
             self.progress;
         self.success = True;
@@ -1371,6 +1370,11 @@ impl recommend_learning_paths.recommend_path{
             os.makedirs("learning_paths");
         }
         # sanitize role title to use as filename
+        # cease operation if role requirements are not fetched
+        # Also store on node for persistence
+        # save learning path to graph
+        # create subdir if it doesn't exist
+        # sanitize role title to use as filename
         let safe_title =
             learning_path_node.role_title.replace(" ", "_").replace("/", "-");
         let base_path = "learning_paths/" + safe_title + ".md";
@@ -1383,6 +1387,182 @@ impl recommend_learning_paths.recommend_path{
             file_path = "learning_paths/" + numbered_title + ".md";
             counter = counter + 1;
         }
+        # convert escaped newlines to real newlines
+        # cease operation if role requirements are not fetched
+        # save learning path to graph
+        # create subdir if it doesn't exist
+        # sanitize role title to use as filename
+        # check if file exists and increment
+        # Check if Skill exists
+        # Check if Interest exists
+        # convert escaped newlines to real newlines
+        # All roles were invalid
+        # Check if Skill exists
+        # Check if Interest exists
+        # All roles were invalid
+        # cease operation if role requirements are not fetched
+        #call a walker to update main skill graph
+        #call a walker to update main skill graph
+        # EMPTY CHECK
+        # cease operation if role requirements are not fetched
+        # Try fuzzy match if exact match fails
+        # User is already fully qualified - no gaps existed
+        # Also store on node for persistence
+        # cease operation if role requirements are not fetched
+        # save learning path to graph
+        # create subdir if it doesn't exist
+        # sanitize role title to use as filename
+        # check if file exists and increment
+        # convert escaped newlines to real newlines
+        #call a walker to update main skill graph
+        #call a walker to update main skill graph
+        # EMPTY CHECK
+        # Try fuzzy match if exact match fails
+        # User is already fully qualified - no gaps existed
+        # Also store on node for persistence
+        # cease operation if role requirements are not fetched
+        # save learning path to graph
+        # create subdir if it doesn't exist
+        # sanitize role title to use as filename
+        # check if file exists and increment
+        # convert escaped newlines to real newlines
+        # User is already fully qualified - no gaps existed
+        # Also store on node for persistence
+        # cease operation if role requirements are not fetched
+        # save learning path to graph
+        # create subdir if it doesn't exist
+        # sanitize role title to use as filename
+        # check if file exists and increment
+        # convert escaped newlines to real newlines
+        # cease operation if role requirements are not fetched
+        # save learning path to graph
+        # create subdir if it doesn't exist
+        # sanitize role title to use as filename
+        # check if file exists and increment
+        # Check if Skill exists
+        # Check if Interest exists
+        # convert escaped newlines to real newlines
+        # All roles were invalid
+        # Check if Skill exists
+        # Check if Interest exists
+        # All roles were invalid
+        # cease operation if role requirements are not fetched
+        #call a walker to update main skill graph
+        #call a walker to update main skill graph
+        # EMPTY CHECK
+        # cease operation if role requirements are not fetched
+        # Try fuzzy match if exact match fails
+        # User is already fully qualified - no gaps existed
+        # Also store on node for persistence
+        # cease operation if role requirements are not fetched
+        # save learning path to graph
+        # create subdir if it doesn't exist
+        # sanitize role title to use as filename
+        # check if file exists and increment
+        # convert escaped newlines to real newlines
+        #call a walker to update main skill graph
+        #call a walker to update main skill graph
+        # EMPTY CHECK
+        # Try fuzzy match if exact match fails
+        # User is already fully qualified - no gaps existed
+        # Also store on node for persistence
+        # cease operation if role requirements are not fetched
+        # save learning path to graph
+        # create subdir if it doesn't exist
+        # sanitize role title to use as filename
+        # check if file exists and increment
+        # convert escaped newlines to real newlines
+        # cease operation if role requirements are not fetched
+        # save learning path to graph
+        # create subdir if it doesn't exist
+        # sanitize role title to use as filename
+        # check if file exists and increment
+        # convert escaped newlines to real newlines
+        # cease operation if role requirements are not fetched
+        # save learning path to graph
+        # create subdir if it doesn't exist
+        # sanitize role title to use as filename
+        # check if file exists and increment
+        # Check if Skill exists
+        # Check if Interest exists
+        # convert escaped newlines to real newlines
+        # All roles were invalid
+        # Check if Skill exists
+        # Check if Interest exists
+        # All roles were invalid
+        # cease operation if role requirements are not fetched
+        #call a walker to update main skill graph
+        #call a walker to update main skill graph
+        # EMPTY CHECK
+        # cease operation if role requirements are not fetched
+        # Try fuzzy match if exact match fails
+        # User is already fully qualified - no gaps existed
+        # Also store on node for persistence
+        # cease operation if role requirements are not fetched
+        # save learning path to graph
+        # create subdir if it doesn't exist
+        # sanitize role title to use as filename
+        # check if file exists and increment
+        # convert escaped newlines to real newlines
+        #call a walker to update main skill graph
+        #call a walker to update main skill graph
+        # EMPTY CHECK
+        # Try fuzzy match if exact match fails
+        # User is already fully qualified - no gaps existed
+        # Also store on node for persistence
+        # cease operation if role requirements are not fetched
+        # save learning path to graph
+        # create subdir if it doesn't exist
+        # sanitize role title to use as filename
+        # check if file exists and increment
+        # convert escaped newlines to real newlines
+        # User is already fully qualified - no gaps existed
+        # Also store on node for persistence
+        # cease operation if role requirements are not fetched
+        # save learning path to graph
+        # create subdir if it doesn't exist
+        # sanitize role title to use as filename
+        # check if file exists and increment
+        # convert escaped newlines to real newlines
+        # cease operation if role requirements are not fetched
+        # save learning path to graph
+        # create subdir if it doesn't exist
+        # sanitize role title to use as filename
+        # check if file exists and increment
+        # Check if Skill exists
+        # Check if Interest exists
+        # convert escaped newlines to real newlines
+        # All roles were invalid
+        # Check if Skill exists
+        # Check if Interest exists
+        # All roles were invalid
+        # cease operation if role requirements are not fetched
+        #call a walker to update main skill graph
+        #call a walker to update main skill graph
+        # EMPTY CHECK
+        # cease operation if role requirements are not fetched
+        # Try fuzzy match if exact match fails
+        # User is already fully qualified - no gaps existed
+        # Also store on node for persistence
+        # cease operation if role requirements are not fetched
+        # save learning path to graph
+        # create subdir if it doesn't exist
+        # sanitize role title to use as filename
+        # check if file exists and increment
+        # convert escaped newlines to real newlines
+        #call a walker to update main skill graph
+        #call a walker to update main skill graph
+        # EMPTY CHECK
+        # Try fuzzy match if exact match fails
+        # User is already fully qualified - no gaps existed
+        # Also store on node for persistence
+        # cease operation if role requirements are not fetched
+        # save learning path to graph
+        # create subdir if it doesn't exist
+        # sanitize role title to use as filename
+        # check if file exists and increment
+        # convert escaped newlines to real newlines
+        # check if file exists and increment
         # convert escaped newlines to real newlines
         # cease operation if role requirements are not fetched
         # save learning path to graph
