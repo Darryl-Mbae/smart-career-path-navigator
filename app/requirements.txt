@@ -6,5 +6,5 @@ beautifulsoup4
 firecrawl-py
 jac-client==0.2.3
 byllm
-jacenv
-.jaccache
+
+
